@@ -1,0 +1,160 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "theme": "kanagawa",
+  "autoupdate": true,
+  "default_agent": "coordinator",
+  "plugin": [
+    "@howaboua/opencode-roadmap-plugin@latest",
+    "@tarquinen/opencode-dcp@latest",
+    "opencode-mem"
+  ],
+  "share": "manual",
+  "tui": {
+    "scroll_speed": 3
+  },
+  "provider": {
+    "aitooling": {
+      "npm": "@ai-sdk/openai-compatible",
+      "options": {
+        "baseURL": "https://litellm.aitooling.mgsops.net",
+        "apiKey": "{env:AITOOLINGKEY}"
+      },
+      "models": {
+        "azure/gpt-4.1": {
+          "id": "gpt-4.1",
+          "name": "GPT 4.1",
+          "temperature": true
+        },
+        "azure/gpt-5.1-codex": {
+          "id": "gpt-5.1-codex",
+          "name": "GPT 5.1 Codex",
+          "temperature": true
+        },
+        "azure/gpt-5.1-codex-mini": {
+          "id": "gpt-5.1-codex-mini",
+          "name": "GPT 5.1 Codex Mini",
+          "temperature": true
+        },
+        "azure/gpt-5.1": {
+          "id": "gpt-5.1",
+          "name": "GPT 5.1",
+          "temperature": true
+        },
+        "azure/gpt-5.2": {
+          "id": "gpt-5.2",
+          "name": "GPT 5.2",
+          "temperature": true
+        },
+        "claude-sonnet-4-5-20250929": {
+          "id": "claude-sonnet-4-5-20250929",
+          "name": "Claude Sonnet 4.5",
+          "temperature": true
+        },
+        "claude-haiku-4-5-20251001": {
+          "id": "claude-haiku-4-5-20251001",
+          "name": "Claude Haiku 4.5",
+          "temperature": true
+        },
+        "claude-haiku-4-5-20250929": {
+          "id": "claude-haiku-4-5-20250929",
+          "name": "Claude Haiku 4.5",
+          "temperature": true
+        }
+      }
+    },
+    "github-copilot": {
+      "models": {
+        "gpt-4o": { "id": "gpt-4o", "name": "GPT-4o", "temperature": true },
+        "gpt-4o-mini": {
+          "id": "gpt-4o-mini",
+          "name": "GPT-4o Mini",
+          "temperature": true
+        },
+        "gpt-4": { "id": "gpt-4", "name": "GPT-4", "temperature": true },
+        "gpt-3.5-turbo": {
+          "id": "gpt-3.5-turbo",
+          "name": "GPT-3.5 Turbo",
+          "temperature": true
+        },
+        "claude-3.5-sonnet": {
+          "id": "claude-3.5-sonnet",
+          "name": "Claude 3.5 Sonnet",
+          "temperature": true
+        },
+        "o1-preview": {
+          "id": "o1-preview",
+          "name": "O1 Preview",
+          "temperature": true
+        },
+        "o1-mini": { "id": "o1-mini", "name": "O1 Mini", "temperature": true }
+      }
+    }
+  },
+  "model": "aitooling/azure/gpt-5.2",
+  "small_model": "aitooling/claude-haiku-4-5-20251001",
+  "instructions": [
+    "AGENTS.md",
+    "protocols/TOOL_USAGE_GUIDE.md",
+    "protocols/DOCUMENTATION_POLICY.md",
+    "protocols/DELEGATION_PROTOCOLS.md",
+    "protocols/HANDOFF_PROTOCOLS.md",
+    "protocols/AGENT_SELECTION_GUIDE.md",
+    "protocols/rulesets/*.md"
+  ],
+  "watcher": {
+    "ignore": [
+      "node_modules/**",
+      "venv/**",
+      ".git/**",
+      "dist/**",
+      "build/**",
+      "*.log",
+      ".DS_Store",
+      "qdrant_storage/**",
+      ".ruff_cache/**",
+      "external/context-db-mcp/venv/**"
+    ]
+  },
+  "permission": "allow",
+  "compaction": {
+    "auto": true,
+    "prune": true
+  },
+  "agent": {
+    "coordinator": {
+      "description": "Coordination lead (user-defined). Choose the coordinator persona that fits your team.",
+      "mode": "primary",
+      "temperature": 0.2
+    },
+    "strategist": {
+      "description": "Systems architect for planning and decisions",
+      "mode": "subagent",
+      "model": "aitooling/claude-haiku-4-5-20251001",
+      "temperature": 0.3
+    },
+    "implementer": {
+      "description": "Implementation specialist for disciplined execution",
+      "mode": "subagent",
+      "model": "aitooling/claude-haiku-4-5-20251001",
+      "temperature": 0.4
+    },
+    "reviewer": {
+      "description": "Code and documentation reviewer for quality assurance",
+      "mode": "subagent",
+      "model": "aitooling/claude-haiku-4-5-20251001",
+      "temperature": 0.2
+    },
+    "research": {
+      "description": "Research lead for discovery and requirements",
+      "mode": "subagent",
+      "model": "aitooling/claude-haiku-4-5-20251001",
+      "temperature": 0.2
+    },
+    "architect": {
+      "description": "Big-picture architect who shapes roadmaps and trade-offs",
+      "mode": "subagent",
+      "model": "aitooling/claude-haiku-4-5-20251001",
+      "temperature": 0.3
+    }
+  }
+}
