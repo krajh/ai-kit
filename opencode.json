@@ -90,8 +90,8 @@
       }
     }
   },
-  "model": "aitooling/azure/gpt-5.2",
-  "small_model": "aitooling/claude-haiku-4-5-20251001",
+  "model": "aitooling/claude-sonnet-4-5-20250929",
+  "small_model": "aitooling/claude-sonnet-4-5-20250929",
   "instructions": [
     "AGENTS.md",
     "protocols/TOOL_USAGE_GUIDE.md",
