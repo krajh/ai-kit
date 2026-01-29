@@ -1,12 +1,11 @@
 ---
 name: protocol-verify
 description: Verify delegation protocol compliance (acknowledgment, reporting, sequential work, escalation)
-agent: rias-queen
 ---
 
 # Protocol Verify
 
-Use this to quickly confirm delegations follow **Delegation Protocols v1.3 (Jan 9, 2026)**.
+Use this to quickly confirm delegations follow the repository's **Delegation Protocols**.
 
 ## Use when
 
@@ -23,7 +22,7 @@ Use this to quickly confirm delegations follow **Delegation Protocols v1.3 (Jan 
 - Acknowledgment requirement: "Protocols acknowledged, beginning work."
 - STATUS UPDATE format (COMPLETED/STARTING/CONTINUING/PROGRESS/BLOCKERS/ETA)
 - SKILL CHECK requirement (first STATUS UPDATE only)
-- Escalation formats (ESCALATION TO RIAS, QUESTION FOR RIAS/MASTER)
+- Escalation formats (ESCALATION TO COORDINATOR; include OPTIONS + RECOMMENDATION when needed)
 - Cross-session return-control block (for blockers requiring approval)
 - Sequential work requirement (one task at a time)
 

@@ -95,7 +95,6 @@ STATUS UPDATE:
 - STARTING: Iteration N+1 — [next small step] OR CONTINUING: [same]
 - PROGRESS: Files: …; Checks: …; Notes: …
 - BLOCKERS: None OR …
-- ETA: tracking
 ```
 
 ## Safety rules (must follow)

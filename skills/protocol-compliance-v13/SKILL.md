@@ -19,7 +19,7 @@ description: Enforce Delegation Protocols v1.3 with acknowledgment, checkpoint-b
 2. **One task at a time:** no parallel "also fixed X".
 3. **Checkpoint updates:** after each discrete unit of work.
 4. **Escalate uncertainty immediately:** questions/decisions are blockers.
-5. **Cross-session escalation:** use the return-control block when you need Rias/Master to decide.
+5. **Cross-session escalation:** use the return-control block when you need a coordinator decision.
 
 ## Required STATUS UPDATE format (copy/paste)
 
@@ -29,7 +29,6 @@ STATUS UPDATE:
 - STARTING: [next checkpoint] OR CONTINUING: [current checkpoint]
 - PROGRESS: [concrete progress: files, functions, commands run]
 - BLOCKERS: [None or specific]
-- ETA: [tracking or estimate to next checkpoint]
 ```
 
 **First update must include:**
@@ -44,7 +43,7 @@ SKILL CHECK:
 ### Blocker / resource
 
 ```
-ESCALATION TO RIAS:
+ESCALATION TO COORDINATOR:
 - BLOCKER: …
 - CONTEXT: …
 - ATTEMPTED: …
@@ -55,7 +54,7 @@ ESCALATION TO RIAS:
 ### Uncertainty / decision
 
 ```
-QUESTION FOR RIAS/MASTER:
+QUESTION FOR COORDINATOR:
 - CONTEXT: …
 - QUESTION: …
 - OPTIONS:
@@ -72,7 +71,7 @@ Use exactly:
 
 ```
 ---
-[ALERT] ESCALATION TO RIAS - RETURNING CONTROL
+[ALERT] ESCALATION TO COORDINATOR - RETURNING CONTROL
 ---
 
 AGENT: [name]
@@ -97,7 +96,7 @@ IMPACT:
 WAITING STATE: ...
 
 ---
-[PAUSED]  PAUSED - Awaiting Rias's response to continue
+[PAUSED]  PAUSED - Awaiting coordinator response to continue
 ---
 ```
 

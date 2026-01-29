@@ -197,7 +197,7 @@ All agents follow strict professional protocols:
 
 This kit ships with essential playbooks for agent coordination and quality assurance. The `/skills/` directory contains:
 
-- **Delegation & Coordination**: `delegation-orchestration`, `protocol-verify`, `context-checkpoint`, `peerage-assemble`
+- **Delegation & Coordination**: `delegation-orchestration`, `protocol-verify`, `context-checkpoint`, `agent-selection`
 - **Quality & Testing**: `verification-and-tests`, `protocol-compliance-v13`, `debugging-error-handling`
 - **Tool & Plugin Authoring**: `opencode-tool-authoring`, `opencode-plugin-authoring`
 - **Workflow Patterns**: `ralph-loop`, `memory-tool-playbook`
@@ -221,7 +221,7 @@ Use skills as part of your standard workflow to maintain protocol compliance and
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) file for details.
+Apache License 2.0 - see [LICENSE](LICENSE).
 
 ---
 

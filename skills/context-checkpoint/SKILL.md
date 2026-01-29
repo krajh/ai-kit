@@ -1,11 +1,11 @@
 ---
 name: context-checkpoint
-description: Capture current project state/decisions/progress into persistent context (Mai)
+description: Capture current project state/decisions/progress into a durable checkpoint
 ---
 
 # Context Checkpoint
 
-Persist what matters across sessions (decisions, progress, blockers, next steps) using the `checkpoint` tool and Mai Context DB.
+Persist what matters across sessions (decisions, progress, blockers, next steps) using the `checkpoint` tool.
 
 ## Use when
 
@@ -17,17 +17,12 @@ Persist what matters across sessions (decisions, progress, blockers, next steps)
 
 ## How it works
 
-**Two-layer persistence:**
+**Local persistence:**
 
 1. **Local checkpoint** - `.opencode/checkpoints/latest.json`
    - Fast, file-based snapshot
-   - Used by plugins (e.g., mai-compaction-plugin)
    - Survives session restarts
-
-2. **Mai Context DB** - Durable knowledge base
-   - Decisions, constraints, patterns, issues
-   - Queryable across sessions
-   - Semantic search enabled
+   - Good for handoffs and compaction/resume workflows
 
 ## Checkpoint Tool Usage
 
@@ -35,12 +30,6 @@ Persist what matters across sessions (decisions, progress, blockers, next steps)
 
 ```bash
 checkpoint --name "milestone-name" --focus "what changed" --note "key details"
-```
-
-**Checkpoint with Mai sync:**
-
-```bash
-checkpoint --name "milestone-name" --focus "what changed" --note "key details" --sync
 ```
 
 **What gets captured:**
@@ -51,32 +40,13 @@ checkpoint --name "milestone-name" --focus "what changed" --note "key details" -
 - Git state (branch, commit, diff stat)
 - Created by (agent name)
 
-## Mai Context DB Integration
+## Durable records (recommended)
 
-**For durable decisions/constraints/patterns:**
+Use a durable system of record for decisions and policies that must survive beyond memory retention:
 
-Use Mai Context DB MCP tools directly:
-
-```typescript
-// Record a decision
-await global.mcp?.callTool("mai-context-db", "create_context_entry", {
-  table: "decisions",
-  data: {
-    title: "Use JWT for authentication",
-    decision_type: "architecture",
-    status: "active",
-    rationale: "Stateless scaling, better for distributed systems",
-    alternatives_considered: "Session-based auth (rejected: requires Redis)",
-  },
-});
-
-// Query active decisions
-await global.mcp?.callTool("mai-context-db", "query_context", {
-  table: "decisions",
-  filters: { status: "active" },
-  limit: 10,
-});
-```
+- ADRs in the repo (`docs/adr/`)
+- Issue tracker (for work items and decisions-in-context)
+- Internal knowledge base / wiki
 
 ## Output Format
 
@@ -86,7 +56,6 @@ await global.mcp?.callTool("mai-context-db", "query_context", {
 [OK] Checkpoint created: milestone-name
 - Path: .opencode/checkpoints/latest.json
 - Focus: what changed
-- Mai sync: yes/no
 - Timestamp: 2026-01-26T08:30:00Z
 ```
 
@@ -104,27 +73,10 @@ await global.mcp?.callTool("mai-context-db", "query_context", {
 checkpoint \
   --name "auth-system-complete" \
   --focus "JWT authentication with refresh tokens" \
-  --note "Implemented JWT auth with 15min access tokens and 7-day refresh tokens. Added middleware for protected routes. All tests pass. Next: add rate limiting and CSRF protection." \
-  --sync
+  --note "Implemented JWT auth with 15min access tokens and 7-day refresh tokens. Added middleware for protected routes. All tests pass. Next: add rate limiting and CSRF protection."
 ```
 
-**Corresponding Mai decision:**
-
-```typescript
-await global.mcp?.callTool("mai-context-db", "create_context_entry", {
-  table: "decisions",
-  data: {
-    title: "JWT authentication with 15min/7day token strategy",
-    decision_type: "architecture",
-    status: "active",
-    rationale:
-      "Balance security (short access tokens) with UX (long refresh tokens)",
-    project_id: "...",
-  },
-});
-```
-
-## When to Use Checkpoint vs. Mai Directly
+## When to Use Checkpoint vs. a durable record
 
 **Use `checkpoint` tool when:**
 
@@ -132,21 +84,20 @@ await global.mcp?.callTool("mai-context-db", "create_context_entry", {
 - You're at a natural stopping point (end of session, milestone)
 - You want local file-based persistence
 
-**Use Mai Context DB directly when:**
+**Use a durable record directly when:**
 
 - You're recording a specific decision/constraint/pattern
-- You need semantic search later
-- You want to query/update existing entries
-- You're building durable knowledge (not just progress tracking)
+- You need a permanent decision log or a policy that should outlive retention windows
+- You need organization-wide discoverability (e.g., wiki/knowledge base)
+- You want to track work items (issue tracker) or decisions (ADR)
 
 **Use both when:**
 
 - Major milestone with architectural decisions
-- Handoff to another agent (checkpoint for state, Mai for decisions)
-- End of complex work (checkpoint for progress, Mai for lessons learned)
+- Handoff to another agent (checkpoint for state + ADR/issue for decisions)
+- End of complex work (checkpoint for progress + write down lessons learned durably)
 
 ## Related
 
-- `mai-context-db-playbook` - Mai Context DB usage patterns
 - `delegation-orchestration` - Coordination with checkpoints
 - `.opencode/tool/checkpoint.ts` - Checkpoint tool implementation

@@ -179,6 +179,7 @@ This plan addresses supply-chain security, local privilege escalation, tampering
   - Reject if RC_FILE is not in $HOME
   - Verify SCRIPT_DIR is readable and not world-writable
 - [ ] **Implementation:**
+
   ```bash
   validate_permissions() {
     # Check target directory permissions
@@ -214,6 +215,7 @@ This plan addresses supply-chain security, local privilege escalation, tampering
   - Use atomic writes (write to temp, then mv)
   - Never execute RC file content during install
 - [ ] **Implementation:**
+
   ```bash
   ensure_aio_key() {
     # Validate RC file path
@@ -1029,9 +1031,9 @@ truffleHog filesystem . --json --fail --include-paths "opencode.json"
 
 ## 12. Revision History
 
-| Version | Date       | Author  | Changes                         |
-| ------- | ---------- | ------- | ------------------------------- |
-| 1.0     | 2026-01-29 | Raynare | Initial security hardening plan |
+| Version | Date       | Author   | Changes                         |
+| ------- | ---------- | -------- | ------------------------------- |
+| 1.0     | 2026-01-29 | Security | Initial security hardening plan |
 
 ---
 

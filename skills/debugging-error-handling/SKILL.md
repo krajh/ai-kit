@@ -18,7 +18,7 @@ description: Fast triage and prevention patterns for tool/plugin/test failures w
 2. **Reduce:** smallest repro (one command, one file).
 3. **Classify:** type error, runtime error, IO error, dependency, environment.
 4. **Fix + guard:** add validation, better error message, or fallback.
-5. **Prevent recurrence:** add a test and/or Mai issue entry.
+5. **Prevent recurrence:** add a test and/or create an issue in your tracking system.
 
 ## Common failure classes + fixes
 
@@ -75,4 +75,4 @@ Template:
 
 - Fix the bug
 - Add/adjust a test under `/tests`
-- If it's a recurring class of bug: add a Mai "issue" entry with root cause + prevention
+- If it's a recurring class of bug: create a tracked issue with root cause + prevention notes
