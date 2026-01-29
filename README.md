@@ -119,9 +119,6 @@ cd ~/.config/opencode
 - ✅ Use professional, neutral language
 - ✅ Provide clear escalation paths and decision criteria
 - ✅ Include accountability metrics and quality gates
-- ❌ No personality traits or character references
-- ❌ No narrative elements or themes
-- ❌ No informal language or slang
 
 ## Directory Structure
 
