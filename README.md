@@ -1,13 +1,19 @@
-# OpenCode Corporate Kit
+# ai-kit (OpenCode Team Kit)
 
-A lightweight, drop-in OpenCode configuration optimized for corporate environments with no anime references or personality.
+A lightweight, installer-first OpenCode configuration kit for teams.
+
+**v0 is WSL/Linux-only** (intended for Dell/Windows laptops running WSL2).
 
 ## Quick Start
 
-1. **Download the installer** from [GitHub Releases](https://github.com/krajh/ai-kit/releases)
-2. **Run the installer**:
+1. **Pick a release**: https://github.com/krajh/ai-kit/releases
+2. **Download the installer** and run it:
 
 ```bash
+TAG="v0.1.0"
+
+curl -fsSL -o ai-kit-install \
+  "https://github.com/krajh/ai-kit/releases/download/${TAG}/ai-kit-install"
 chmod +x ai-kit-install
 ./ai-kit-install install
 ```
@@ -58,11 +64,13 @@ This will:
 
 ### Automatic (Recommended)
 
-1. Download the latest installer from [GitHub Releases](https://github.com/krajh/ai-kit/releases):
+1. Download the installer from [GitHub Releases](https://github.com/krajh/ai-kit/releases):
 
 ```bash
-# Download the installer
-wget https://github.com/krajh/ai-kit/releases/download/v1.0.0/ai-kit-install
+TAG="v0.1.0"
+
+curl -fsSL -o ai-kit-install \
+  "https://github.com/krajh/ai-kit/releases/download/${TAG}/ai-kit-install"
 chmod +x ai-kit-install
 
 # Run the installer
@@ -220,4 +228,4 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 ---
 
-**OpenCode Corporate Kit**: Professional AI agent coordination for enterprise environments.
+**ai-kit**: A stable OpenCode setup for teams.
