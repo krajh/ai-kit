@@ -95,11 +95,7 @@
   "instructions": [
     "AGENTS.md",
     "protocols/TOOL_USAGE_GUIDE.md",
-    "protocols/DOCUMENTATION_POLICY.md",
-    "protocols/DELEGATION_PROTOCOLS.md",
-    "protocols/HANDOFF_PROTOCOLS.md",
-    "protocols/AGENT_SELECTION_GUIDE.md",
-    "protocols/rulesets/*.md"
+    "protocols/DELEGATION_PROTOCOLS.md"
   ],
   "watcher": {
     "ignore": [

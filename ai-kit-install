@@ -1,0 +1,519 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# OpenCode Corporate Kit Installer
+# Supports: install, update, status, rollback, dry-run
+# WSL/Linux-only with cosign keyless verification
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+TARGET_DIR="$HOME/.config/opencode"
+BACKUP_ROOT="$HOME/.config/opencode.backups"
+TIMESTAMP="$(date -u +%Y%m%d%H%M%SZ)"
+BACKUP_PATH="$BACKUP_ROOT/opencode-$TIMESTAMP"
+VERSIONS_DIR="$TARGET_DIR/versions"
+CURRENT_LINK="$TARGET_DIR/current"
+
+# Cosign configuration
+COSIGN_VERSION="v2.4.1"
+COSIGN_SHA256="8b24b946dd5809c6bd93de08033bcf6bc0ed7d336b7785787c080f574b89249b"
+COSIGN_OIDC_ISSUER="https://token.actions.githubusercontent.com"
+COSIGN_IDENTITY_PREFIX="https://github.com/krajh/ai-kit/.github/workflows/release.yml@refs/tags/"
+
+COMMAND="${1:-install}"
+DRY_RUN=false
+VERBOSE=false
+
+# Color codes
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+log() {
+  printf "${BLUE}[ai-kit]${NC} %s\n" "$*"
+}
+
+log_ok() {
+  printf "${GREEN}[OK]${NC} %s\n" "$*"
+}
+
+log_warn() {
+  printf "${YELLOW}[!]${NC} %s\n" "$*"
+}
+
+log_error() {
+  printf "${RED}[X]${NC} %s\n" "$*" >&2
+}
+
+die() {
+  log_error "$*"
+  exit 1
+}
+
+# Detect OS and architecture
+detect_platform() {
+  local os kernel arch
+  
+  os="$(uname -s)"
+  kernel="$(uname -r)"
+  arch="$(uname -m)"
+  
+  # Check for WSL
+  if grep -qi microsoft /proc/version 2>/dev/null || grep -qi wsl /proc/version 2>/dev/null; then
+    log_ok "Detected WSL environment"
+  elif [ "$os" = "Linux" ]; then
+    log_ok "Detected Linux environment"
+  else
+    die "This installer only supports WSL and Linux. Detected: $os"
+  fi
+  
+  # Check architecture
+  if [ "$arch" != "x86_64" ] && [ "$arch" != "amd64" ]; then
+    die "This installer only supports x86_64/amd64 architecture. Detected: $arch"
+  fi
+  
+  log "Platform: $os $kernel ($arch)"
+}
+
+# Check prerequisites
+check_prerequisites() {
+  local missing=()
+  
+  for cmd in curl tar mkdir; do
+    if ! command -v "$cmd" >/dev/null 2>&1; then
+      missing+=("$cmd")
+    fi
+  done
+  
+  if [ ${#missing[@]} -gt 0 ]; then
+    die "Missing required commands: ${missing[*]}. Please install them and try again."
+  fi
+  
+  log_ok "All prerequisites found"
+}
+
+# Download cosign binary if needed
+ensure_cosign() {
+  local cosign_bin cosign_url
+  
+  cosign_bin="$TARGET_DIR/bin/cosign"
+  cosign_url="https://github.com/sigstore/cosign/releases/download/${COSIGN_VERSION}/cosign-linux-amd64"
+
+  if [ -x "$cosign_bin" ]; then
+    echo "$cosign_bin"
+    return 0
+  fi
+
+  mkdir -p "$TARGET_DIR/bin"
+  local tmp
+  tmp="$(mktemp)"
+  
+  log "Downloading cosign ${COSIGN_VERSION}..."
+  
+  if ! curl -fsSL "$cosign_url" -o "$tmp"; then
+    rm -f "$tmp"
+    die "Failed to download cosign from $cosign_url"
+  fi
+  
+  local actual_sha
+  actual_sha="$(sha256sum "$tmp" | awk '{print $1}')"
+
+  if [ "$actual_sha" != "$COSIGN_SHA256" ]; then
+    rm -f "$tmp"
+    die "cosign sha256 mismatch (expected pinned hash)"
+  fi
+
+  if ! chmod +x "$tmp" || ! "$tmp" version >/dev/null 2>&1; then
+    rm -f "$tmp"
+    die "Downloaded cosign binary is invalid"
+  fi
+
+  mv "$tmp" "$cosign_bin"
+  
+  log_ok "cosign ${COSIGN_VERSION} ready"
+  echo "$cosign_bin"
+}
+
+# Verify tarball signature with cosign keyless
+verify_tarball() {
+  local tarball="$1" bundle="$2" tag="$3" cosign_bin expected_identity
+  
+  if [ "$DRY_RUN" = true ]; then
+    log "Dry run: would verify signature for $tarball"
+    return 0
+  fi
+  
+  log "Verifying tarball signature (cosign keyless bundle)..."
+  cosign_bin="$(ensure_cosign)"
+
+  expected_identity="${COSIGN_IDENTITY_PREFIX}${tag}"
+  
+  if ! "$cosign_bin" verify-blob \
+    --bundle "$bundle" \
+    --certificate-identity "$expected_identity" \
+    --certificate-oidc-issuer "$COSIGN_OIDC_ISSUER" \
+    "$tarball" >/dev/null 2>&1; then
+    die "Tarball signature verification failed for $tarball"
+  fi
+  
+  log_ok "Tarball signature verified"
+}
+
+validate_tarball_entries() {
+  local tarball="$1"
+
+  # Reject absolute paths and any .. path segments (path traversal).
+  if tar -tzf "$tarball" | grep -E '^(\/|.*(^|\/)\.\.(\/|$))' >/dev/null 2>&1; then
+    die "Tarball contains unsafe paths (absolute or traversal)"
+  fi
+}
+
+# Download release artifacts
+download_release() {
+  local tag version_dir manifest_url tarball_url
+  
+  # Determine tag (use latest if not specified)
+  tag="${1:-latest}"
+  
+  if [ "$tag" = "latest" ]; then
+    log "Fetching latest release information..."
+    tag="$(curl -fsSL https://api.github.com/repos/krajh/ai-kit/releases/latest | grep '"tag_name"' | head -1 | cut -d'"' -f4)"
+    if [ -z "$tag" ]; then
+      die "Could not determine latest release tag"
+    fi
+  fi
+  
+  log "Using release tag: $tag"
+  
+  version_dir="$VERSIONS_DIR/$tag"
+  mkdir -p "$version_dir"
+  
+  manifest_url="https://github.com/krajh/ai-kit/releases/download/${tag}/manifest.json"
+  tarball_url="https://github.com/krajh/ai-kit/releases/download/${tag}/ai-kit-${tag}.tar.gz"
+  local bundle_url
+  bundle_url="https://github.com/krajh/ai-kit/releases/download/${tag}/ai-kit-${tag}.bundle.json"
+  
+  log "Downloading manifest from $manifest_url..."
+  if ! curl -fsSL "$manifest_url" -o "$version_dir/manifest.json"; then
+    die "Failed to download manifest"
+  fi
+  
+  log "Downloading tarball from $tarball_url..."
+  if ! curl -fsSL "$tarball_url" -o "$version_dir/ai-kit-${tag}.tar.gz"; then
+    die "Failed to download tarball"
+  fi
+
+  log "Downloading bundle from $bundle_url..."
+  if ! curl -fsSL "$bundle_url" -o "$version_dir/ai-kit-${tag}.bundle.json"; then
+    die "Failed to download bundle"
+  fi
+
+  # Verify tarball sha256 from manifest (best-effort parse; fail if present and mismatch)
+  local expected_sha actual_sha
+  expected_sha="$(grep -o '"sha256"\s*:\s*"[a-f0-9]\+"' "$version_dir/manifest.json" | head -1 | cut -d'"' -f4)"
+  actual_sha="$(sha256sum "$version_dir/ai-kit-${tag}.tar.gz" | awk '{print $1}')"
+  if [ -n "$expected_sha" ] && [ "$expected_sha" != "$actual_sha" ]; then
+    die "Tarball sha256 mismatch"
+  fi
+  
+  log_ok "Release artifacts downloaded to $version_dir"
+  echo "$tag"
+}
+
+# Extract tarball to version directory
+extract_tarball() {
+  local tag="$1" version_dir
+  
+  version_dir="$VERSIONS_DIR/$tag"
+  
+  if [ "$DRY_RUN" = true ]; then
+    log "Dry run: would extract tarball to $version_dir"
+    return 0
+  fi
+  
+  verify_tarball "$version_dir/ai-kit-${tag}.tar.gz" "$version_dir/ai-kit-${tag}.bundle.json" "$tag"
+  validate_tarball_entries "$version_dir/ai-kit-${tag}.tar.gz"
+
+  log "Extracting tarball..."
+  if ! tar -xzf "$version_dir/ai-kit-${tag}.tar.gz" -C "$version_dir"; then
+    die "Failed to extract tarball"
+  fi
+  
+  log_ok "Tarball extracted"
+}
+
+# Preserve .env and local/ directories
+preserve_local_state() {
+  local backup_env backup_local
+  
+  if [ ! -d "$TARGET_DIR" ]; then
+    return 0
+  fi
+  
+  backup_env="$(mktemp)"
+  backup_local="$(mktemp -d)"
+  
+  if [ -f "$TARGET_DIR/.env" ]; then
+    log "Preserving .env file..."
+    cp "$TARGET_DIR/.env" "$backup_env"
+  fi
+  
+  if [ -d "$TARGET_DIR/local" ]; then
+    log "Preserving local/ directory..."
+    cp -r "$TARGET_DIR/local" "$backup_local/"
+  fi
+  
+  echo "$backup_env:$backup_local"
+}
+
+# Restore .env and local/ directories
+restore_local_state() {
+  local backup_info="$1" backup_env backup_local
+  
+  IFS=':' read -r backup_env backup_local <<<"$backup_info"
+  
+  if [ -f "$backup_env" ] && [ -s "$backup_env" ]; then
+    log "Restoring .env file..."
+    cp "$backup_env" "$TARGET_DIR/.env"
+    rm -f "$backup_env"
+  fi
+  
+  if [ -d "$backup_local/local" ]; then
+    log "Restoring local/ directory..."
+    cp -r "$backup_local/local" "$TARGET_DIR/"
+    rm -rf "$backup_local"
+  fi
+}
+
+# Install fresh configuration
+cmd_install() {
+  local tag backup_info version_dir
+  
+  log "Starting fresh installation..."
+  detect_platform
+  check_prerequisites
+  
+  if [ -d "$TARGET_DIR" ]; then
+    die "Installation directory already exists at $TARGET_DIR. Use 'update' to refresh or remove the directory manually."
+  fi
+  
+  # Download release
+  tag="$(download_release "${1:-latest}")"
+  
+  # Verify signature
+  version_dir="$VERSIONS_DIR/$tag"
+  if [ -f "$version_dir/ai-kit-${tag}.tar.gz.sig" ]; then
+    verify_tarball "$version_dir/ai-kit-${tag}.tar.gz" "$tag"
+  else
+    log_warn "Signature file not found, skipping verification"
+  fi
+  
+  # Extract
+  extract_tarball "$tag"
+  
+  # Create symlink
+  if [ "$DRY_RUN" = false ]; then
+    mkdir -p "$TARGET_DIR"
+    ln -sfn "$version_dir" "$CURRENT_LINK"
+    log_ok "Symlink created: $CURRENT_LINK -> $version_dir"
+  fi
+  
+  log_ok "Installation complete at $TARGET_DIR"
+  log "Run 'opencode' to begin using the configuration."
+}
+
+# Update existing installation
+cmd_update() {
+  local tag backup_info version_dir
+  
+  log "Starting update..."
+  detect_platform
+  check_prerequisites
+  
+  if [ ! -d "$TARGET_DIR" ]; then
+    die "No existing installation found at $TARGET_DIR. Use 'install' for fresh installation."
+  fi
+  
+  # Backup existing config
+  if [ "$DRY_RUN" = false ]; then
+    mkdir -p "$BACKUP_ROOT"
+    log "Archiving existing configuration to $BACKUP_PATH"
+    cp -r "$TARGET_DIR" "$BACKUP_PATH"
+  else
+    log "Dry run: would archive to $BACKUP_PATH"
+  fi
+  
+  # Preserve local state
+  backup_info="$(preserve_local_state)"
+  
+  # Download release
+  tag="$(download_release "${1:-latest}")"
+  
+  # Verify signature
+  version_dir="$VERSIONS_DIR/$tag"
+  if [ -f "$version_dir/ai-kit-${tag}.tar.gz.sig" ]; then
+    verify_tarball "$version_dir/ai-kit-${tag}.tar.gz" "$tag"
+  else
+    log_warn "Signature file not found, skipping verification"
+  fi
+  
+  # Extract
+  extract_tarball "$tag"
+  
+  # Update symlink
+  if [ "$DRY_RUN" = false ]; then
+    ln -sfn "$version_dir" "$CURRENT_LINK"
+    log_ok "Symlink updated: $CURRENT_LINK -> $version_dir"
+    
+    # Restore local state
+    restore_local_state "$backup_info"
+  fi
+  
+  log_ok "Update complete"
+  log "Run 'opencode' to use the updated configuration."
+}
+
+# Show installation status
+cmd_status() {
+  if [ ! -d "$TARGET_DIR" ]; then
+    log "No installation found at $TARGET_DIR"
+    return 1
+  fi
+  
+  log "Installation status:"
+  log "  Location: $TARGET_DIR"
+  
+  if [ -L "$CURRENT_LINK" ]; then
+    local current_version
+    current_version="$(readlink "$CURRENT_LINK" | xargs basename)"
+    log "  Current version: $current_version"
+  fi
+  
+  if [ -d "$VERSIONS_DIR" ]; then
+    log "  Available versions:"
+    for version_dir in "$VERSIONS_DIR"/*; do
+      if [ -d "$version_dir" ]; then
+        local version
+        version="$(basename "$version_dir")"
+        log "    - $version"
+      fi
+    done
+  fi
+  
+  if [ -f "$TARGET_DIR/.env" ]; then
+    log_ok ".env file is present"
+  fi
+  
+  if [ -d "$TARGET_DIR/local" ]; then
+    log_ok "local/ directory is present"
+  fi
+}
+
+# Rollback to previous version
+cmd_rollback() {
+  local latest_backup
+  
+  if [ ! -d "$BACKUP_ROOT" ]; then
+    die "No backups found at $BACKUP_ROOT"
+  fi
+  
+  latest_backup="$(ls -td "$BACKUP_ROOT"/opencode-* 2>/dev/null | head -1)"
+  
+  if [ -z "$latest_backup" ]; then
+    die "No backups found"
+  fi
+  
+  log "Rolling back to: $latest_backup"
+  
+  if [ "$DRY_RUN" = false ]; then
+    rm -rf "$TARGET_DIR"
+    cp -r "$latest_backup" "$TARGET_DIR"
+    log_ok "Rollback complete"
+  else
+    log "Dry run: would restore from $latest_backup"
+  fi
+}
+
+# Dry run mode
+cmd_dry_run() {
+  DRY_RUN=true
+  log "Running in DRY RUN mode - no changes will be made"
+  
+  detect_platform
+  check_prerequisites
+  
+  if [ -d "$TARGET_DIR" ]; then
+    log "Existing installation found at $TARGET_DIR"
+    cmd_update "${1:-latest}"
+  else
+    log "No existing installation found"
+    cmd_install "${1:-latest}"
+  fi
+  
+  log_ok "Dry run complete"
+}
+
+# Show help
+show_help() {
+  cat <<EOF
+OpenCode Corporate Kit Installer
+
+USAGE:
+  ai-kit-install <command> [options]
+
+COMMANDS:
+  install [TAG]     Fresh installation (default: latest release)
+  update [TAG]      Update existing installation (default: latest release)
+  status            Show installation status
+  rollback          Restore previous backup
+  dry-run [TAG]     Simulate installation without making changes
+
+OPTIONS:
+  -v, --verbose     Enable verbose output
+  -h, --help        Show this help message
+
+EXAMPLES:
+  ai-kit-install install
+  ai-kit-install update
+  ai-kit-install status
+  ai-kit-install rollback
+  ai-kit-install dry-run
+
+ENVIRONMENT:
+  WSL/Linux-only (x86_64 architecture required)
+  Requires: curl, tar, mkdir
+
+EOF
+}
+
+# Main entry point
+main() {
+  case "${COMMAND}" in
+    install)
+      cmd_install "${2:-latest}"
+      ;;
+    update)
+      cmd_update "${2:-latest}"
+      ;;
+    status)
+      cmd_status
+      ;;
+    rollback)
+      cmd_rollback
+      ;;
+    dry-run)
+      cmd_dry_run "${2:-latest}"
+      ;;
+    -h|--help|help)
+      show_help
+      ;;
+    *)
+      log_error "Unknown command: $COMMAND"
+      show_help
+      exit 1
+      ;;
+  esac
+}
+
+main "$@"
