@@ -160,8 +160,7 @@ verify_tarball() {
     --certificate-identity "$expected_identity" \
     --certificate-oidc-issuer "$COSIGN_OIDC_ISSUER" \
     "$tarball" >/dev/null 2>&1; then
-    log_warn "Tarball signature verification failed. Set SKIP_VERIFY=true to skip verification."
-    die "Tarball signature verification failed for $tarball"
+    die "Tarball signature verification failed for $tarball. Set SKIP_VERIFY=true to skip verification."
   fi
   
   log_ok "Tarball signature verified"
@@ -186,19 +185,17 @@ download_release() {
   if [ "$tag" = "latest" ]; then
     log "Fetching latest release information..."
     
-    # Build curl command with optional authentication
-    local curl_cmd="curl -fsSL"
+    # Try to fetch latest release tag from GitHub API
     if [ -n "${GITHUB_TOKEN:-}" ]; then
-      curl_cmd="$curl_cmd -H 'Authorization: Bearer $GITHUB_TOKEN'"
+      tag="$(curl -fsSL -H "Authorization: Bearer $GITHUB_TOKEN" https://api.github.com/repos/krajh/ai-kit/releases/latest 2>/dev/null | grep '"tag_name"' | head -1 | cut -d'"' -f4)"
+    else
+      tag="$(curl -fsSL https://api.github.com/repos/krajh/ai-kit/releases/latest 2>/dev/null | grep '"tag_name"' | head -1 | cut -d'"' -f4)"
     fi
     
-    # Try to fetch latest release tag from GitHub API
-    tag="$(eval "$curl_cmd https://api.github.com/repos/krajh/ai-kit/releases/latest" 2>/dev/null | grep '"tag_name"' | head -1 | cut -d'"' -f4)"
-    
-    # If API call failed, try scraping the releases page
+    # If API call failed, try using the Atom feed (more stable than HTML scraping)
     if [ -z "$tag" ]; then
-      log_warn "GitHub API unavailable, trying alternative method..."
-      tag="$(curl -fsSL https://github.com/krajh/ai-kit/releases 2>/dev/null | grep -o 'releases/tag/v[0-9.]*' | head -1 | sed 's|releases/tag/||')"
+      log_warn "GitHub API unavailable, trying releases feed..."
+      tag="$(curl -fsSL https://github.com/krajh/ai-kit/releases.atom 2>/dev/null | grep -o '<id>tag:github.com,2008:Repository/[^/]*/[^<]*</id>' | head -1 | sed 's|.*Repository/[^/]*/||; s|</id>||')"
     fi
     
     if [ -z "$tag" ]; then
