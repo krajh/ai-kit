@@ -13,6 +13,17 @@ BACKUP_PATH="$BACKUP_ROOT/ai-kit-$TIMESTAMP"
 VERSIONS_DIR="$TARGET_DIR/versions"
 CURRENT_LINK="$TARGET_DIR/current"
 
+# Top-level items that OpenCode reads from ~/.config/opencode.
+# We keep the real content in versions/<tag>/ and expose it via symlinks.
+KIT_LINK_ITEMS=(
+  "opencode.json"
+  "AGENTS.md"
+  "agent"
+  "plugin"
+  "protocols"
+  "skills"
+)
+
 # Cosign configuration
 COSIGN_VERSION="v2.4.1"
 COSIGN_SHA256="8b24b946dd5809c6bd93de08033bcf6bc0ed7d336b7785787c080f574b89249b"
@@ -263,8 +274,38 @@ extract_tarball() {
   if ! tar -xzf "$version_dir/ai-kit-${tag}.tar.gz" -C "$version_dir"; then
     die "Failed to extract tarball"
   fi
+
+  # Keep versions/<tag>/ clean: remove downloaded artifacts after extraction.
+  rm -f \
+    "$version_dir/ai-kit-${tag}.tar.gz" \
+    "$version_dir/ai-kit-${tag}.bundle.json" \
+    "$version_dir/manifest.json" 2>/dev/null || true
   
   log_ok "Tarball extracted"
+}
+
+activate_version() {
+  local tag="$1" version_dir
+  version_dir="$VERSIONS_DIR/$tag"
+
+  if [ "$DRY_RUN" = true ]; then
+    log "Dry run: would activate $tag"
+    return 0
+  fi
+
+  ln -sfn "$version_dir" "$CURRENT_LINK"
+  log_ok "Symlink created: $CURRENT_LINK -> $version_dir"
+
+  # Expose kit files at ~/.config/opencode/* via symlinks.
+  for item in "${KIT_LINK_ITEMS[@]}"; do
+    if [ -e "$TARGET_DIR/$item" ] && [ ! -L "$TARGET_DIR/$item" ]; then
+      log_warn "Not overwriting existing non-symlink: $TARGET_DIR/$item"
+      continue
+    fi
+
+    rm -rf "$TARGET_DIR/$item" 2>/dev/null || true
+    ln -sfn "$CURRENT_LINK/$item" "$TARGET_DIR/$item"
+  done
 }
 
 # Preserve .env and local/ directories
@@ -312,7 +353,7 @@ restore_local_state() {
 
 # Install fresh configuration
 cmd_install() {
-  local tag backup_info version_dir
+  local tag version_dir
   
   log "Starting fresh installation..."
   detect_platform
@@ -324,16 +365,13 @@ cmd_install() {
   
   # Download release
   tag="$(download_release "${1:-latest}")"
+  version_dir="$VERSIONS_DIR/$tag"
 
   # Extract
   extract_tarball "$tag"
   
-  # Create symlink
-  if [ "$DRY_RUN" = false ]; then
-    mkdir -p "$TARGET_DIR"
-    ln -sfn "$version_dir" "$CURRENT_LINK"
-    log_ok "Symlink created: $CURRENT_LINK -> $version_dir"
-  fi
+  mkdir -p "$TARGET_DIR"
+  activate_version "$tag"
   
   log_ok "Installation complete at $TARGET_DIR"
   log "Run 'opencode' to begin using the configuration."
@@ -365,16 +403,16 @@ cmd_update() {
   
   # Download release
   tag="$(download_release "${1:-latest}")"
+  version_dir="$VERSIONS_DIR/$tag"
 
   # Extract
   extract_tarball "$tag"
   
-  # Update symlink
+  # Activate
+  activate_version "$tag"
+  
+  # Restore local state
   if [ "$DRY_RUN" = false ]; then
-    ln -sfn "$version_dir" "$CURRENT_LINK"
-    log_ok "Symlink updated: $CURRENT_LINK -> $version_dir"
-    
-    # Restore local state
     restore_local_state "$backup_info"
   fi
   
@@ -426,7 +464,7 @@ cmd_rollback() {
     die "No backups found at $BACKUP_ROOT"
   fi
   
-  latest_backup="$(ls -td "$BACKUP_ROOT"/opencode-* 2>/dev/null | head -1)"
+  latest_backup="$(ls -td "$BACKUP_ROOT"/ai-kit-* 2>/dev/null | head -1)"
   
   if [ -z "$latest_backup" ]; then
     die "No backups found"

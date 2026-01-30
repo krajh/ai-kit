@@ -17,6 +17,12 @@ This installs the kit **into OpenCode’s config directory**:
 - `~/.config/opencode/versions/<tag>/` (versioned content)
 - `~/.config/opencode/current` → the active version
 
+To keep the config easy to use (and not nested), the installer exposes the kit at the top-level via symlinks:
+
+- `~/.config/opencode/opencode.json` → `~/.config/opencode/current/opencode.json`
+- `~/.config/opencode/agent` → `~/.config/opencode/current/agent`
+- (same for `protocols/`, `skills/`, `plugin/`, `AGENTS.md`)
+
 To pin a specific release:
 
 ```bash
@@ -134,6 +140,12 @@ SKIP_VERIFY=true ./ai-kit-install install
 ```
 ~/.config/opencode/
 ├── current -> versions/v0.1.0/     # Active version symlink
+├── opencode.json -> current/opencode.json
+├── AGENTS.md -> current/AGENTS.md
+├── agent -> current/agent
+├── plugin -> current/plugin
+├── protocols -> current/protocols
+├── skills -> current/skills
 ├── versions/                      # Installed versions
 │   └── v0.1.0/                    # Kit contents (agents/protocols/plugins/etc.)
 ├── staging/                       # Downloaded+extracted updates (applied on restart)

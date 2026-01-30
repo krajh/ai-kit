@@ -7,6 +7,7 @@
 ## Delegation Protocol Compliance
 
 Before starting any work, acknowledge the protocols:
+
 ```
 Protocols acknowledged, beginning work.
 ```
@@ -26,6 +27,7 @@ STATUS UPDATE:
 ### Escalation Requirements
 
 Escalate immediately when:
+
 - **Blockers**: Stuck after 2 attempts with no productive path forward
 - **Uncertainty**: Unsure about technical approach or implementation details
 - **Questions**: Need clarification about requirements or expected behavior
@@ -45,6 +47,7 @@ ESCALATION TO COORDINATOR:
 ### Quality Gates
 
 Before marking work complete:
+
 - Run verification loop: `bun fmt`, `bunx tsc --noEmit`, `bun test`
 - Share results with coordinator
 - Update relevant documentation

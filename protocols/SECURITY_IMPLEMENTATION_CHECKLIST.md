@@ -16,7 +16,7 @@
   - [ ] Update Installation section
   - [ ] Add signed release download instructions
   - [ ] Document cosign verification steps
-  - **Owner:** ****\_\_\_****
+  - **Owner:** \***\*\_\_\_\*\***
   - **Status:** Pending
   - **Notes:**
 
@@ -26,7 +26,7 @@
   - [ ] Sign opencode.json with cosign keyless
   - [ ] Upload signatures and certificates to release
   - [ ] Test verification process
-  - **Owner:** ****\_\_\_****
+  - **Owner:** \***\*\_\_\_\*\***
   - **Status:** Pending
   - **Notes:**
 
@@ -34,7 +34,7 @@
   - [ ] Add to README.md
   - [ ] Add to SECURITY.md
   - [ ] Create short URL with verification instructions
-  - **Owner:** ****\_\_\_****
+  - **Owner:** \***\*\_\_\_\*\***
   - **Status:** Pending
   - **Notes:**
 
@@ -46,7 +46,7 @@
   - [ ] Configure GitHub Actions workflow
   - [ ] Test OIDC token generation
   - [ ] Verify cosign can sign with OIDC
-  - **Owner:** ****\_\_\_****
+  - **Owner:** \***\*\_\_\_\*\***
   - **Status:** Pending
   - **Notes:**
 
@@ -56,7 +56,7 @@
   - [ ] Verify opencode.json before loading
   - [ ] Test with valid and invalid signatures
   - [ ] Test with tampered files
-  - **Owner:** ****\_\_\_****
+  - **Owner:** \***\*\_\_\_\*\***
   - **Status:** Pending
   - **Notes:**
 
@@ -65,7 +65,7 @@
   - [ ] Verify each file before applying
   - [ ] Reject if any signature invalid
   - [ ] Test failure scenarios
-  - **Owner:** ****\_\_\_****
+  - **Owner:** \***\*\_\_\_\*\***
   - **Status:** Pending
   - **Notes:**
 
@@ -74,7 +74,7 @@
   - [ ] Create SECURITY.md with verification steps
   - [ ] Provide example commands
   - [ ] Document failure scenarios
-  - **Owner:** ****\_\_\_****
+  - **Owner:** \***\*\_\_\_\*\***
   - **Status:** Pending
   - **Notes:**
 
@@ -89,7 +89,7 @@
   - [ ] Add private key patterns
   - [ ] Add connection string patterns
   - [ ] Test with sample secrets
-  - **Owner:** ****\_\_\_****
+  - **Owner:** \***\*\_\_\_\*\***
   - **Status:** Pending
   - **Notes:**
 
@@ -98,7 +98,7 @@
   - [ ] Make executable (chmod +x)
   - [ ] Test hook blocks commits with secrets
   - [ ] Test hook allows --no-verify override
-  - **Owner:** ****\_\_\_****
+  - **Owner:** \***\*\_\_\_\*\***
   - **Status:** Pending
   - **Notes:**
 
@@ -107,7 +107,7 @@
   - [ ] Document override procedure
   - [ ] Document false positive handling
   - [ ] Add to SECURITY.md
-  - **Owner:** ****\_\_\_****
+  - **Owner:** \***\*\_\_\_\*\***
   - **Status:** Pending
   - **Notes:**
 
@@ -116,7 +116,7 @@
   - [ ] Scan on every commit
   - [ ] Block merge if secrets detected
   - [ ] Alert on --no-verify overrides
-  - **Owner:** ****\_\_\_****
+  - **Owner:** \***\*\_\_\_\*\***
   - **Status:** Pending
   - **Notes:**
 
@@ -130,7 +130,7 @@
   - [ ] Check RC_FILE is in $HOME
   - [ ] Check SCRIPT_DIR is readable
   - [ ] Reject unsafe permissions
-  - **Owner:** ****\_\_\_****
+  - **Owner:** \***\*\_\_\_\*\***
   - **Status:** Pending
   - **Notes:**
 
@@ -140,7 +140,7 @@
   - [ ] Test with group-writable (0770)
   - [ ] Test with symlinks
   - [ ] Test with RC file outside $HOME
-  - **Owner:** ****\_\_\_****
+  - **Owner:** \***\*\_\_\_\*\***
   - **Status:** Pending
   - **Notes:**
 
@@ -155,7 +155,7 @@
   - [ ] Never truncate RC file
   - [ ] Use atomic writes (temp → mv)
   - [ ] Redact secrets in logs
-  - **Owner:** ****\_\_\_****
+  - **Owner:** \***\*\_\_\_\*\***
   - **Status:** Pending
   - **Notes:**
 
@@ -165,7 +165,7 @@
   - [ ] Test with RC file outside $HOME
   - [ ] Test that RC file is not truncated
   - [ ] Test that secrets are redacted in logs
-  - **Owner:** ****\_\_\_****
+  - **Owner:** \***\*\_\_\_\*\***
   - **Status:** Pending
   - **Notes:**
 
@@ -181,7 +181,7 @@
   - [ ] Verify each file's signature
   - [ ] Apply updates atomically
   - [ ] Never use curl|bash
-  - **Owner:** ****\_\_\_****
+  - **Owner:** \***\*\_\_\_\*\***
   - **Status:** Pending
   - **Notes:**
 
@@ -191,7 +191,7 @@
   - [ ] Test with tampered files
   - [ ] Test atomic application
   - [ ] Test rollback on failure
-  - **Owner:** ****\_\_\_****
+  - **Owner:** \***\*\_\_\_\*\***
   - **Status:** Pending
   - **Notes:**
 
@@ -205,7 +205,7 @@
   - [ ] Backup/restore: 5 minutes max
   - [ ] Use `timeout` command
   - [ ] Handle timeout errors gracefully
-  - **Owner:** ****\_\_\_****
+  - **Owner:** \***\*\_\_\_\*\***
   - **Status:** Pending
   - **Notes:**
 
@@ -214,7 +214,7 @@
   - [ ] Max backup size: 500MB
   - [ ] Max concurrent operations: 1
   - [ ] Validate file sizes before processing
-  - **Owner:** ****\_\_\_****
+  - **Owner:** \***\*\_\_\_\*\***
   - **Status:** Pending
   - **Notes:**
 
@@ -223,7 +223,7 @@
   - [ ] Test signature verification timeout
   - [ ] Test file size limit
   - [ ] Test backup size limit
-  - **Owner:** ****\_\_\_****
+  - **Owner:** \***\*\_\_\_\*\***
   - **Status:** Pending
   - **Notes:**
 
@@ -239,7 +239,7 @@
   - [ ] Log signature verification results
   - [ ] Redact secrets in logs
   - [ ] Set permissions to 0600
-  - **Owner:** ****\_\_\_****
+  - **Owner:** \***\*\_\_\_\*\***
   - **Status:** Pending
   - **Notes:**
 
@@ -249,7 +249,7 @@
   - [ ] Verify secrets redacted
   - [ ] Verify log persists across updates
   - [ ] Verify log rotation (30-day retention)
-  - **Owner:** ****\_\_\_****
+  - **Owner:** \***\*\_\_\_\*\***
   - **Status:** Pending
   - **Notes:**
 
@@ -259,7 +259,7 @@
   - [ ] Document log format
   - [ ] Document how to view logs
   - [ ] Document how to check update history
-  - **Owner:** ****\_\_\_****
+  - **Owner:** \***\*\_\_\_\*\***
   - **Status:** Pending
   - **Notes:**
 
@@ -274,7 +274,7 @@
   - [ ] Verify signature before loading config
   - [ ] Reject if signature invalid
   - [ ] Test with valid and invalid signatures
-  - **Owner:** ****\_\_\_****
+  - **Owner:** \***\*\_\_\_\*\***
   - **Status:** Pending
   - **Notes:**
 
@@ -286,7 +286,7 @@
   - [ ] List all plugins with checksums
   - [ ] Sign manifest with cosign
   - [ ] Include in release
-  - **Owner:** ****\_\_\_****
+  - **Owner:** \***\*\_\_\_\*\***
   - **Status:** Pending
   - **Notes:**
 
@@ -295,7 +295,7 @@
   - [ ] Verify plugin signatures
   - [ ] Reject if verification fails
   - [ ] Test with valid and invalid plugins
-  - **Owner:** ****\_\_\_****
+  - **Owner:** \***\*\_\_\_\*\***
   - **Status:** Pending
   - **Notes:**
 
@@ -308,7 +308,7 @@
   - [ ] Include signature with backup
   - [ ] Verify signature before restore
   - [ ] Reject if signature invalid
-  - **Owner:** ****\_\_\_****
+  - **Owner:** \***\*\_\_\_\*\***
   - **Status:** Pending
   - **Notes:**
 
@@ -316,7 +316,7 @@
   - [ ] Encrypt backup with user's GPG key
   - [ ] Decrypt before restore
   - [ ] Handle missing GPG key gracefully
-  - **Owner:** ****\_\_\_****
+  - **Owner:** \***\*\_\_\_\*\***
   - **Status:** Pending
   - **Notes:**
 
@@ -329,7 +329,7 @@
   - [ ] Track version in audit log
   - [ ] Reject downgrades
   - [ ] Warn on major version changes
-  - **Owner:** ****\_\_\_****
+  - **Owner:** \***\*\_\_\_\*\***
   - **Status:** Pending
   - **Notes:**
 
@@ -342,7 +342,7 @@
   - [ ] Run updater in temp distro
   - [ ] Verify changes before applying
   - [ ] Clean up temp distro
-  - **Owner:** ****\_\_\_****
+  - **Owner:** \***\*\_\_\_\*\***
   - **Status:** Pending
   - **Notes:**
 
@@ -357,7 +357,7 @@
   - [ ] Scan installer and updater scripts
   - [ ] Fix all warnings
   - [ ] Block merge if issues found
-  - **Owner:** ****\_\_\_****
+  - **Owner:** \***\*\_\_\_\*\***
   - **Status:** Pending
   - **Notes:**
 
@@ -365,7 +365,7 @@
   - [ ] Install Trivy
   - [ ] Scan for vulnerabilities
   - [ ] Block merge if critical issues found
-  - **Owner:** ****\_\_\_****
+  - **Owner:** \***\*\_\_\_\*\***
   - **Status:** Pending
   - **Notes:**
 
@@ -377,7 +377,7 @@
   - [ ] Run npm audit on every commit
   - [ ] Alert on new vulnerabilities
   - [ ] Update dependencies regularly
-  - **Owner:** ****\_\_\_****
+  - **Owner:** \***\*\_\_\_\*\***
   - **Status:** Pending
   - **Notes:**
 
@@ -385,7 +385,7 @@
   - [ ] Integrate Snyk with GitHub
   - [ ] Scan on every commit
   - [ ] Alert on vulnerabilities
-  - **Owner:** ****\_\_\_****
+  - **Owner:** \***\*\_\_\_\*\***
   - **Status:** Pending
   - **Notes:**
 
@@ -397,7 +397,7 @@
   - [ ] Sign installer with cosign
   - [ ] Provide signature alongside installer
   - [ ] Document verification process
-  - **Owner:** ****\_\_\_****
+  - **Owner:** \***\*\_\_\_\*\***
   - **Status:** Pending
   - **Notes:**
 
@@ -410,7 +410,7 @@
   - [ ] Show what files will be modified
   - [ ] Show RC file modifications
   - [ ] Require explicit user confirmation
-  - **Owner:** ****\_\_\_****
+  - **Owner:** \***\*\_\_\_\*\***
   - **Status:** Pending
   - **Notes:**
 
@@ -418,7 +418,7 @@
   - [ ] Show cosign verification results
   - [ ] Show audit trail of previous installs
   - [ ] Show version information
-  - **Owner:** ****\_\_\_****
+  - **Owner:** \***\*\_\_\_\*\***
   - **Status:** Pending
   - **Notes:**
 
@@ -513,14 +513,14 @@
 
 ## Sign-Off
 
-| Phase                | Owner        | Status  | Date         | Notes        |
-| -------------------- | ------------ | ------- | ------------ | ------------ |
-| Phase 1 (Critical)   | ****\_\_**** | Pending | ****\_\_**** | ****\_\_**** |
-| Phase 2 (High)       | ****\_\_**** | Pending | ****\_\_**** | ****\_\_**** |
-| Phase 3 (Medium)     | ****\_\_**** | Pending | ****\_\_**** | ****\_\_**** |
-| Testing & Validation | ****\_\_**** | Pending | ****\_\_**** | ****\_\_**** |
-| Documentation        | ****\_\_**** | Pending | ****\_\_**** | ****\_\_**** |
-| **FINAL APPROVAL**   | ****\_\_**** | Pending | ****\_\_**** | ****\_\_**** |
+| Phase                | Owner            | Status  | Date             | Notes            |
+| -------------------- | ---------------- | ------- | ---------------- | ---------------- |
+| Phase 1 (Critical)   | \***\*\_\_\*\*** | Pending | \***\*\_\_\*\*** | \***\*\_\_\*\*** |
+| Phase 2 (High)       | \***\*\_\_\*\*** | Pending | \***\*\_\_\*\*** | \***\*\_\_\*\*** |
+| Phase 3 (Medium)     | \***\*\_\_\*\*** | Pending | \***\*\_\_\*\*** | \***\*\_\_\*\*** |
+| Testing & Validation | \***\*\_\_\*\*** | Pending | \***\*\_\_\*\*** | \***\*\_\_\*\*** |
+| Documentation        | \***\*\_\_\*\*** | Pending | \***\*\_\_\*\*** | \***\*\_\_\*\*** |
+| **FINAL APPROVAL**   | \***\*\_\_\*\*** | Pending | \***\*\_\_\*\*** | \***\*\_\_\*\*** |
 
 ---
 

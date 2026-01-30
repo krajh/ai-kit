@@ -23,6 +23,15 @@ const STATE_DIR = join(OPENCODE_HOME, "state");
 const STATE_FILE = join(STATE_DIR, "ai-kit-update.json");
 const CURRENT_LINK = join(OPENCODE_HOME, "current");
 
+const KIT_LINK_ITEMS = [
+  "opencode.json",
+  "AGENTS.md",
+  "agent",
+  "plugin",
+  "protocols",
+  "skills",
+] as const;
+
 const CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000;
 
 const GITHUB_RELEASE_LATEST_API =
@@ -62,6 +71,14 @@ interface Manifest {
     oidc_issuer: string;
     identity: string;
   };
+}
+
+// Some OpenCode/Bun environments type `fetch()` as returning a minimal `Response`
+// shape. We only rely on these fields.
+interface FetchResponseLike {
+  ok: boolean;
+  json(): Promise<unknown>;
+  arrayBuffer(): Promise<ArrayBuffer>;
 }
 
 function shouldCheck(lastCheckTime: number): boolean {
@@ -108,9 +125,9 @@ function compareVersions(
 
 async function fetchLatestRelease(): Promise<LatestRelease | null> {
   try {
-    const response = await fetch(GITHUB_RELEASE_LATEST_API, {
+    const response = (await fetch(GITHUB_RELEASE_LATEST_API, {
       headers: { Accept: "application/vnd.github+json" },
-    });
+    })) as unknown as FetchResponseLike;
     if (!response.ok) return null;
     return (await response.json()) as LatestRelease;
   } catch {
@@ -120,9 +137,9 @@ async function fetchLatestRelease(): Promise<LatestRelease | null> {
 
 async function fetchManifest(url: string): Promise<Manifest | null> {
   try {
-    const response = await fetch(url, {
+    const response = (await fetch(url, {
       headers: { Accept: "application/json" },
-    });
+    })) as unknown as FetchResponseLike;
     if (!response.ok) return null;
     return (await response.json()) as Manifest;
   } catch {
@@ -199,7 +216,7 @@ async function downloadFileAtomic(
   try {
     await mkdir(dirname(destPath), { recursive: true });
     const tmpPath = `${destPath}.tmp`;
-    const res = await fetch(url);
+    const res = (await fetch(url)) as unknown as FetchResponseLike;
     if (!res.ok) return false;
     const buf = Buffer.from(await res.arrayBuffer());
     await writeFile(tmpPath, buf);
@@ -291,6 +308,25 @@ async function applyStagedUpdate(tag: string): Promise<boolean> {
       // ignore
     }
     await symlink(versionPath, CURRENT_LINK);
+
+    // Expose kit items at ~/.config/opencode/* via symlinks.
+    // Never overwrite real files/dirs (user customizations).
+    for (const item of KIT_LINK_ITEMS) {
+      const targetPath = join(OPENCODE_HOME, item);
+      try {
+        await stat(targetPath);
+        continue;
+      } catch {
+        // missing -> create link
+      }
+
+      try {
+        await symlink(join(CURRENT_LINK, item), targetPath);
+      } catch {
+        // ignore
+      }
+    }
+
     return true;
   } catch {
     return false;

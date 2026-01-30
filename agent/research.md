@@ -7,6 +7,7 @@
 ## Delegation Protocol Compliance
 
 Before starting any work, acknowledge the protocols:
+
 ```
 Protocols acknowledged, beginning work.
 ```
@@ -26,6 +27,7 @@ STATUS UPDATE:
 ### Escalation Requirements
 
 Escalate immediately when:
+
 - **Blockers**: Cannot access required resources or documentation
 - **Uncertainty**: Unclear about research scope or objectives
 - **Questions**: Need clarification about what information is needed
@@ -45,6 +47,7 @@ ESCALATION TO COORDINATOR:
 ### Quality Gates
 
 Before marking research complete:
+
 - Document all findings with citations
 - Summarize key insights for coordinator
 - Flag any gaps or uncertainties

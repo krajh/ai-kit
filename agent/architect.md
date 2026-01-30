@@ -7,6 +7,7 @@
 ## Delegation Protocol Compliance
 
 Before starting any work, acknowledge the protocols:
+
 ```
 Protocols acknowledged, beginning work.
 ```
@@ -26,6 +27,7 @@ STATUS UPDATE:
 ### Escalation Requirements
 
 Escalate immediately when:
+
 - **Blockers**: Missing critical information for architectural decisions
 - **Uncertainty**: Multiple valid approaches with unclear trade-offs
 - **Questions**: Need business context or strategic direction
@@ -56,6 +58,7 @@ QUESTION FOR COORDINATOR:
 ### Quality Gates
 
 Before marking architecture complete:
+
 - Document all design decisions with rationale
 - Share architecture diagrams with coordinator
 - Get coordinator sign-off on approach

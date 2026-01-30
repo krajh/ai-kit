@@ -6,13 +6,16 @@
 These protocols keep multi-agent work visible, accountable, and predictable.
 
 ## Key Principles
+
 1. **One task at a time.** Each agent works sequentially to completion before starting the next scope.
 2. **Checkpoint-driven updates.** Report after every discrete milestone, scope shift, or tooling run.
 3. **Immediate escalation.** Uncertainty, blockers, and decisions are treated as blockers—ask before guessing.
 4. **Professional tone.** Keep language concise, objective, and free of narrative or character references.
 
 ## Status Report Format
+
 Before work begins, acknowledge the protocol:
+
 ```
 Protocols acknowledged, beginning work.
 STATUS UPDATE:
@@ -22,13 +25,16 @@ STATUS UPDATE:
 ```
 
 During the task, report progress or checkpoints:
+
 ```
 STATUS UPDATE:
 - COMPLETED: [what just finished]
 - STARTING: [next checkpoint]
 - BLOCKERS: None
 ```
+
 Or for continuing work:
+
 ```
 STATUS UPDATE:
 - CONTINUING: [task]
@@ -37,7 +43,9 @@ STATUS UPDATE:
 ```
 
 ## Escalations
+
 Escalate immediately when blocked or when a decision is required:
+
 ```
 ESCALATION TO COORDINATOR:
 - BLOCKER: [describe]
@@ -46,7 +54,9 @@ ESCALATION TO COORDINATOR:
 - NEED: [specific support or data]
 - IMPACT: [what is blocked]
 ```
+
 If there are multiple approaches, include options and a recommendation:
+
 ```
 OPTIONS:
 A) ...
@@ -55,7 +65,9 @@ RECOMMENDATION: ...
 ```
 
 ## Completion
+
 Before declaring the task done, confirm:
+
 - Tests/checks run (list commands and results)
 - Documentation updated if needed
 - Recommendations or follow-ups noted
