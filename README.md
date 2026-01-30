@@ -85,10 +85,10 @@ chmod +x ai-kit-install
 
 #### Environment Variables
 
-- **SKIP_VERIFY**: Set to `true` to skip cryptographic signature verification of release artifacts. This may be necessary in restricted network environments where cosign cannot connect to the OIDC provider.
+- **SKIP_VERIFY**: Set to `true` to skip cryptographic signature verification of release artifacts. This may be necessary in restricted network environments where cosign cannot connect to the OIDC provider. **Security warning:** Enabling this bypasses authenticity checks and can allow tampered or malicious artifacts to be installed; use only in exceptional cases and in trusted, controlled environments, and never set it as a default.
 
 ```bash
-# Skip signature verification if needed
+# WARNING: Disables signature verification; use only in exceptional, trusted environments
 SKIP_VERIFY=true ./ai-kit-install install
 ```
 

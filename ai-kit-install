@@ -187,7 +187,7 @@ download_release() {
     
     # Try to fetch latest release tag from GitHub API
     if [ -n "${GITHUB_TOKEN:-}" ]; then
-      tag="$(curl -fsSL -H "Authorization: Bearer $GITHUB_TOKEN" https://api.github.com/repos/krajh/ai-kit/releases/latest 2>/dev/null | grep '"tag_name"' | head -1 | cut -d'"' -f4)"
+      tag="$(curl -fsSL -H "Authorization: Bearer \"$GITHUB_TOKEN\"" https://api.github.com/repos/krajh/ai-kit/releases/latest 2>/dev/null | grep '"tag_name"' | head -1 | cut -d'"' -f4)"
     else
       tag="$(curl -fsSL https://api.github.com/repos/krajh/ai-kit/releases/latest 2>/dev/null | grep '"tag_name"' | head -1 | cut -d'"' -f4)"
     fi
@@ -196,6 +196,11 @@ download_release() {
     if [ -z "$tag" ]; then
       log_warn "GitHub API unavailable, trying releases feed..."
       tag="$(curl -fsSL https://github.com/krajh/ai-kit/releases.atom 2>/dev/null | grep -o '<id>tag:github.com,2008:Repository/[^/]*/[^<]*</id>' | head -1 | sed 's|.*Repository/[^/]*/||; s|</id>||')"
+      # Validate tag format to avoid silently using unexpected values if the feed format changes
+      if [ -n "$tag" ] && ! [[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        log_warn "Unexpected tag format from releases feed: '$tag'; ignoring."
+        tag=""
+      fi
     fi
     
     if [ -z "$tag" ]; then
