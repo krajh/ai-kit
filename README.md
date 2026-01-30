@@ -6,6 +6,33 @@ A lightweight, installer-first OpenCode configuration kit for teams.
 
 ## Quick Start
 
+### Automatic (curl | bash)
+
+```bash
+curl -fsSL "https://github.com/krajh/ai-kit/releases/latest/download/install" | bash
+```
+
+This installs the kit **into OpenCode’s config directory**:
+
+- `~/.config/opencode/versions/<tag>/` (versioned content)
+- `~/.config/opencode/current` → the active version
+
+To pin a specific release:
+
+```bash
+curl -fsSL "https://github.com/krajh/ai-kit/releases/latest/download/install" | \
+  bash -s -- --version v0.1.0
+```
+
+Update an existing install (download + apply immediately):
+
+```bash
+curl -fsSL "https://github.com/krajh/ai-kit/releases/latest/download/install" | \
+  bash -s -- --command update
+```
+
+### Manual (download installer)
+
 1. **Pick a release**: https://github.com/krajh/ai-kit/releases
 2. **Download the installer** and run it:
 
@@ -30,11 +57,21 @@ The installer supports the following commands:
 | `rollback` | Restore the previous configuration from backup.                                                                             |
 | `dry-run`  | Validates prerequisites, simulates an install, and reports the actions without touching `~/.config/opencode`.               |
 
-This will:
+After installation, the installer is also available at:
+
+- `~/.config/opencode/current/ai-kit-install`
+
+This kit will:
 
 - Set up OpenCode configuration for corporate use
 - Install protocols and agent definitions
 - Configure sensible defaults for team collaboration
+
+## Requirements
+
+- **WSL 2** (Windows Subsystem for Linux) or **Linux** (x86_64 architecture)
+- **curl**, **tar**, **mkdir** (standard utilities)
+- No special privileges required
 
 ## What's Included
 
@@ -54,36 +91,7 @@ This will:
 - **Skills Library**: Playbooks for delegation, testing, and tool authoring
 - **Plugin Support**: Memory integration and roadmap management
 
-## Installation
-
-### Requirements
-
-- **WSL 2** (Windows Subsystem for Linux) or **Linux** (x86_64 architecture)
-- **curl**, **tar**, **mkdir** (standard utilities)
-- No special privileges required
-
-### Automatic (Recommended)
-
-1. Download the installer from [GitHub Releases](https://github.com/krajh/ai-kit/releases):
-
-```bash
-TAG="v0.1.0"
-
-curl -fsSL -o ai-kit-install \
-  "https://github.com/krajh/ai-kit/releases/download/${TAG}/ai-kit-install"
-chmod +x ai-kit-install
-
-# Run the installer
-./ai-kit-install install
-```
-
-2. For updates, use the same installer with the `update` command:
-
-```bash
-./ai-kit-install update
-```
-
-#### Environment Variables
+## Environment Variables
 
 - **SKIP_VERIFY**: Set to `true` to skip cryptographic signature verification of release artifacts. This may be necessary in restricted network environments where cosign cannot connect to the OIDC provider. **Security warning:** Enabling this bypasses authenticity checks and can allow tampered or malicious artifacts to be installed; use only in exceptional cases and in trusted, controlled environments, and never set it as a default.
 
@@ -94,21 +102,13 @@ SKIP_VERIFY=true ./ai-kit-install install
 
 ### How Updates Work
 
-- **Automatic checks**: OpenCode checks for updates daily on launch (silent, no interruption)
-- **Staging**: New versions are downloaded and staged in `~/.config/opencode/versions/`
-- **Apply on restart**: Updates are applied when you restart OpenCode
+- **Automatic checks**: the `ai-kit-updater` plugin checks GitHub Releases at most once per 24h
+- **Staging**: new versions are downloaded and extracted into `~/.config/opencode/staging/<tag>/`
+- **Apply on restart**: on the next OpenCode start, the updater moves the staged version into `~/.config/opencode/versions/<tag>/` and flips `~/.config/opencode/current`
 - **Preservation**: Your user-owned files are always preserved:
   - `~/.config/opencode/.env` (environment variables)
   - `~/.config/opencode/local/` (custom configurations)
-- **Rollback**: Previous versions are archived in `~/.config/opencode.backups/` for recovery
-
-### Manual (Advanced)
-
-```bash
-git clone https://github.com/krajh/ai-kit.git ~/.config/opencode
-cd ~/.config/opencode
-# Review the configuration before using
-```
+- **Rollback**: previous installs are archived in `~/.config/opencode.backups/` for recovery
 
 ## Customization
 
@@ -133,29 +133,15 @@ cd ~/.config/opencode
 
 ```
 ~/.config/opencode/
-├── README.md                      # This file
-├── AGENTS.md                      # Agent matrix and routing guide
-├── opencode.json                  # Main configuration
-├── ai-kit-install                 # Installer/updater script
-├── protocols/                     # Operational protocols
-│   ├── DELEGATION_PROTOCOLS.md    # Agent coordination and escalation
-│   └── TOOL_USAGE_GUIDE.md        # Tool selection patterns
-├── agent/                         # Agent definitions
-│   ├── coordinator.md
-│   ├── architect.md
-│   ├── implementer.md
-│   ├── reviewer.md
-│   ├── research.md
-│   └── strategist.md
-├── skills/                        # Playbooks and skill definitions
-│   ├── delegation-orchestration/
-│   ├── protocol-verify/
-│   ├── verification-and-tests/
-│   └── ... (additional skills)
-├── plugin/                        # Runtime plugins
-│   └── ... (plugin files)
+├── current -> versions/v0.1.0/     # Active version symlink
+├── versions/                      # Installed versions
+│   └── v0.1.0/                    # Kit contents (agents/protocols/plugins/etc.)
+├── staging/                       # Downloaded+extracted updates (applied on restart)
+├── state/                         # Updater state (last check, staged tag)
+├── bin/                           # Tooling used by the installer/updater (e.g., cosign)
 ├── local/                         # User-owned local customizations (preserved on update)
-└── .env                           # User-owned environment variables (preserved on update)
+├── .env                           # User-owned environment variables (preserved on update)
+└── ...                            # Kit files live under versions/<tag>/
 ```
 
 ## Usage

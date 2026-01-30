@@ -115,6 +115,8 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
+            install
+            ai-kit-install
             ${{ steps.tarball.outputs.tarball }}
             ${{ steps.cosign.outputs.bundle }}
             manifest.json

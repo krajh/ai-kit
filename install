@@ -1,8 +1,179 @@
 #!/usr/bin/env bash
-# Legacy installer redirect - use ai-kit-install instead
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Bootstrap installer (curl | bash)
+#
+# This script mirrors OpenCode's installer UX:
+# - Supports --version
+# - Downloads the real installer (ai-kit-install) from GitHub Releases
+# - Runs it with a selected command (install/update/status/rollback/dry-run)
 
-# Redirect to new installer
-exec "$SCRIPT_DIR/ai-kit-install" "$@"
+APP="ai-kit"
+REPO="krajh/ai-kit"
+INSTALLER_ASSET="ai-kit-install"
+
+MUTED='\033[0;2m'
+RED='\033[0;31m'
+ORANGE='\033[38;5;214m'
+NC='\033[0m'
+
+usage() {
+  cat <<EOF
+${APP} installer
+
+Usage: install [options] [-- <args passed to ai-kit-install>]
+
+Options:
+  -h, --help                 Show this help
+  -v, --version <tag>        Install a specific release tag (e.g., v0.1.0)
+  -c, --command <command>    install|update|status|rollback|dry-run (default: install)
+  -i, --installer <path>     Run a local ai-kit-install instead of downloading
+
+Examples:
+  curl -fsSL https://github.com/${REPO}/releases/latest/download/install | bash
+  curl -fsSL https://github.com/${REPO}/releases/latest/download/install | bash -s -- --command update
+  curl -fsSL https://github.com/${REPO}/releases/latest/download/install | bash -s -- --version v0.1.0
+
+Notes:
+  - Signature verification is controlled by the ai-kit-install script.
+    Set SKIP_VERIFY=true to bypass verification (not recommended).
+EOF
+}
+
+print_error() {
+  echo -e "${RED}Error:${NC} $*" >&2
+}
+
+print_warn() {
+  echo -e "${ORANGE}Warning:${NC} $*" >&2
+}
+
+command="install"
+tag=""
+local_installer=""
+passthrough=()
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    -v|--version)
+      if [[ -n "${2:-}" ]]; then
+        tag="$2"
+        shift 2
+      else
+        print_error "--version requires a tag argument"
+        exit 1
+      fi
+      ;;
+    -c|--command)
+      if [[ -n "${2:-}" ]]; then
+        command="$2"
+        shift 2
+      else
+        print_error "--command requires a command argument"
+        exit 1
+      fi
+      ;;
+    -i|--installer)
+      if [[ -n "${2:-}" ]]; then
+        local_installer="$2"
+        shift 2
+      else
+        print_error "--installer requires a path argument"
+        exit 1
+      fi
+      ;;
+    --)
+      shift
+      passthrough+=("$@")
+      break
+      ;;
+    *)
+      print_warn "Unknown option '$1'"
+      shift
+      ;;
+  esac
+done
+
+case "$command" in
+  install|update|status|rollback|dry-run)
+    ;;
+  *)
+    print_error "Unknown command: $command"
+    usage
+    exit 1
+    ;;
+esac
+
+if [[ -n "$tag" ]]; then
+  # Normalize to a v-prefixed tag.
+  tag="${tag#v}"
+  tag="v${tag}"
+fi
+
+require_cmd() {
+  local cmd="$1"
+  if ! command -v "$cmd" >/dev/null 2>&1; then
+    print_error "'$cmd' is required but not installed"
+    exit 1
+  fi
+}
+
+require_cmd curl
+
+run_installer() {
+  local installer_path="$1"
+
+  if [[ ! -f "$installer_path" ]]; then
+    print_error "Installer not found at: $installer_path"
+    exit 1
+  fi
+
+  # Ensure it's executable when running locally.
+  chmod +x "$installer_path" 2>/dev/null || true
+
+  if [[ "$command" == "status" || "$command" == "rollback" ]]; then
+    "$installer_path" "$command" "${passthrough[@]}"
+    return 0
+  fi
+
+  if [[ -n "$tag" ]]; then
+    "$installer_path" "$command" "$tag" "${passthrough[@]}"
+  else
+    "$installer_path" "$command" "${passthrough[@]}"
+  fi
+}
+
+if [[ -n "$local_installer" ]]; then
+  run_installer "$local_installer"
+  exit 0
+fi
+
+tmp_dir="${TMPDIR:-/tmp}/${APP}_bootstrap_$$"
+mkdir -p "$tmp_dir"
+installer_tmp="$tmp_dir/$INSTALLER_ASSET"
+
+cleanup() {
+  rm -rf "$tmp_dir"
+}
+trap cleanup EXIT
+
+download_url=""
+if [[ -n "$tag" ]]; then
+  download_url="https://github.com/${REPO}/releases/download/${tag}/${INSTALLER_ASSET}"
+else
+  download_url="https://github.com/${REPO}/releases/latest/download/${INSTALLER_ASSET}"
+fi
+
+echo -e "${MUTED}Downloading ${NC}${INSTALLER_ASSET}${MUTED} from:${NC} ${download_url}" >&2
+
+if ! curl -fsSL -o "$installer_tmp" "$download_url"; then
+  print_error "Failed to download installer"
+  echo -e "${MUTED}Check releases: ${NC}https://github.com/${REPO}/releases" >&2
+  exit 1
+fi
+
+run_installer "$installer_tmp"

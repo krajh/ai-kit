@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# OpenCode Corporate Kit Installer
+# AI Kit Installer (OpenCode configuration)
 # Supports: install, update, status, rollback, dry-run
 # WSL/Linux-only with cosign keyless verification
 
@@ -9,7 +9,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TARGET_DIR="$HOME/.config/opencode"
 BACKUP_ROOT="$HOME/.config/opencode.backups"
 TIMESTAMP="$(date -u +%Y%m%d%H%M%SZ)"
-BACKUP_PATH="$BACKUP_ROOT/opencode-$TIMESTAMP"
+BACKUP_PATH="$BACKUP_ROOT/ai-kit-$TIMESTAMP"
 VERSIONS_DIR="$TARGET_DIR/versions"
 CURRENT_LINK="$TARGET_DIR/current"
 
@@ -324,15 +324,7 @@ cmd_install() {
   
   # Download release
   tag="$(download_release "${1:-latest}")"
-  
-  # Verify signature
-  version_dir="$VERSIONS_DIR/$tag"
-  if [ -f "$version_dir/ai-kit-${tag}.tar.gz.sig" ]; then
-    verify_tarball "$version_dir/ai-kit-${tag}.tar.gz" "$tag"
-  else
-    log_warn "Signature file not found, skipping verification"
-  fi
-  
+
   # Extract
   extract_tarball "$tag"
   
@@ -373,15 +365,7 @@ cmd_update() {
   
   # Download release
   tag="$(download_release "${1:-latest}")"
-  
-  # Verify signature
-  version_dir="$VERSIONS_DIR/$tag"
-  if [ -f "$version_dir/ai-kit-${tag}.tar.gz.sig" ]; then
-    verify_tarball "$version_dir/ai-kit-${tag}.tar.gz" "$tag"
-  else
-    log_warn "Signature file not found, skipping verification"
-  fi
-  
+
   # Extract
   extract_tarball "$tag"
   
@@ -481,7 +465,7 @@ cmd_dry_run() {
 # Show help
 show_help() {
   cat <<EOF
-OpenCode Corporate Kit Installer
+AI Kit Installer (OpenCode configuration)
 
 USAGE:
   ai-kit-install <command> [options]
