@@ -22,6 +22,7 @@ COSIGN_IDENTITY_PREFIX="https://github.com/krajh/ai-kit/.github/workflows/releas
 COMMAND="${1:-install}"
 DRY_RUN=false
 VERBOSE=false
+SKIP_VERIFY="${SKIP_VERIFY:-false}"
 
 # Color codes
 RED='\033[0;31m'
@@ -31,15 +32,15 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 log() {
-  printf "${BLUE}[ai-kit]${NC} %s\n" "$*"
+  printf "${BLUE}[ai-kit]${NC} %s\n" "$*" >&2
 }
 
 log_ok() {
-  printf "${GREEN}[OK]${NC} %s\n" "$*"
+  printf "${GREEN}[OK]${NC} %s\n" "$*" >&2
 }
 
 log_warn() {
-  printf "${YELLOW}[!]${NC} %s\n" "$*"
+  printf "${YELLOW}[!]${NC} %s\n" "$*" >&2
 }
 
 log_error() {
@@ -144,6 +145,11 @@ verify_tarball() {
     return 0
   fi
   
+  if [ "$SKIP_VERIFY" = "true" ]; then
+    log_warn "Signature verification skipped (SKIP_VERIFY=true)"
+    return 0
+  fi
+  
   log "Verifying tarball signature (cosign keyless bundle)..."
   cosign_bin="$(ensure_cosign)"
 
@@ -154,7 +160,7 @@ verify_tarball() {
     --certificate-identity "$expected_identity" \
     --certificate-oidc-issuer "$COSIGN_OIDC_ISSUER" \
     "$tarball" >/dev/null 2>&1; then
-    die "Tarball signature verification failed for $tarball"
+    die "Tarball signature verification failed for $tarball. Set SKIP_VERIFY=true to skip verification."
   fi
   
   log_ok "Tarball signature verified"
@@ -178,9 +184,27 @@ download_release() {
   
   if [ "$tag" = "latest" ]; then
     log "Fetching latest release information..."
-    tag="$(curl -fsSL https://api.github.com/repos/krajh/ai-kit/releases/latest | grep '"tag_name"' | head -1 | cut -d'"' -f4)"
+    
+    # Try to fetch latest release tag from GitHub API
+    if [ -n "${GITHUB_TOKEN:-}" ]; then
+      tag="$(curl -fsSL -H "Authorization: Bearer \"$GITHUB_TOKEN\"" https://api.github.com/repos/krajh/ai-kit/releases/latest 2>/dev/null | grep '"tag_name"' | head -1 | cut -d'"' -f4)"
+    else
+      tag="$(curl -fsSL https://api.github.com/repos/krajh/ai-kit/releases/latest 2>/dev/null | grep '"tag_name"' | head -1 | cut -d'"' -f4)"
+    fi
+    
+    # If API call failed, try using the Atom feed (more stable than HTML scraping)
     if [ -z "$tag" ]; then
-      die "Could not determine latest release tag"
+      log_warn "GitHub API unavailable, trying releases feed..."
+      tag="$(curl -fsSL https://github.com/krajh/ai-kit/releases.atom 2>/dev/null | grep -o '<id>tag:github.com,2008:Repository/[^/]*/[^<]*</id>' | head -1 | sed 's|.*Repository/[^/]*/||; s|</id>||')"
+      # Validate tag format to avoid silently using unexpected values if the feed format changes
+      if [ -n "$tag" ] && ! [[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        log_warn "Unexpected tag format from releases feed: '$tag'; ignoring."
+        tag=""
+      fi
+    fi
+    
+    if [ -z "$tag" ]; then
+      die "Could not determine latest release tag. Please specify a version explicitly (e.g., ./ai-kit-install install v0.1.0)"
     fi
   fi
   
