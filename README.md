@@ -83,6 +83,15 @@ chmod +x ai-kit-install
 ./ai-kit-install update
 ```
 
+#### Environment Variables
+
+- **SKIP_VERIFY**: Set to `true` to skip cryptographic signature verification of release artifacts. This may be necessary in restricted network environments where cosign cannot connect to the OIDC provider.
+
+```bash
+# Skip signature verification if needed
+SKIP_VERIFY=true ./ai-kit-install install
+```
+
 ### How Updates Work
 
 - **Automatic checks**: OpenCode checks for updates daily on launch (silent, no interruption)
