@@ -25,14 +25,14 @@ Usage: install [options] [-- <args passed to ai-kit-install>]
 
 Options:
   -h, --help                 Show this help
-  -v, --version <tag>        Install a specific release tag (e.g., v0.1.0)
+  -v, --version <tag>        Install a specific release tag (e.g., v0.1.3)
   -c, --command <command>    install|update|status|rollback|dry-run (default: install)
   -i, --installer <path>     Run a local ai-kit-install instead of downloading
 
 Examples:
   curl -fsSL https://github.com/${REPO}/releases/latest/download/install | bash
   curl -fsSL https://github.com/${REPO}/releases/latest/download/install | bash -s -- --command update
-  curl -fsSL https://github.com/${REPO}/releases/latest/download/install | bash -s -- --version v0.1.0
+  curl -fsSL https://github.com/${REPO}/releases/latest/download/install | bash -s -- --version v0.1.3
 
 Notes:
   - Signature verification is controlled by the ai-kit-install script.

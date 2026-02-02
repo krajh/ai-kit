@@ -27,7 +27,7 @@ To pin a specific release:
 
 ```bash
 curl -fsSL "https://github.com/krajh/ai-kit/releases/latest/download/install" | \
-  bash -s -- --version v0.1.0
+  bash -s -- --version v0.1.3
 ```
 
 Update an existing install (download + apply immediately):
@@ -43,7 +43,7 @@ curl -fsSL "https://github.com/krajh/ai-kit/releases/latest/download/install" | 
 2. **Download the installer** and run it:
 
 ```bash
-TAG="v0.1.0"
+TAG="v0.1.3"
 
 curl -fsSL -o ai-kit-install \
   "https://github.com/krajh/ai-kit/releases/download/${TAG}/ai-kit-install"
@@ -99,6 +99,19 @@ This kit will:
 
 ## Environment Variables
 
+- **AITOOLINGKEY**: API key used by the `aitooling` provider in `opencode.json`.
+  - If missing, `ai-kit-install` will prompt (input hidden) during `install` and `update`, then persist it to `~/.config/opencode/.env`.
+  - In non-interactive environments (CI), the installer fails with instructions.
+  - To disable prompting (fail fast), pass `--no-prompt` to `ai-kit-install`.
+
+```bash
+# Prefer setting in your shell env (installer will persist it into ~/.config/opencode/.env)
+export AITOOLINGKEY="<your_key>"
+
+# Or run without prompting (CI)
+./ai-kit-install install --no-prompt
+```
+
 - **SKIP_VERIFY**: Set to `true` to skip cryptographic signature verification of release artifacts. This may be necessary in restricted network environments where cosign cannot connect to the OIDC provider. **Security warning:** Enabling this bypasses authenticity checks and can allow tampered or malicious artifacts to be installed; use only in exceptional cases and in trusted, controlled environments, and never set it as a default.
 
 ```bash
@@ -139,7 +152,7 @@ SKIP_VERIFY=true ./ai-kit-install install
 
 ```
 ~/.config/opencode/
-├── current -> versions/v0.1.0/     # Active version symlink
+├── current -> versions/v0.1.3/     # Active version symlink
 ├── opencode.json -> current/opencode.json
 ├── AGENTS.md -> current/AGENTS.md
 ├── agent -> current/agent
@@ -147,7 +160,7 @@ SKIP_VERIFY=true ./ai-kit-install install
 ├── protocols -> current/protocols
 ├── skills -> current/skills
 ├── versions/                      # Installed versions
-│   └── v0.1.0/                    # Kit contents (agents/protocols/plugins/etc.)
+│   └── v0.1.3/                    # Kit contents (agents/protocols/plugins/etc.)
 ├── staging/                       # Downloaded+extracted updates (applied on restart)
 ├── state/                         # Updater state (last check, staged tag)
 ├── bin/                           # Tooling used by the installer/updater (e.g., cosign)

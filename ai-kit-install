@@ -30,10 +30,42 @@ COSIGN_SHA256="8b24b946dd5809c6bd93de08033bcf6bc0ed7d336b7785787c080f574b89249b"
 COSIGN_OIDC_ISSUER="https://token.actions.githubusercontent.com"
 COSIGN_IDENTITY_PREFIX="https://github.com/krajh/ai-kit/.github/workflows/release.yml@refs/tags/"
 
-COMMAND="${1:-install}"
+COMMAND="install"
+TAG="latest"
 DRY_RUN=false
 VERBOSE=false
 SKIP_VERIFY="${SKIP_VERIFY:-false}"
+NO_PROMPT=false
+
+# Parse flags anywhere; accept: <command> [tag]
+POSITIONAL=()
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -v|--verbose)
+      VERBOSE=true
+      shift
+      ;;
+    -h|--help|help)
+      POSITIONAL=("help")
+      shift
+      ;;
+    --no-prompt)
+      NO_PROMPT=true
+      shift
+      ;;
+    --)
+      shift
+      break
+      ;;
+    *)
+      POSITIONAL+=("$1")
+      shift
+      ;;
+  esac
+done
+
+COMMAND="${POSITIONAL[0]:-install}"
+TAG="${POSITIONAL[1]:-latest}"
 
 # Color codes
 RED='\033[0;31m'
@@ -61,6 +93,107 @@ log_error() {
 die() {
   log_error "$*"
   exit 1
+}
+
+get_env_file_key() {
+  local env_file="$TARGET_DIR/.env"
+
+  if [ ! -f "$env_file" ]; then
+    return 0
+  fi
+
+  local line
+  line="$(grep -E '^AITOOLINGKEY=' "$env_file" 2>/dev/null | tail -1 || true)"
+  if [ -z "$line" ]; then
+    return 0
+  fi
+
+  printf "%s" "${line#AITOOLINGKEY=}"
+}
+
+write_env_key() {
+  local key="$1"
+  local env_file="$TARGET_DIR/.env"
+
+  if [ -L "$env_file" ]; then
+    die "Refusing to write to symlink: $env_file"
+  fi
+
+  mkdir -p "$TARGET_DIR"
+  touch "$env_file"
+  chmod 600 "$env_file" 2>/dev/null || true
+
+  local tmp
+  tmp="$(mktemp)"
+
+  # Copy existing .env while removing any prior AITOOLINGKEY entries
+  while IFS= read -r line || [ -n "$line" ]; do
+    case "$line" in
+      AITOOLINGKEY=*)
+        continue
+        ;;
+    esac
+    printf "%s\n" "$line" >>"$tmp"
+  done <"$env_file"
+
+  printf "AITOOLINGKEY=%s\n" "$key" >>"$tmp"
+  mv "$tmp" "$env_file"
+  chmod 600 "$env_file" 2>/dev/null || true
+}
+
+ensure_aitoolingkey() {
+  local env_key file_key
+  env_key="${AITOOLINGKEY:-}"
+  file_key="$(get_env_file_key || true)"
+
+  # If already present in the process environment, persist it for future runs.
+  if [ -n "$env_key" ]; then
+    if [ "$DRY_RUN" = true ]; then
+      log "Dry run: would persist AITOOLINGKEY to $TARGET_DIR/.env"
+      return 0
+    fi
+    if [ "$file_key" != "$env_key" ]; then
+      log "Persisting AITOOLINGKEY to $TARGET_DIR/.env"
+      write_env_key "$env_key"
+    fi
+    return 0
+  fi
+
+  # Otherwise, trust the existing .env value.
+  if [ -n "$file_key" ]; then
+    return 0
+  fi
+
+  if [ "$DRY_RUN" = true ]; then
+    log_warn "Dry run: AITOOLINGKEY missing; would prompt and write to $TARGET_DIR/.env"
+    return 0
+  fi
+
+  if [ "$NO_PROMPT" = true ]; then
+    die "AITOOLINGKEY is not set and no value found in $TARGET_DIR/.env. Prompting disabled (--no-prompt). Set env var AITOOLINGKEY or add it to $TARGET_DIR/.env."
+  fi
+
+  # Non-interactive mode: fail with clear instructions.
+  if [ ! -t 0 ]; then
+    die "AITOOLINGKEY is not set and no value found in $TARGET_DIR/.env. Non-interactive session: set env var AITOOLINGKEY or add it to $TARGET_DIR/.env."
+  fi
+
+  log_warn "AITOOLINGKEY not found. You'll be prompted to enter it (input hidden)."
+
+  local entered
+  entered=""
+  while [ -z "$entered" ]; do
+    printf "Enter AITOOLINGKEY: " >&2
+    IFS= read -r -s entered
+    printf "\n" >&2
+
+    if [ -z "$entered" ]; then
+      log_warn "AITOOLINGKEY cannot be empty."
+    fi
+  done
+
+  write_env_key "$entered"
+  log_ok "Saved AITOOLINGKEY to $TARGET_DIR/.env"
 }
 
 # Detect OS and architecture
@@ -215,7 +348,7 @@ download_release() {
     fi
     
     if [ -z "$tag" ]; then
-      die "Could not determine latest release tag. Please specify a version explicitly (e.g., ./ai-kit-install install v0.1.0)"
+      die "Could not determine latest release tag. Please specify a version explicitly (e.g., ./ai-kit-install install v0.1.3)"
     fi
   fi
   
@@ -372,6 +505,8 @@ cmd_install() {
   
   mkdir -p "$TARGET_DIR"
   activate_version "$tag"
+
+  ensure_aitoolingkey
   
   log_ok "Installation complete at $TARGET_DIR"
   log "Run 'opencode' to begin using the configuration."
@@ -415,6 +550,8 @@ cmd_update() {
   if [ "$DRY_RUN" = false ]; then
     restore_local_state "$backup_info"
   fi
+
+  ensure_aitoolingkey
   
   log_ok "Update complete"
   log "Run 'opencode' to use the updated configuration."
@@ -518,6 +655,7 @@ COMMANDS:
 OPTIONS:
   -v, --verbose     Enable verbose output
   -h, --help        Show this help message
+  --no-prompt        Do not prompt for AITOOLINGKEY (fail if missing)
 
 EXAMPLES:
   ai-kit-install install
@@ -529,6 +667,7 @@ EXAMPLES:
 ENVIRONMENT:
   WSL/Linux-only (x86_64 architecture required)
   Requires: curl, tar, mkdir
+  AITOOLINGKEY: will prompt if missing (or set via env / ~/.config/opencode/.env)
 
 EOF
 }
@@ -537,10 +676,10 @@ EOF
 main() {
   case "${COMMAND}" in
     install)
-      cmd_install "${2:-latest}"
+      cmd_install "${TAG:-latest}"
       ;;
     update)
-      cmd_update "${2:-latest}"
+      cmd_update "${TAG:-latest}"
       ;;
     status)
       cmd_status
@@ -549,7 +688,7 @@ main() {
       cmd_rollback
       ;;
     dry-run)
-      cmd_dry_run "${2:-latest}"
+      cmd_dry_run "${TAG:-latest}"
       ;;
     -h|--help|help)
       show_help
