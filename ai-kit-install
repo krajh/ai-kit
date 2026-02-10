@@ -150,8 +150,15 @@ ensure_aitoolingkey() {
   env_base_url="${BASE_URL:-}"
   file_base_url="$(get_env_file_key "BASE_URL" || true)"
 
-  # If already present in the process environment, persist it for future runs.
+  # Check if we can prompt interactively
+  local can_prompt=false
+  if [ "$DRY_RUN" != true ] && [ "$NO_PROMPT" != true ] && [ -t 0 ]; then
+    can_prompt=true
+  fi
+
+  # Handle AITOOLINGKEY
   if [ -n "$env_key" ]; then
+    # Present in environment, persist it
     if [ "$DRY_RUN" = true ]; then
       log "Dry run: would persist AITOOLINGKEY to $TARGET_DIR/.env"
     elif [ "$file_key" != "$env_key" ]; then
@@ -159,46 +166,91 @@ ensure_aitoolingkey() {
       write_env_key "AITOOLINGKEY" "$env_key"
     fi
   elif [ -n "$file_key" ]; then
-    # Trust the existing .env value
-    :
-  elif [ "$DRY_RUN" = true ]; then
-    log_warn "Dry run: AITOOLINGKEY missing; would prompt and write to $TARGET_DIR/.env"
-  elif [ "$NO_PROMPT" = true ]; then
-    die "AITOOLINGKEY is not set and no value found in $TARGET_DIR/.env. Prompting disabled (--no-prompt). Set env var AITOOLINGKEY or add it to $TARGET_DIR/.env."
-  elif [ ! -t 0 ]; then
-    # Non-interactive mode: fail with clear instructions.
-    die "AITOOLINGKEY is not set and no value found in $TARGET_DIR/.env. Non-interactive session: set env var AITOOLINGKEY or add it to $TARGET_DIR/.env."
-  else
-    # Prompt for AITOOLINGKEY
-    log_warn "AITOOLINGKEY not found. You'll be prompted to enter it (input hidden)."
-
-    local entered
-    entered=""
-    while [ -z "$entered" ]; do
-      printf "Enter AITOOLINGKEY: " >&2
-      IFS= read -r -s entered
-      printf "\n" >&2
-
-      if [ -z "$entered" ]; then
-        log_warn "AITOOLINGKEY cannot be empty."
+    # Already configured in .env - confirm or keep
+    if [ "$can_prompt" = true ]; then
+      printf "AITOOLINGKEY is already configured. Keep existing value? [Y/n]: " >&2
+      local response
+      IFS= read -r response
+      if [[ "$response" =~ ^[Nn]$ ]]; then
+        env_key=""
+        file_key=""
       fi
-    done
-
-    write_env_key "AITOOLINGKEY" "$entered"
-    log_ok "Saved AITOOLINGKEY to $TARGET_DIR/.env"
-    env_key="$entered"
+    fi
   fi
 
-  # Handle BASE_URL (optional override)
+  # Prompt for AITOOLINGKEY if still needed
+  if [ -z "$env_key" ] && [ -z "$file_key" ]; then
+    if [ "$DRY_RUN" = true ]; then
+      log_warn "Dry run: AITOOLINGKEY missing; would prompt and write to $TARGET_DIR/.env"
+    elif [ "$NO_PROMPT" = true ]; then
+      die "AITOOLINGKEY is not set and no value found in $TARGET_DIR/.env. Prompting disabled (--no-prompt). Set env var AITOOLINGKEY or add it to $TARGET_DIR/.env."
+    elif [ ! -t 0 ]; then
+      die "AITOOLINGKEY is not set and no value found in $TARGET_DIR/.env. Non-interactive session: set env var AITOOLINGKEY or add it to $TARGET_DIR/.env."
+    else
+      # Interactive prompt
+      log_warn "Configuration required"
+      printf "\n" >&2
+      printf "╔══════════════════════════════════════════════════════════════╗\n" >&2
+      printf "║  AI Kit Configuration                                        ║\n" >&2
+      printf "╠══════════════════════════════════════════════════════════════╣\n" >&2
+      printf "║  Please enter your AITOOLINGKEY (API key)                    ║\n" >&2
+      printf "║  Input will be hidden for security                           ║\n" >&2
+      printf "╚══════════════════════════════════════════════════════════════╝\n" >&2
+      printf "\n" >&2
+
+      local entered
+      entered=""
+      while [ -z "$entered" ]; do
+        printf "AITOOLINGKEY: " >&2
+        IFS= read -r -s entered
+        printf "\n" >&2
+
+        if [ -z "$entered" ]; then
+          log_warn "AITOOLINGKEY cannot be empty. Please try again."
+        fi
+      done
+
+      write_env_key "AITOOLINGKEY" "$entered"
+      log_ok "✓ Saved AITOOLINGKEY to $TARGET_DIR/.env"
+      env_key="$entered"
+    fi
+  fi
+
+  # Handle BASE_URL (optional)
   if [ -n "$env_base_url" ]; then
+    # Present in environment, persist it
     if [ "$DRY_RUN" = true ]; then
       log "Dry run: would persist BASE_URL to $TARGET_DIR/.env"
     elif [ "$file_base_url" != "$env_base_url" ]; then
       log "Persisting BASE_URL to $TARGET_DIR/.env"
       write_env_key "BASE_URL" "$env_base_url"
     fi
+  elif [ -n "$file_base_url" ]; then
+    # Already configured in .env - confirm or keep
+    if [ "$can_prompt" = true ]; then
+      printf "BASE_URL is already configured (%s). Keep? [Y/n]: " "$file_base_url" >&2
+      local response
+      IFS= read -r response
+      if [[ "$response" =~ ^[Nn]$ ]]; then
+        file_base_url=""
+      fi
+    fi
   fi
-  # If BASE_URL is not set in env and not in file, we don't prompt - use default from config
+
+  # Prompt for BASE_URL if not set and we're interactive
+  if [ -z "$env_base_url" ] && [ -z "$file_base_url" ] && [ "$can_prompt" = true ]; then
+    printf "\n" >&2
+    printf "BASE_URL (optional - press Enter to use default): " >&2
+    local entered_url
+    IFS= read -r entered_url
+
+    if [ -n "$entered_url" ]; then
+      write_env_key "BASE_URL" "$entered_url"
+      log_ok "✓ Saved BASE_URL to $TARGET_DIR/.env"
+    else
+      log "Using default BASE_URL from configuration"
+    fi
+  fi
 }
 
 # Detect OS and architecture
