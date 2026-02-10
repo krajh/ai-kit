@@ -3,7 +3,19 @@ set -euo pipefail
 
 # AI Kit Installer (OpenCode configuration)
 # Supports: install, update, status, rollback, dry-run
-# WSL/Linux-only with cosign keyless verification
+# WSL/Linux/macOS with cosign keyless verification
+
+show_logo() {
+  cat << 'EOF'
+    ___    ____       __ __ _ __ 
+   /   |  /  _/      / //_/(_) /_
+  / /| |  / /       / ,<  / / __/
+ / ___ |_/ /       / /| |/ / /_  
+/_/  |_/___/      /_/ |_/_/\__/  
+                                 
+OpenCode Configuration Framework
+EOF
+}
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TARGET_DIR="$HOME/.config/opencode"
@@ -573,6 +585,8 @@ restore_local_state() {
 cmd_install() {
   local tag version_dir
   
+  show_logo
+  echo ""
   log "Starting fresh installation..."
   detect_platform
   check_prerequisites
@@ -601,6 +615,8 @@ cmd_install() {
 cmd_update() {
   local tag backup_info version_dir
   
+  show_logo
+  echo ""
   log "Starting update..."
   detect_platform
   check_prerequisites

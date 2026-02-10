@@ -1,3 +1,11 @@
+```
+    ___    ____      __ __ _ __ 
+   /   |  /  _/     / //_/(_) /_
+  / /| |  / /______/ ,<  / / __/
+ / ___ |_/ /_/_____/ /| |/ / /_  
+/_/  |_/___/     /_/ |_/_/\__/  
+```
+
 # ai-kit (OpenCode Team Kit)
 
 A lightweight, installer-first OpenCode configuration kit for teams.
