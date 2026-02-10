@@ -97,22 +97,24 @@ die() {
 
 get_env_file_key() {
   local env_file="$TARGET_DIR/.env"
+  local key_name="${1:-AITOOLINGKEY}"
 
   if [ ! -f "$env_file" ]; then
     return 0
   fi
 
   local line
-  line="$(grep -E '^AITOOLINGKEY=' "$env_file" 2>/dev/null | tail -1 || true)"
+  line="$(grep -E "^${key_name}=" "$env_file" 2>/dev/null | tail -1 || true)"
   if [ -z "$line" ]; then
     return 0
   fi
 
-  printf "%s" "${line#AITOOLINGKEY=}"
+  printf "%s" "${line#${key_name}=}"
 }
 
 write_env_key() {
-  local key="$1"
+  local key_name="$1"
+  local key_value="$2"
   local env_file="$TARGET_DIR/.env"
 
   if [ -L "$env_file" ]; then
@@ -126,74 +128,77 @@ write_env_key() {
   local tmp
   tmp="$(mktemp)"
 
-  # Copy existing .env while removing any prior AITOOLINGKEY entries
+  # Copy existing .env while removing any prior entries for this key
   while IFS= read -r line || [ -n "$line" ]; do
     case "$line" in
-      AITOOLINGKEY=*)
+      "${key_name}"=*)
         continue
         ;;
     esac
     printf "%s\n" "$line" >>"$tmp"
   done <"$env_file"
 
-  printf "AITOOLINGKEY=%s\n" "$key" >>"$tmp"
+  printf "%s=%s\n" "$key_name" "$key_value" >>"$tmp"
   mv "$tmp" "$env_file"
   chmod 600 "$env_file" 2>/dev/null || true
 }
 
 ensure_aitoolingkey() {
-  local env_key file_key
+  local env_key file_key env_base_url file_base_url
   env_key="${AITOOLINGKEY:-}"
-  file_key="$(get_env_file_key || true)"
+  file_key="$(get_env_file_key "AITOOLINGKEY" || true)"
+  env_base_url="${BASE_URL:-}"
+  file_base_url="$(get_env_file_key "BASE_URL" || true)"
 
   # If already present in the process environment, persist it for future runs.
   if [ -n "$env_key" ]; then
     if [ "$DRY_RUN" = true ]; then
       log "Dry run: would persist AITOOLINGKEY to $TARGET_DIR/.env"
-      return 0
-    fi
-    if [ "$file_key" != "$env_key" ]; then
+    elif [ "$file_key" != "$env_key" ]; then
       log "Persisting AITOOLINGKEY to $TARGET_DIR/.env"
-      write_env_key "$env_key"
+      write_env_key "AITOOLINGKEY" "$env_key"
     fi
-    return 0
-  fi
-
-  # Otherwise, trust the existing .env value.
-  if [ -n "$file_key" ]; then
-    return 0
-  fi
-
-  if [ "$DRY_RUN" = true ]; then
+  elif [ -n "$file_key" ]; then
+    # Trust the existing .env value
+    :
+  elif [ "$DRY_RUN" = true ]; then
     log_warn "Dry run: AITOOLINGKEY missing; would prompt and write to $TARGET_DIR/.env"
-    return 0
-  fi
-
-  if [ "$NO_PROMPT" = true ]; then
+  elif [ "$NO_PROMPT" = true ]; then
     die "AITOOLINGKEY is not set and no value found in $TARGET_DIR/.env. Prompting disabled (--no-prompt). Set env var AITOOLINGKEY or add it to $TARGET_DIR/.env."
-  fi
-
-  # Non-interactive mode: fail with clear instructions.
-  if [ ! -t 0 ]; then
+  elif [ ! -t 0 ]; then
+    # Non-interactive mode: fail with clear instructions.
     die "AITOOLINGKEY is not set and no value found in $TARGET_DIR/.env. Non-interactive session: set env var AITOOLINGKEY or add it to $TARGET_DIR/.env."
+  else
+    # Prompt for AITOOLINGKEY
+    log_warn "AITOOLINGKEY not found. You'll be prompted to enter it (input hidden)."
+
+    local entered
+    entered=""
+    while [ -z "$entered" ]; do
+      printf "Enter AITOOLINGKEY: " >&2
+      IFS= read -r -s entered
+      printf "\n" >&2
+
+      if [ -z "$entered" ]; then
+        log_warn "AITOOLINGKEY cannot be empty."
+      fi
+    done
+
+    write_env_key "AITOOLINGKEY" "$entered"
+    log_ok "Saved AITOOLINGKEY to $TARGET_DIR/.env"
+    env_key="$entered"
   fi
 
-  log_warn "AITOOLINGKEY not found. You'll be prompted to enter it (input hidden)."
-
-  local entered
-  entered=""
-  while [ -z "$entered" ]; do
-    printf "Enter AITOOLINGKEY: " >&2
-    IFS= read -r -s entered
-    printf "\n" >&2
-
-    if [ -z "$entered" ]; then
-      log_warn "AITOOLINGKEY cannot be empty."
+  # Handle BASE_URL (optional override)
+  if [ -n "$env_base_url" ]; then
+    if [ "$DRY_RUN" = true ]; then
+      log "Dry run: would persist BASE_URL to $TARGET_DIR/.env"
+    elif [ "$file_base_url" != "$env_base_url" ]; then
+      log "Persisting BASE_URL to $TARGET_DIR/.env"
+      write_env_key "BASE_URL" "$env_base_url"
     fi
-  done
-
-  write_env_key "$entered"
-  log_ok "Saved AITOOLINGKEY to $TARGET_DIR/.env"
+  fi
+  # If BASE_URL is not set in env and not in file, we don't prompt - use default from config
 }
 
 # Detect OS and architecture
@@ -695,7 +700,13 @@ EXAMPLES:
 ENVIRONMENT:
   WSL/Linux/macOS (x86_64/amd64/arm64 architecture required)
   Requires: curl, tar, mkdir
-  AITOOLINGKEY: will prompt if missing (or set via env / ~/.config/opencode/.env)
+  AITOOLINGKEY: API key (will prompt if missing, or set via env / ~/.config/opencode/.env)
+  BASE_URL: Optional base URL override (set via env / ~/.config/opencode/.env)
+
+NOTES:
+  When using 'curl | bash', export variables before the pipe:
+    export AITOOLINGKEY="your-key" [BASE_URL="https://api.example.com"]
+    curl -fsSL ... | bash
 
 EOF
 }

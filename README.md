@@ -112,6 +112,20 @@ export AITOOLINGKEY="<your_key>"
 ./ai-kit-install install --no-prompt
 ```
 
+- **BASE_URL**: Optional base URL override for API endpoints.
+  - Only needed if you want to override the default base URL from `opencode.json`.
+  - If not set, the default from configuration will be used.
+  - Useful for custom API gateways or proxy services.
+
+```bash
+# Set both variables when using curl | bash
+export AITOOLINGKEY="<your_key>"
+export BASE_URL="https://api.example.com/v1"
+
+# Then run the installer
+curl -fsSL "https://github.com/krajh/ai-kit/releases/latest/download/install" | bash
+```
+
 - **SKIP_VERIFY**: Set to `true` to skip cryptographic signature verification of release artifacts. This may be necessary in restricted network environments where cosign cannot connect to the OIDC provider. **Security warning:** Enabling this bypasses authenticity checks and can allow tampered or malicious artifacts to be installed; use only in exceptional cases and in trusted, controlled environments, and never set it as a default.
 
 ```bash
