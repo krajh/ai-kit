@@ -136,14 +136,15 @@ run_installer() {
   chmod +x "$installer_path" 2>/dev/null || true
 
   if [[ "$command" == "status" || "$command" == "rollback" ]]; then
-    "$installer_path" "$command" "${passthrough[@]}"
+    # Use ${arr[@]+"${arr[@]}"} to safely expand array on bash 3.2 (macOS)
+    "$installer_path" "$command" ${passthrough[@]+"${passthrough[@]}"}
     return 0
   fi
 
   if [[ -n "$tag" ]]; then
-    "$installer_path" "$command" "$tag" "${passthrough[@]}"
+    "$installer_path" "$command" "$tag" ${passthrough[@]+"${passthrough[@]}"}
   else
-    "$installer_path" "$command" "${passthrough[@]}"
+    "$installer_path" "$command" ${passthrough[@]+"${passthrough[@]}"}
   fi
 }
 

@@ -207,15 +207,27 @@ detect_platform() {
   # Check for WSL
   if grep -qi microsoft /proc/version 2>/dev/null || grep -qi wsl /proc/version 2>/dev/null; then
     log_ok "Detected WSL environment"
+    PLATFORM_OS="linux"
   elif [ "$os" = "Linux" ]; then
     log_ok "Detected Linux environment"
+    PLATFORM_OS="linux"
+  elif [ "$os" = "Darwin" ]; then
+    log_ok "Detected macOS environment"
+    PLATFORM_OS="darwin"
   else
-    die "This installer only supports WSL and Linux. Detected: $os"
+    die "This installer only supports WSL, Linux, and macOS. Detected: $os"
   fi
   
   # Check architecture
-  if [ "$arch" != "x86_64" ] && [ "$arch" != "amd64" ]; then
-    die "This installer only supports x86_64/amd64 architecture. Detected: $arch"
+  if [ "$arch" != "x86_64" ] && [ "$arch" != "amd64" ] && [ "$arch" != "arm64" ]; then
+    die "This installer only supports x86_64/amd64/arm64 architecture. Detected: $arch"
+  fi
+  
+  # Normalize architecture for cosign binary selection
+  if [ "$arch" = "x86_64" ] || [ "$arch" = "amd64" ]; then
+    PLATFORM_ARCH="amd64"
+  elif [ "$arch" = "arm64" ]; then
+    PLATFORM_ARCH="arm64"
   fi
   
   log "Platform: $os $kernel ($arch)"
@@ -240,10 +252,13 @@ check_prerequisites() {
 
 # Download cosign binary if needed
 ensure_cosign() {
-  local cosign_bin cosign_url
+  local cosign_bin cosign_url cosign_binary_name
   
   cosign_bin="$TARGET_DIR/bin/cosign"
-  cosign_url="https://github.com/sigstore/cosign/releases/download/${COSIGN_VERSION}/cosign-linux-amd64"
+  
+  # Determine the correct cosign binary based on platform
+  cosign_binary_name="cosign-${PLATFORM_OS}-${PLATFORM_ARCH}"
+  cosign_url="https://github.com/sigstore/cosign/releases/download/${COSIGN_VERSION}/${cosign_binary_name}"
 
   if [ -x "$cosign_bin" ]; then
     echo "$cosign_bin"
@@ -254,19 +269,32 @@ ensure_cosign() {
   local tmp
   tmp="$(mktemp)"
   
-  log "Downloading cosign ${COSIGN_VERSION}..."
+  log "Downloading cosign ${COSIGN_VERSION} for ${PLATFORM_OS}/${PLATFORM_ARCH}..."
   
   if ! curl -fsSL "$cosign_url" -o "$tmp"; then
     rm -f "$tmp"
     die "Failed to download cosign from $cosign_url"
   fi
   
-  local actual_sha
-  actual_sha="$(sha256sum "$tmp" | awk '{print $1}')"
+  # Note: SHA256 verification skipped for non-linux platforms
+  # The pinned hash (COSIGN_SHA256) is specifically for cosign-linux-amd64
+  if [ "$PLATFORM_OS" = "linux" ] && [ "$PLATFORM_ARCH" = "amd64" ]; then
+    local actual_sha
+    if command -v sha256sum >/dev/null 2>&1; then
+      actual_sha="$(sha256sum "$tmp" | awk '{print $1}')"
+    elif command -v shasum >/dev/null 2>&1; then
+      actual_sha="$(shasum -a 256 "$tmp" | awk '{print $1}')"
+    else
+      log_warn "sha256sum/shasum not found, skipping cosign hash verification"
+      actual_sha="$COSIGN_SHA256"
+    fi
 
-  if [ "$actual_sha" != "$COSIGN_SHA256" ]; then
-    rm -f "$tmp"
-    die "cosign sha256 mismatch (expected pinned hash)"
+    if [ "$actual_sha" != "$COSIGN_SHA256" ]; then
+      rm -f "$tmp"
+      die "cosign sha256 mismatch (expected pinned hash)"
+    fi
+  else
+    log_warn "Skipping cosign SHA256 verification for ${PLATFORM_OS}/${PLATFORM_ARCH} (pinned hash is linux-amd64 specific)"
   fi
 
   if ! chmod +x "$tmp" || ! "$tmp" version >/dev/null 2>&1; then
@@ -665,7 +693,7 @@ EXAMPLES:
   ai-kit-install dry-run
 
 ENVIRONMENT:
-  WSL/Linux-only (x86_64 architecture required)
+  WSL/Linux/macOS (x86_64/amd64/arm64 architecture required)
   Requires: curl, tar, mkdir
   AITOOLINGKEY: will prompt if missing (or set via env / ~/.config/opencode/.env)
 

@@ -2,7 +2,7 @@
 
 A lightweight, installer-first OpenCode configuration kit for teams.
 
-**v0 is WSL/Linux-only** (intended for Dell/Windows laptops running WSL2).
+**Supports WSL, Linux, and macOS** (x86_64/amd64/arm64 architectures).
 
 ## Quick Start
 
@@ -75,7 +75,7 @@ This kit will:
 
 ## Requirements
 
-- **WSL 2** (Windows Subsystem for Linux) or **Linux** (x86_64 architecture)
+- **WSL 2** (Windows Subsystem for Linux), **Linux**, or **macOS** (x86_64/amd64/arm64 architecture)
 - **curl**, **tar**, **mkdir** (standard utilities)
 - No special privileges required
 
