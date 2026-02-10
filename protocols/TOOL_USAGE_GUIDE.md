@@ -1,5 +1,9 @@
 # Tool Usage Guide — Corporate Edition
 
+> **⚠️ SKILL AVAILABLE:** Consider using the `tool-selection` skill instead.  
+> Load via: `skill({ name: "tool-selection" })`  
+> This provides fast tool selection patterns optimized for common scenarios.
+
 ## 1. Command selection
 
 - Use `bash` only for repository management, installs, build/test commands, or git operations.

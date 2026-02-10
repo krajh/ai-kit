@@ -1,5 +1,9 @@
 # Delegation Protocols — Corporate Edition
 
+> **⚠️ SKILL AVAILABLE:** Consider using the `delegation-protocols` skill instead.  
+> Load via: `skill({ name: "delegation-protocols" })`  
+> This provides the same content in a more token-efficient, on-demand format.
+
 **Version:** 1.0
 **Effective Date:** 2026-01-28
 

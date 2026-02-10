@@ -1,10 +1,10 @@
 ```
- ___  _____      _   _______ _____ 
+ ___  _____      _   _______ _____
  / _ \|_   _|    | | / /_   _|_   _|
-/ /_\ \ | |______| |/ /  | |   | |  
-|  _  | | |______|    \  | |   | |  
-| | | |_| |_     | |\  \_| |_  | |  
-\_| |_/\___/     \_| \_/\___/  \_/  
+/ /_\ \ | |______| |/ /  | |   | |
+|  _  | | |______|    \  | |   | |
+| | | |_| |_     | |\  \_| |_  | |
+\_| |_/\___/     \_| \_/\___/  \_/
 ```
 
 # ai-kit (OpenCode Team Kit)
@@ -90,10 +90,15 @@ This kit will:
 
 ## What's Included
 
-### 📋 Protocols
+### 📋 Protocols & Skills (Skill-First Approach)
 
-- **Delegation Protocols**: Professional agent coordination and escalation
-- **Tool Usage Guide**: Efficient tool selection patterns
+This kit follows a **skill-first pattern**: load skills on-demand instead of referencing protocol files directly.
+
+| Protocol File             | Preferred Skill        |
+| ------------------------- | ---------------------- |
+| `DELEGATION_PROTOCOLS.md` | `delegation-protocols` |
+| `HANDOFF_PROTOCOLS.md`    | `handoff-patterns`     |
+| `TOOL_USAGE_GUIDE.md`     | `tool-selection`       |
 
 ### 🤖 Agent Framework
 
@@ -105,6 +110,42 @@ This kit will:
 - **opencode.json**: Production-ready configuration with plugin defaults
 - **Skills Library**: Playbooks for delegation, testing, and tool authoring
 - **Plugin Support**: Memory integration and roadmap management
+
+## Using Skills in Other Projects
+
+The installer symlinks all ai-kit skills to `~/.config/opencode/skills/`, making them available globally in any project you work on.
+
+```bash
+# After running ai-kit-install, skills are available globally:
+await skill({ name: "delegation-protocols" })
+await skill({ name: "handoff-patterns" })
+await skill({ name: "tool-selection" })
+```
+
+### How It Works
+
+The installer creates symlinks from:
+
+- `~/.config/opencode/current/skills/<skill-name>/` → `~/.config/opencode/skills/<skill-name>/`
+
+This means skills are discovered by OpenCode's runtime and listed in `<available_skills>` regardless of which directory you're working in.
+
+### Manual Setup (if not using installer)
+
+If you cloned the repo manually instead of using the installer:
+
+```bash
+# Symlink all ai-kit skills to make them globally available
+ln -sf $(pwd)/skills/* ~/.config/opencode/skills/
+```
+
+Or copy specific skills:
+
+```bash
+# Copy only the skills you need
+cp -r skills/delegation-protocols ~/.config/opencode/skills/
+cp -r skills/handoff-patterns ~/.config/opencode/skills/
+```
 
 ## Environment Variables
 
@@ -238,25 +279,67 @@ All agents follow strict professional protocols:
 
 ## Skills Library
 
-This kit ships with essential playbooks for agent coordination and quality assurance. The `/skills/` directory contains:
+This kit ships with essential playbooks for agent coordination, quality assurance, and development workflows. The `/skills/` directory contains:
 
-- **Delegation & Coordination**: `delegation-orchestration`, `protocol-verify`, `context-checkpoint`, `agent-selection`
-- **Quality & Testing**: `verification-and-tests`, `protocol-compliance-v13`, `debugging-error-handling`
-- **Tool & Plugin Authoring**: `opencode-tool-authoring`, `opencode-plugin-authoring`
-- **Workflow Patterns**: `ralph-loop`, `memory-tool-playbook`
+**Delegation & Coordination**:
+
+- `delegation-protocols` - Agent coordination and continuous reporting
+- `handoff-patterns` - 5 handoff types to prevent context loss
+- `agent-routing` - Fast specialist selection for routing work
+- `context-checkpoint` - Capture project state/decisions/progress
+
+**Planning & Assessment**:
+
+- `effort-complexity-framework` - Replace time estimates with Effort+Complexity ratings
+- `tlc-spec-driven` - Spec-driven development workflow (when available)
+
+**Development & Code Quality**:
+
+- `coding-guidelines` - Behavioral guidelines to reduce common LLM coding mistakes
+- `clean-code-standards` - Minimal comments, maximum readability
+- `tool-selection` - Fast tool selection guide (patch→edit→write priority)
+
+**Quality & Testing**:
+
+- `verification-and-tests` - Definition of Done workflow
+- `debugging-error-handling` - Error triage and prevention patterns
+- `debug-instrumentation` - Structured logging for debugging
+
+**Workflow & Tooling**:
+
+- `gitbutler` - Virtual branch workflow for parallel work
+- `opencode-tool-authoring` - Standards for authoring `.opencode/tool/*.ts` tools
+- `opencode-plugin-authoring` - Patterns for authoring `plugin/*.ts` runtime plugins
+- `ralph-loop` - Iterate-to-done loop for mechanical tasks
+- `memory-tool-playbook` - Episodic memory patterns
 
 ### Using Skills
 
-Load skills in-session when needed:
+Load skills in-session when triggers apply:
 
 ```typescript
-// Load a skill for your current task
-await skill({ name: "delegation-orchestration" });
+// Skill auto-loading triggers (from AGENTS.md)
+// - Delegating work → load `delegation-protocols`
+// - Planning F2+ effort → load `effort-complexity-framework`
+// - Writing/modifying code → load `coding-guidelines`
+// - Using GitButler → load `gitbutler`
+
+// Example:
+await skill({ name: "delegation-protocols" });
+```
+
+**First STATUS UPDATE requirement**: Include a SKILL CHECK line showing loaded skills:
+
+```
+SKILL CHECK: loaded [skill-name-1, skill-name-2]
+# OR
+SKILL CHECK: none applicable
 ```
 
 Each skill file (`skills/<skill>/SKILL.md`) contains:
 
-- Recommended prompts and patterns
+- Trigger conditions (when to load)
+- Recommended patterns and workflows
 - Command references
 - Guardrails and best practices
 

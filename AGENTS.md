@@ -60,7 +60,24 @@ bun .opencode/tool/verify-loop.ts --type auto
 - Always explain how to extend or customize agents
 - No anime references, mascots, or personality flourishes
 
-## 5) Agent routing
+## 5) Skill loading guide
+
+Load skills on-demand based on your task. Skills are loaded via: `skill({ name: "skill-name" })`
+
+| When you are...                                                   | Load this skill                             |
+| ----------------------------------------------------------------- | ------------------------------------------- |
+| Delegating work to another agent                                  | `delegation-protocols`                      |
+| Coordinating multi-agent handoffs                                 | `handoff-patterns`                          |
+| Selecting tools for a task                                        | `tool-selection`                            |
+| Planning F2+ effort work (Medium+ effort OR Moderate+ complexity) | `effort-complexity-framework`               |
+| Writing or reviewing code                                         | `coding-guidelines`, `clean-code-standards` |
+| Running tests or verification                                     | `verification-and-tests`                    |
+| Using GitButler virtual branches                                  | `gitbutler`                                 |
+| Selecting which agent to use                                      | `agent-routing`                             |
+
+**Benefits:** Token efficiency (load only what's needed), cleaner prompts, better discoverability via `<available_skills>`.
+
+## 6) Agent routing
 
 | Need           | Agent         | Purpose                                     |
 | -------------- | ------------- | ------------------------------------------- |
@@ -69,7 +86,7 @@ bun .opencode/tool/verify-loop.ts --type auto
 | Implementation | `implementer` | Builds features that follow standards       |
 | Verification   | `reviewer`    | Checks quality, docs, and release readiness |
 
-## 6) Customization path
+## 7) Customization path
 
 To add your own agents:
 
@@ -78,7 +95,7 @@ To add your own agents:
 3. Mention relevant tools, files, or protocols.
 4. Register the agent in `opencode.json` and update this table if needed.
 
-## 7) Verification loop
+## 8) Verification loop
 
 The kit enforces the verification loop from the protocols. Always confirm:
 
