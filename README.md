@@ -27,7 +27,7 @@ To pin a specific release:
 
 ```bash
 curl -fsSL "https://github.com/krajh/ai-kit/releases/latest/download/install" | \
-  bash -s -- --version v0.1.4
+  bash -s -- --version v0.1.6
 ```
 
 Update an existing install (download + apply immediately):
@@ -43,7 +43,7 @@ curl -fsSL "https://github.com/krajh/ai-kit/releases/latest/download/install" | 
 2. **Download the installer** and run it:
 
 ```bash
-TAG="v0.1.4"
+TAG="v0.1.6"
 
 curl -fsSL -o ai-kit-install \
   "https://github.com/krajh/ai-kit/releases/download/${TAG}/ai-kit-install"
@@ -166,7 +166,7 @@ SKIP_VERIFY=true ./ai-kit-install install
 
 ```
 ~/.config/opencode/
-├── current -> versions/v0.1.4/     # Active version symlink
+├── current -> versions/v0.1.6/     # Active version symlink
 ├── opencode.json -> current/opencode.json
 ├── AGENTS.md -> current/AGENTS.md
 ├── agent -> current/agent
@@ -174,7 +174,7 @@ SKIP_VERIFY=true ./ai-kit-install install
 ├── protocols -> current/protocols
 ├── skills -> current/skills
 ├── versions/                      # Installed versions
-│   └── v0.1.4/                    # Kit contents (agents/protocols/plugins/etc.)
+│   └── v0.1.6/                    # Kit contents (agents/protocols/plugins/etc.)
 ├── staging/                       # Downloaded+extracted updates (applied on restart)
 ├── state/                         # Updater state (last check, staged tag)
 ├── bin/                           # Tooling used by the installer/updater (e.g., cosign)
