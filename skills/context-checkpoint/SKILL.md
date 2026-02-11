@@ -99,5 +99,5 @@ checkpoint \
 
 ## Related
 
-- `delegation-orchestration` - Coordination with checkpoints
-- `.opencode/tool/checkpoint.ts` - Checkpoint tool implementation
+- `delegation-protocols` - Coordination with checkpoints
+- `.opencode/tools/checkpoint.ts` - Checkpoint tool implementation

@@ -1,15 +1,15 @@
 ---
 name: opencode-tool-authoring
-description: Standards and templates for authoring reliable `.opencode/tool/*.ts` tools in this repo (Bun+TS), with good error handling, output discipline, and tests.
+description: Standards and templates for authoring reliable `.opencode/tools/*.ts` tools in this repo (Bun+TS), with good error handling, output discipline, and tests.
 ---
 
-# Authoring an OpenCode Tool (`.opencode/tool/*.ts`) — Production Pattern
+# Authoring an OpenCode Tool (`.opencode/tools/*.ts`) — Production Pattern
 
 **Purpose:** Build reliable, cost-conscious tools that behave well in this repo's Bun+TS environment.
 
 ## When to use
 
-- Creating or refactoring `.opencode/tool/*.ts`
+- Creating or refactoring `.opencode/tools/*.ts`
 - Adding new automation for status/checkpoints/skills/workflows
 
 ## Repo conventions to follow
@@ -18,7 +18,7 @@ description: Standards and templates for authoring reliable `.opencode/tool/*.ts
 - Formatting: `bun fmt` (no ESLint/Prettier config)
 - Typecheck: best-effort `bunx tsc --noEmit --pretty false` (no tsconfig)
 - Tests: `bun test`, tests must live under `/tests`  
-  **Do not** place `*.test.ts` in `/plugin/` (auto-loaded at startup)
+  **Do not** place `*.test.ts` in `/plugins/` (auto-loaded at startup)
 
 ## Tool quality bar (minimum)
 

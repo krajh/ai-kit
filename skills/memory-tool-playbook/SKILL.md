@@ -111,5 +111,5 @@ ESCALATION TO COORDINATOR - KNOWLEDGE PROMOTION:
 
 ## Related
 
-- `protocol-verify` — delegation compliance checks
+- `delegation-protocols` — delegation compliance and coordination
 - `context-checkpoint` — capture session/project state

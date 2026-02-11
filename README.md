@@ -29,8 +29,8 @@ This installs the kit **into OpenCode’s config directory**:
 To keep the config easy to use (and not nested), the installer exposes the kit at the top-level via symlinks:
 
 - `~/.config/opencode/opencode.json` → `~/.config/opencode/current/opencode.json`
-- `~/.config/opencode/agent` → `~/.config/opencode/current/agent`
-- (same for `protocols/`, `skills/`, `plugin/`, `AGENTS.md`)
+- `~/.config/opencode/agents` → `~/.config/opencode/current/agents`
+- (same for `protocols/`, `skills/`, `plugins/`, `AGENTS.md`)
 
 To pin a specific release:
 
@@ -198,7 +198,7 @@ SKIP_VERIFY=true ./ai-kit-install install
 ### Adding Your Own Agents
 
 1. **Read the Guide**: See `docs/PERSONA_DEFINITION_GUIDE.md` for comprehensive best practices
-2. **Create Agent Definition**: Copy an existing agent definition (e.g., `agent/implementer.md`) as a template
+2. **Create Agent Definition**: Copy an existing agent definition (e.g., `agents/implementer.md`) as a template
 3. **Edit Agent Profile**:
    - Define clear role, capabilities, and scope boundaries
    - Embed delegation protocol requirements
@@ -226,8 +226,8 @@ SKIP_VERIFY=true ./ai-kit-install install
 ├── current -> versions/v0.1.7/     # Active version symlink
 ├── opencode.json -> current/opencode.json
 ├── AGENTS.md -> current/AGENTS.md
-├── agent -> current/agent
-├── plugin -> current/plugin
+├── agents -> current/agents
+├── plugins -> current/plugins
 ├── protocols -> current/protocols
 ├── skills -> current/skills
 ├── versions/                      # Installed versions
@@ -315,8 +315,8 @@ This kit ships with essential playbooks for agent coordination, quality assuranc
 **Workflow & Tooling**:
 
 - `gitbutler` - Virtual branch workflow for parallel work
-- `opencode-tool-authoring` - Standards for authoring `.opencode/tool/*.ts` tools
-- `opencode-plugin-authoring` - Patterns for authoring `plugin/*.ts` runtime plugins
+- `opencode-tool-authoring` - Standards for authoring `.opencode/tools/*.ts` tools
+- `opencode-plugin-authoring` - Patterns for authoring `plugins/*.ts` runtime plugins
 - `ralph-loop` - Iterate-to-done loop for mechanical tasks
 - `memory-tool-playbook` - Episodic memory patterns
 
@@ -351,50 +351,6 @@ Each skill file (`skills/<skill>/SKILL.md`) contains:
 - Guardrails and best practices
 
 Use skills as part of your standard workflow to maintain protocol compliance and quality standards.
-
-## 🧪 Experimental Features
-
-### Auto-Update Configs Plugin
-
-**Status**: Experimental, disabled by default
-
-Automatic daily updates for OpenCode configuration repos.
-
-#### Features
-
-- **Opt-in only**: Disabled by default (`.auto-update-configs.ts`)
-- **Non-destructive**: Skips repos with uncommitted changes
-- **Safe pulls**: Fast-forward only, never force
-- **Configurable**: Environment variables for repos and interval
-- **Silent operation**: Reports only on updates or issues
-
-#### Enable
-
-```bash
-cd ~/.config/opencode/plugins
-mv .auto-update-configs.ts auto-update-configs.ts
-# Restart OpenCode
-```
-
-#### Configuration
-
-```bash
-export AUTO_UPDATE_REPOS="~/.config/opencode,~/ai-kit"
-export AUTO_UPDATE_INTERVAL_HOURS="24"
-```
-
-#### Documentation
-
-- 📖 Full docs: `docs/AUTO_UPDATE_CONFIGS.md`
-
-#### ⚠️ Experimental Notice
-
-This plugin is **experimental** and disabled by default. Enable only if you:
-- Understand the auto-pull behavior
-- Keep configs in git with clean working trees
-- Want automatic daily updates
-
----
 
 ## License
 

@@ -1,20 +1,20 @@
 ---
 name: opencode-plugin-authoring
-description: Safety-first patterns for authoring `plugin/*.ts` runtime plugins that don't break startup, leak secrets, or run heavy work at import-time.
+description: Safety-first patterns for authoring `plugins/*.ts` runtime plugins that don't break startup, leak secrets, or run heavy work at import-time.
 ---
 
-# Authoring a Runtime Plugin (`plugin/*.ts`) — Safety-First Pattern
+# Authoring a Runtime Plugin (`plugins/*.ts`) — Safety-First Pattern
 
 **Purpose:** Create runtime plugins that are stable at startup, predictable, and don't accidentally execute test code or heavy work.
 
 ## When to use
 
-- Creating/refactoring `plugin/*.ts`
+- Creating/refactoring `plugins/*.ts`
 - Adding startup hooks, message transforms, or runtime integrations
 
 ## Hard rules (this repo)
 
-- **Do not** put `*.test.ts` / `*.spec.ts` in `/plugin/` (auto-loaded).
+- **Do not** put `*.test.ts` / `*.spec.ts` in `/plugins/` (auto-loaded).
 - Keep plugin initialization fast and side-effect minimal.
 - Prefer feature flags / config checks before doing anything heavy.
 

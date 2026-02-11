@@ -35,13 +35,13 @@ bun test --pass-with-no-tests
 ### Tool validation
 
 ```bash
-bun .opencode/tool/verify-loop.ts --type auto
+bun .opencode/tools/verify-loop.ts --type auto
 ```
 
 ## 2) Repo layout
 
-- `.opencode/tool/*.ts` — shared automation tools
-- `agent/*.md` — agent personas (editable)
+- `.opencode/tools/*.ts` — shared automation tools
+- `agents/*.md` — agent personas (editable)
 - `protocols/*.md` — operational standards
 - `protocols/rulesets/*.md` — codified rules
 - `README.md` — orientation and install guidelines
@@ -109,7 +109,7 @@ Load skills on-demand based on your task. Skills are loaded via: `skill({ name: 
 To add your own agents:
 
 1. **Read the persona definition guide**: See `docs/PERSONA_DEFINITION_GUIDE.md` for comprehensive best practices, examples, and anti-patterns.
-2. Copy an existing agent (e.g., `agent/implementer.md`) to `agent/<name>.md` with a descriptive name.
+2. Copy an existing agent (e.g., `agents/implementer.md`) to `agents/<name>.md` with a descriptive name.
 3. Describe capabilities, constraints, and preferred work style following the guide's template.
 4. Embed delegation protocol requirements (STATUS format, escalations, quality gates).
 5. Define clear scope boundaries (in scope / out of scope / escalate to user).

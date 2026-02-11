@@ -315,9 +315,9 @@ async function checkConfigFiles(): Promise<CheckResult> {
 
 async function checkMCPAssumptions(): Promise<CheckResult> {
   const pluginFiles = [
-    "plugin/mai-compaction-plugin.ts",
-    "plugin/decision-hook-plugin.ts",
-    "plugin/roadmap-sync-plugin.ts",
+    "plugins/mai-compaction-plugin.ts",
+    "plugins/decision-hook-plugin.ts",
+    "plugins/roadmap-sync-plugin.ts",
   ];
 
   const warnings: string[] = [];

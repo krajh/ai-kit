@@ -255,8 +255,8 @@ Run verification to ensure work meets Definition of Done
 **Usage:**
 
 ```bash
-bun .opencode/tool/verify-loop.ts --type auto
-bun .opencode/tool/verify-loop.ts --type tool --checkpoint-name "complete"
+bun .opencode/tools/verify-loop.ts --type auto
+bun .opencode/tools/verify-loop.ts --type tool --checkpoint-name "complete"
 ```
 
 **Checks:**
@@ -278,8 +278,8 @@ Write local milestone snapshot
 **Usage:**
 
 ```bash
-bun .opencode/tool/checkpoint.ts --name "milestone" --focus "context"
-bun .opencode/tool/checkpoint.ts --name "milestone" --sync  # Sync to Mai
+bun .opencode/tools/checkpoint.ts --name "milestone" --focus "context"
+bun .opencode/tools/checkpoint.ts --name "milestone" --sync  # Sync to Mai
 ```
 
 ---
@@ -303,8 +303,8 @@ Query episodic memory for recent tool events or artifacts
 **Usage:**
 
 ```bash
-bun .opencode/tool/episodic-memory-query.ts --mode recent --limit 20
-bun .opencode/tool/episodic-memory-query.ts --mode artifacts --artifact-types '["file","git_commit"]'
+bun .opencode/tools/episodic-memory-query.ts --mode recent --limit 20
+bun .opencode/tools/episodic-memory-query.ts --mode artifacts --artifact-types '["file","git_commit"]'
 ```
 
 ---

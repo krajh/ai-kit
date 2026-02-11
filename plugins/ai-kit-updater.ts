@@ -1,6 +1,6 @@
 import type { Plugin } from "@opencode-ai/plugin";
 
-import { mkdir, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
+import { lstat, mkdir, readFile, rename, rm, stat, symlink, unlink, writeFile } from "node:fs/promises";
 import { execFile } from "node:child_process";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
@@ -26,8 +26,8 @@ const CURRENT_LINK = join(OPENCODE_HOME, "current");
 const KIT_LINK_ITEMS = [
   "opencode.json",
   "AGENTS.md",
-  "agent",
-  "plugin",
+  "agents",
+  "plugins",
   "protocols",
   "skills",
 ] as const;
@@ -275,7 +275,7 @@ async function extractTarGzSafe(
 async function looksLikeKitRoot(dir: string): Promise<boolean> {
   try {
     const required = [
-      join(dir, "agent"),
+      join(dir, "agents"),
       join(dir, "protocols"),
       join(dir, "opencode.json"),
     ];
@@ -301,13 +301,27 @@ async function applyStagedUpdate(tag: string): Promise<boolean> {
 
     if (!(await looksLikeKitRoot(versionPath))) return false;
 
-    const { symlink, unlink } = await import("node:fs/promises");
     try {
       await unlink(CURRENT_LINK);
     } catch {
-      // ignore
+      // missing — nothing to unlink
     }
     await symlink(versionPath, CURRENT_LINK);
+
+    // Clean up stale symlinks from pre-v0.3.0 directory renames.
+    // (agent -> agents, plugin -> plugins)
+    const STALE_LINKS = ["agent", "plugin"];
+    for (const old of STALE_LINKS) {
+      const oldPath = join(OPENCODE_HOME, old);
+      try {
+        const linkStat = await lstat(oldPath);
+        if (linkStat.isSymbolicLink()) {
+          await unlink(oldPath);
+        }
+      } catch {
+        // missing — nothing to clean
+      }
+    }
 
     // Expose kit items at ~/.config/opencode/* via symlinks.
     // Never overwrite real files/dirs (user customizations).

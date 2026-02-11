@@ -57,7 +57,7 @@ Example:
 
 - Iteration 3:
   - Goal: Add tests for config layering
-  - Files: .opencode/tool/some-tool.ts, tests/some-tool.test.ts
+  - Files: .opencode/tools/some-tool.ts, tests/some-tool.test.ts
   - Checks: bun test OK; tsc OK
   - Next: edge case for missing dirs
 
@@ -81,7 +81,7 @@ Use this same prompt every loop; only update the checklist/progress section.
 **ITERATION RULES:**
 
 - Make one small, reviewable change
-- Run: `bun .opencode/tool/verify-loop.ts --type auto` (or explain why not)
+- Run: `bun .opencode/tools/verify-loop.ts --type auto` (or explain why not)
 - Update `progress.txt`
 - Output a STATUS UPDATE (checkpoint-based)
 - If complete: print `<promise>COMPLETE</promise>`

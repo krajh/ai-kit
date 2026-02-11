@@ -18,11 +18,11 @@ description: Definition-of-Done workflow using `verify-loop` plus Bun formatting
 - Format: `bun fmt`
 - Typecheck (best-effort): `bunx tsc --noEmit --pretty false`
 - Tests: `bun test`
-- Unified gate: `bun .opencode/tool/verify-loop.ts --type auto`
+- Unified gate: `bun .opencode/tools/verify-loop.ts --type auto`
 
 ## Work-type rules
 
-### Tool (`.opencode/tool/*.ts`)
+### Tool (`.opencode/tools/*.ts`)
 
 Must pass:
 
@@ -32,7 +32,7 @@ Must pass:
 - Manual run of the tool
 - Output tags: `[OK]`, `[!]`, `[X]`
 
-### Plugin (`plugin/*.ts`)
+### Plugin (`plugins/*.ts`)
 
 Must pass:
 
@@ -51,7 +51,7 @@ Must pass:
 ## Test placement rules (critical)
 
 - ✅ Put tests in `/tests/`
-- ❌ Do not put `*.test.ts` / `*.spec.ts` in `/plugin/`
+- ❌ Do not put `*.test.ts` / `*.spec.ts` in `/plugins/`
 
 ## Test design patterns (cost-conscious)
 
@@ -69,7 +69,7 @@ Must pass:
 
 ## Example workflow (before reporting "COMPLETED")
 
-1. Run `bun .opencode/tool/verify-loop.ts --type auto`
+1. Run `bun .opencode/tools/verify-loop.ts --type auto`
 2. If fail: fix issues, re-run
 3. Report exact output summary (no huge dumps), e.g.:
    - `bun fmt: OK; tsc: OK; bun test: OK; verify-loop: OK`

@@ -24,7 +24,7 @@ async function looksLikeKitRoot(dir: string): Promise<boolean> {
   try {
     const { stat } = await import("node:fs/promises");
     const required = [
-      join(dir, "agent"),
+      join(dir, "agents"),
       join(dir, "protocols"),
       join(dir, "opencode.json"),
     ];
@@ -59,9 +59,9 @@ describe("ai-kit-updater looksLikeKitRoot (essentials-only tarball)", () => {
     const testDir = join(tmpdir(), `ai-kit-test-${Date.now()}`);
     try {
       // Create essentials-only structure (matching new tarball spec)
-      await mkdir(join(testDir, "agent"), { recursive: true });
+      await mkdir(join(testDir, "agents"), { recursive: true });
       await mkdir(join(testDir, "protocols"), { recursive: true });
-      await mkdir(join(testDir, "plugin"), { recursive: true });
+      await mkdir(join(testDir, "plugins"), { recursive: true });
       await mkdir(join(testDir, "skills"), { recursive: true });
 
       // Create required files
@@ -84,7 +84,7 @@ describe("ai-kit-updater looksLikeKitRoot (essentials-only tarball)", () => {
     }
   });
 
-  it("rejects incomplete tarball (missing agent/)", async () => {
+  it("rejects incomplete tarball (missing agents/)", async () => {
     const testDir = join(tmpdir(), `ai-kit-test-${Date.now()}`);
     try {
       await mkdir(join(testDir, "protocols"), { recursive: true });
@@ -100,7 +100,7 @@ describe("ai-kit-updater looksLikeKitRoot (essentials-only tarball)", () => {
   it("rejects incomplete tarball (missing protocols/)", async () => {
     const testDir = join(tmpdir(), `ai-kit-test-${Date.now()}`);
     try {
-      await mkdir(join(testDir, "agent"), { recursive: true });
+      await mkdir(join(testDir, "agents"), { recursive: true });
       await writeFile(join(testDir, "opencode.json"), "{}");
 
       const result = await looksLikeKitRoot(testDir);
@@ -113,7 +113,7 @@ describe("ai-kit-updater looksLikeKitRoot (essentials-only tarball)", () => {
   it("rejects incomplete tarball (missing opencode.json)", async () => {
     const testDir = join(tmpdir(), `ai-kit-test-${Date.now()}`);
     try {
-      await mkdir(join(testDir, "agent"), { recursive: true });
+      await mkdir(join(testDir, "agents"), { recursive: true });
       await mkdir(join(testDir, "protocols"), { recursive: true });
 
       const result = await looksLikeKitRoot(testDir);

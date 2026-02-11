@@ -54,9 +54,9 @@ jobs:
             -C . \
             opencode.json \
             AGENTS.md \
-            agent \
+            agents \
             skills \
-            plugin \
+            plugins \
             protocols/TOOL_USAGE_GUIDE.md \
             protocols/DELEGATION_PROTOCOLS.md
 

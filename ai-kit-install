@@ -31,8 +31,8 @@ CURRENT_LINK="$TARGET_DIR/current"
 KIT_LINK_ITEMS=(
   "opencode.json"
   "AGENTS.md"
-  "agent"
-  "plugin"
+  "agents"
+  "plugins"
   "protocols"
   "skills"
 )
@@ -526,6 +526,16 @@ activate_version() {
 
   ln -sfn "$version_dir" "$CURRENT_LINK"
   log_ok "Symlink created: $CURRENT_LINK -> $version_dir"
+
+  # Clean up stale symlinks from pre-v0.3.0 directory renames.
+  # (agent -> agents, plugin -> plugins)
+  local -a STALE_LINKS=("agent" "plugin")
+  for old in "${STALE_LINKS[@]}"; do
+    if [ -L "$TARGET_DIR/$old" ]; then
+      rm -f "$TARGET_DIR/$old"
+      log "Removed stale symlink: $TARGET_DIR/$old"
+    fi
+  done
 
   # Expose kit files at ~/.config/opencode/* via symlinks.
   for item in "${KIT_LINK_ITEMS[@]}"; do
