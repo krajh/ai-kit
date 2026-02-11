@@ -352,6 +352,50 @@ Each skill file (`skills/<skill>/SKILL.md`) contains:
 
 Use skills as part of your standard workflow to maintain protocol compliance and quality standards.
 
+## 🧪 Experimental Features
+
+### Auto-Update Configs Plugin
+
+**Status**: Experimental, disabled by default
+
+Automatic daily updates for OpenCode configuration repos.
+
+#### Features
+
+- **Opt-in only**: Disabled by default (`.auto-update-configs.ts`)
+- **Non-destructive**: Skips repos with uncommitted changes
+- **Safe pulls**: Fast-forward only, never force
+- **Configurable**: Environment variables for repos and interval
+- **Silent operation**: Reports only on updates or issues
+
+#### Enable
+
+```bash
+cd ~/.config/opencode/plugins
+mv .auto-update-configs.ts auto-update-configs.ts
+# Restart OpenCode
+```
+
+#### Configuration
+
+```bash
+export AUTO_UPDATE_REPOS="~/.config/opencode,~/ai-kit"
+export AUTO_UPDATE_INTERVAL_HOURS="24"
+```
+
+#### Documentation
+
+- 📖 Full docs: `docs/AUTO_UPDATE_CONFIGS.md`
+
+#### ⚠️ Experimental Notice
+
+This plugin is **experimental** and disabled by default. Enable only if you:
+- Understand the auto-pull behavior
+- Keep configs in git with clean working trees
+- Want automatic daily updates
+
+---
+
 ## License
 
 Apache License 2.0 - see [LICENSE](LICENSE).
