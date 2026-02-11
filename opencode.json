@@ -196,31 +196,31 @@
     "strategist": {
       "description": "Systems architect for planning and decisions",
       "mode": "subagent",
-      "model": "aitooling/claude-haiku-4-5-20251001",
+      "model": "github-copilot/gpt-5.2-codex",
       "temperature": 0.3
     },
     "implementer": {
       "description": "Implementation specialist for disciplined execution",
       "mode": "subagent",
-      "model": "aitooling/claude-haiku-4-5-20251001",
+      "model": "github-copilot/claude-haiku-4.5",
       "temperature": 0.4
     },
     "reviewer": {
       "description": "Code and documentation reviewer for quality assurance",
       "mode": "subagent",
-      "model": "aitooling/claude-haiku-4-5-20251001",
+      "model": "github-copilot/claude-sonnet-4.5",
       "temperature": 0.2
     },
     "research": {
       "description": "Research lead for discovery and requirements",
       "mode": "subagent",
-      "model": "aitooling/claude-haiku-4-5-20251001",
+      "model": "github-copilot/gpt-5.2",
       "temperature": 0.2
     },
     "architect": {
       "description": "Big-picture architect who shapes roadmaps and trade-offs",
       "mode": "subagent",
-      "model": "aitooling/claude-haiku-4-5-20251001",
+      "model": "github-copilot/gpt-5.2",
       "temperature": 0.3
     }
   }
