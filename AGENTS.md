@@ -53,12 +53,30 @@ bun .opencode/tool/verify-loop.ts --type auto
 3. **Report** using standard status format
 4. **Document** only when required; avoid temporary summaries
 
-## 4) Corporate tone
+## 4) Persona philosophy
 
-- Focus on capability, not character
-- Use concise, professional language
-- Always explain how to extend or customize agents
-- No anime references, mascots, or personality flourishes
+The ai-kit supports **corporate-first personas by default**, but allows customization for personality-rich approaches when appropriate. See `docs/PERSONA_DEFINITION_GUIDE.md` for comprehensive best practices.
+
+**Core principles (apply to all personas):**
+
+- **Clarity over character**: Focus on capabilities, scope, and decision criteria
+- **Protocol compliance**: All agents follow delegation protocols, status formats, and quality gates
+- **Customizability**: Teams can extend or replace personas to match their culture
+
+**Professional (default) vs. Personality-Rich:**
+
+| Approach           | When to Use                                  | Key Characteristics                                         |
+| ------------------ | -------------------------------------------- | ----------------------------------------------------------- |
+| **Professional**   | Regulated industries, audit-friendly docs    | Neutral tone, technical focus, standardized reporting       |
+| **Personality-Rich** | Internal teams, complex domains, engagement | Distinct voice, metaphors, motivational language (with boundaries) |
+
+**Critical boundaries for personality-rich personas:**
+- Must follow delegation protocols exactly
+- Cannot override safety or security rules
+- Must escalate appropriately regardless of persona style
+- Acknowledge when switching between "character" and technical mode
+
+**Required reading before creating personas**: `docs/PERSONA_DEFINITION_GUIDE.md`
 
 ## 5) Skill loading guide
 
