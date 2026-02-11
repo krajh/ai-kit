@@ -1,5 +1,5 @@
 ```
- ___  _____      _   _______ _____
+  ___  _____      _   _______ _____
  / _ \|_   _|    | | / /_   _|_   _|
 / /_\ \ | |______| |/ /  | |   | |
 |  _  | | |______|    \  | |   | |
@@ -48,7 +48,7 @@ curl -fsSL "https://github.com/krajh/ai-kit/releases/latest/download/install" | 
 
 ### Manual (download installer)
 
-1. **Pick a release**: https://github.com/krajh/ai-kit/releases
+1. **Pick a release**: <https://github.com/krajh/ai-kit/releases>
 2. **Download the installer** and run it:
 
 ```bash
@@ -64,13 +64,13 @@ chmod +x ai-kit-install
 
 The installer supports the following commands:
 
-| Command    | Description                                                                                                                 |
-| ---------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `install`  | Fresh installation of OpenCode configuration to `~/.config/opencode`.                                                       |
-| `update`   | Update an existing installation. Validates install state, archives the prior config, and applies the latest files in place. |
-| `status`   | Check the current installation status and version.                                                                          |
-| `rollback` | Restore the previous configuration from backup.                                                                             |
-| `dry-run`  | Validates prerequisites, simulates an install, and reports the actions without touching `~/.config/opencode`.               |
+| Command    | Description                                                                                                                          |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `install`  | Fresh installation of OpenCode configuration to `~/.config/opencode`.                                                                |
+| `update`   | Update an existing installation. Detects your personalisations, applies the new version, and reapplies your changes via 3-way merge. |
+| `status`   | Check the current installation status and version.                                                                                   |
+| `rollback` | Restore the previous configuration from backup.                                                                                      |
+| `dry-run`  | Validates prerequisites, simulates an install, and reports the actions without touching `~/.config/opencode`.                        |
 
 After installation, the installer is also available at:
 
@@ -188,10 +188,75 @@ SKIP_VERIFY=true ./ai-kit-install install
 - **Automatic checks**: the `ai-kit-updater` plugin checks GitHub Releases at most once per 24h
 - **Staging**: new versions are downloaded and extracted into `~/.config/opencode/staging/<tag>/`
 - **Apply on restart**: on the next OpenCode start, the updater moves the staged version into `~/.config/opencode/versions/<tag>/` and flips `~/.config/opencode/current`
+- **Personalisation safety**: any files you've modified or added inside the active version directory are automatically detected, stashed, and reapplied after the update using a 3-way merge (see [Personalisation Safety](#personalisation-safety) below)
 - **Preservation**: Your user-owned files are always preserved:
   - `~/.config/opencode/.env` (environment variables)
   - `~/.config/opencode/local/` (custom configurations)
 - **Rollback**: previous installs are archived in `~/.config/opencode.backups/` for recovery
+
+### Personalisation Safety
+
+Starting with the version that introduces checksum tracking, ai-kit protects your in-place customisations across updates.
+
+#### How it works
+
+1. **Checksum manifest** — On every `install` or `update`, ai-kit writes a `.ai-kit-checksums` file inside the version directory. It records the SHA-256 hash of every file as it was shipped, giving the updater a reference point for "original" content.
+
+2. **Modification detection** — Before applying a new version, the updater compares every file in the active version directory against its stored checksum. Files with a different hash are flagged as **modified** (`M`); files that exist on disk but aren't in the manifest are flagged as **user-added** (`A`).
+
+3. **Stash** — Detected modifications are copied to a temporary stash directory, preserving their relative paths.
+
+4. **3-way merge** — After the new version is extracted, each stashed file is compared against both the old original and the new version:
+
+   | Old original       | New version        | User's version | Result                                                        |
+   | ------------------ | ------------------ | -------------- | ------------------------------------------------------------- |
+   | Same as new        | —                  | Different      | ✅ User's version applied (only the user changed it)          |
+   | Different from new | —                  | Different      | ⚠️ **Conflict** — both upstream and the user changed the file |
+   | N/A (user-added)   | File doesn't exist | —              | ✅ User's file copied into the new version                    |
+   | N/A (user-added)   | File exists        | —              | ⚠️ **Conflict** — upstream added a file with the same name    |
+
+5. **Conflict resolution**:
+   - **Interactive terminal** (manual `./ai-kit-install update`): you're prompted per conflict with `[k]eep yours / [o]verwrite with new / [d]iff / [s]kip`.
+   - **Non-interactive** (plugin auto-update, piped input, `--no-prompt`): the new upstream version wins, and your version is saved alongside it as `<filename>.user` so you can manually reconcile later.
+
+#### Example
+
+```
+$ ./ai-kit-install update
+
+Detecting user modifications...
+  M ./agents/implementer.md
+  A ./skills/my-custom-skill/SKILL.md
+Stashing 2 modified files...
+Downloading v0.3.2...
+Reapplying personalisations...
+  ✓ Applied: ./skills/my-custom-skill/SKILL.md (user-added)
+  ⚠ Conflict: ./agents/implementer.md (both user and upstream changed)
+    [k]eep yours / [o]verwrite with new / [d]iff / [s]kip? k
+  ✓ Kept user version: ./agents/implementer.md
+Personalisation complete: 1 applied, 1 conflict resolved.
+```
+
+#### Pre-feature upgrades
+
+If you're upgrading from a version that predates checksum tracking, the updater will print a one-time warning:
+
+```
+[!] No checksums manifest found (pre-feature version).
+    Your modifications cannot be detected this time.
+    Future updates will support personalisation safety.
+```
+
+After this upgrade completes, the new version's checksums are written, and all subsequent updates will have full personalisation protection.
+
+#### Files that are always preserved (outside the version directory)
+
+These live outside the version directory and are never touched by updates:
+
+| Path                        | Purpose                                    |
+| --------------------------- | ------------------------------------------ |
+| `~/.config/opencode/.env`   | Environment variables (AITOOLINGKEY, etc.) |
+| `~/.config/opencode/local/` | User-owned local customisations            |
 
 ## Customization
 
@@ -217,6 +282,7 @@ SKIP_VERIFY=true ./ai-kit-install install
 - ✅ Embed delegation protocol requirements (non-negotiable)
 
 **For detailed guidance**, including examples, anti-patterns, and testing strategies, see:
+
 - **`docs/PERSONA_DEFINITION_GUIDE.md`** - Comprehensive persona definition guide
 
 ## Directory Structure
@@ -232,6 +298,7 @@ SKIP_VERIFY=true ./ai-kit-install install
 ├── skills -> current/skills
 ├── versions/                      # Installed versions
 │   └── v0.1.7/                    # Kit contents (agents/protocols/plugins/etc.)
+│       └── .ai-kit-checksums      # SHA-256 manifest of shipped files (personalisation tracking)
 ├── staging/                       # Downloaded+extracted updates (applied on restart)
 ├── state/                         # Updater state (last check, staged tag)
 ├── bin/                           # Tooling used by the installer/updater (e.g., cosign)
@@ -242,7 +309,7 @@ SKIP_VERIFY=true ./ai-kit-install install
 
 ## Usage
 
-### Configuration is active after installation. Select agents by technical need:
+### Configuration is active after installation. Select agents by technical need
 
 ```bash
 # For system architecture

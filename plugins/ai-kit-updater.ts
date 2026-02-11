@@ -1,6 +1,18 @@
 import type { Plugin } from "@opencode-ai/plugin";
 
-import { lstat, mkdir, readFile, rename, rm, stat, symlink, unlink, writeFile } from "node:fs/promises";
+import {
+  lstat,
+  mkdir,
+  readdir,
+  readFile,
+  rename,
+  rm,
+  stat,
+  symlink,
+  unlink,
+  writeFile,
+} from "node:fs/promises";
+import { createHash } from "node:crypto";
 import { execFile } from "node:child_process";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
@@ -33,6 +45,7 @@ const KIT_LINK_ITEMS = [
 ] as const;
 
 const CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000;
+const CHECKSUMS_FILE = ".ai-kit-checksums";
 
 const GITHUB_RELEASE_LATEST_API =
   "https://api.github.com/repos/krajh/ai-kit/releases/latest";
@@ -79,6 +92,166 @@ interface FetchResponseLike {
   ok: boolean;
   json(): Promise<unknown>;
   arrayBuffer(): Promise<ArrayBuffer>;
+}
+
+interface ChecksumEntry {
+  path: string;
+  hash: string;
+}
+
+interface UserModification {
+  type: "M" | "A";
+  relativePath: string;
+}
+
+interface ReapplyResult {
+  applied: string[];
+  conflicts: string[];
+}
+
+// ---------------------------------------------------------------------------
+// Personalisation-safe update helpers
+// ---------------------------------------------------------------------------
+
+async function walkDirectory(dir: string, prefix = ""): Promise<string[]> {
+  const entries = await readdir(dir, { withFileTypes: true });
+  const results: string[] = [];
+  for (const entry of entries) {
+    const relPath = prefix ? `${prefix}/${entry.name}` : entry.name;
+    if (entry.isDirectory()) {
+      results.push(...(await walkDirectory(join(dir, entry.name), relPath)));
+    } else if (entry.isFile() && entry.name !== CHECKSUMS_FILE) {
+      results.push(relPath);
+    }
+  }
+  return results;
+}
+
+async function computeFileHash(filePath: string): Promise<string> {
+  const content = await readFile(filePath);
+  return createHash("sha256").update(content).digest("hex");
+}
+
+async function computeChecksums(versionDir: string): Promise<void> {
+  const files = await walkDirectory(versionDir);
+  const entries: ChecksumEntry[] = [];
+  for (const relPath of files) {
+    const hash = await computeFileHash(join(versionDir, relPath));
+    entries.push({ path: relPath, hash });
+  }
+  await writeFile(
+    join(versionDir, CHECKSUMS_FILE),
+    JSON.stringify(entries, null, 2),
+  );
+}
+
+async function readChecksums(
+  versionDir: string,
+): Promise<ChecksumEntry[] | null> {
+  try {
+    const content = await readFile(join(versionDir, CHECKSUMS_FILE), "utf-8");
+    return JSON.parse(content) as ChecksumEntry[];
+  } catch {
+    return null;
+  }
+}
+
+async function detectUserModifications(
+  versionDir: string,
+): Promise<UserModification[]> {
+  const checksums = await readChecksums(versionDir);
+  if (!checksums) return [];
+
+  const modifications: UserModification[] = [];
+  const knownPaths = new Set(checksums.map((e) => e.path));
+
+  for (const entry of checksums) {
+    try {
+      const currentHash = await computeFileHash(join(versionDir, entry.path));
+      if (currentHash !== entry.hash) {
+        modifications.push({ type: "M", relativePath: entry.path });
+      }
+    } catch {
+      // File deleted by user — skip
+    }
+  }
+
+  const currentFiles = await walkDirectory(versionDir);
+  for (const relPath of currentFiles) {
+    if (!knownPaths.has(relPath)) {
+      modifications.push({ type: "A", relativePath: relPath });
+    }
+  }
+
+  return modifications;
+}
+
+async function stashModifications(
+  versionDir: string,
+  stashDir: string,
+  modifications: UserModification[],
+): Promise<void> {
+  await mkdir(stashDir, { recursive: true });
+  for (const mod of modifications) {
+    const src = join(versionDir, mod.relativePath);
+    const dst = join(stashDir, mod.relativePath);
+    await mkdir(dirname(dst), { recursive: true });
+    const content = await readFile(src);
+    await writeFile(dst, content);
+  }
+}
+
+async function reapplyModifications(
+  oldChecksums: ChecksumEntry[],
+  newVersionDir: string,
+  stashDir: string,
+  modifications: UserModification[],
+): Promise<ReapplyResult> {
+  const oldHashMap = new Map(oldChecksums.map((e) => [e.path, e.hash]));
+  const applied: string[] = [];
+  const conflicts: string[] = [];
+
+  for (const mod of modifications) {
+    const stashedFile = join(stashDir, mod.relativePath);
+    const newFile = join(newVersionDir, mod.relativePath);
+
+    let existsInNew = true;
+    try {
+      await stat(newFile);
+    } catch {
+      existsInNew = false;
+    }
+
+    if (!existsInNew) {
+      await mkdir(dirname(newFile), { recursive: true });
+      const content = await readFile(stashedFile);
+      await writeFile(newFile, content);
+      applied.push(mod.relativePath);
+      continue;
+    }
+
+    if (mod.type === "A") {
+      const content = await readFile(stashedFile);
+      await writeFile(`${newFile}.user`, content);
+      conflicts.push(mod.relativePath);
+      continue;
+    }
+
+    const oldHash = oldHashMap.get(mod.relativePath);
+    const newHash = await computeFileHash(newFile);
+
+    if (oldHash && oldHash === newHash) {
+      const content = await readFile(stashedFile);
+      await writeFile(newFile, content);
+      applied.push(mod.relativePath);
+    } else {
+      const content = await readFile(stashedFile);
+      await writeFile(`${newFile}.user`, content);
+      conflicts.push(mod.relativePath);
+    }
+  }
+
+  return { applied, conflicts };
 }
 
 function shouldCheck(lastCheckTime: number): boolean {
@@ -291,6 +464,31 @@ async function applyStagedUpdate(tag: string): Promise<boolean> {
   const versionPath = join(VERSIONS_DIR, tag);
 
   try {
+    // ── Detect personalisations in current version ──
+    let modifications: UserModification[] = [];
+    let oldChecksums: ChecksumEntry[] | null = null;
+    let stashDir: string | null = null;
+    let currentVersionDir: string | null = null;
+
+    try {
+      const { realpath } = await import("node:fs/promises");
+      currentVersionDir = await realpath(CURRENT_LINK);
+    } catch {
+      // No current version symlink — fresh install
+    }
+
+    if (currentVersionDir) {
+      oldChecksums = await readChecksums(currentVersionDir);
+      modifications = await detectUserModifications(currentVersionDir);
+
+      if (modifications.length > 0 && oldChecksums) {
+        const { tmpdir } = await import("node:os");
+        stashDir = join(tmpdir(), `ai-kit-stash-${Date.now()}`);
+        await stashModifications(currentVersionDir, stashDir, modifications);
+      }
+    }
+
+    // ── Move staged → versions ──
     try {
       await stat(stagedPath);
       await mkdir(VERSIONS_DIR, { recursive: true });
@@ -301,6 +499,26 @@ async function applyStagedUpdate(tag: string): Promise<boolean> {
 
     if (!(await looksLikeKitRoot(versionPath))) return false;
 
+    // ── Compute checksums for new version (before reapply) ──
+    await computeChecksums(versionPath);
+
+    // ── Reapply personalisations ──
+    if (stashDir && oldChecksums && modifications.length > 0) {
+      try {
+        await reapplyModifications(
+          oldChecksums,
+          versionPath,
+          stashDir,
+          modifications,
+        );
+      } catch {
+        // Non-interactive: don't block update on reapply failure
+      } finally {
+        await rm(stashDir, { recursive: true, force: true }).catch(() => {});
+      }
+    }
+
+    // ── Flip symlink ──
     try {
       await unlink(CURRENT_LINK);
     } catch {
@@ -451,3 +669,16 @@ const AiKitUpdaterPlugin: Plugin = async () => {
 };
 
 export default AiKitUpdaterPlugin;
+
+// Named exports for testing
+export {
+  walkDirectory,
+  computeFileHash,
+  computeChecksums,
+  readChecksums,
+  detectUserModifications,
+  stashModifications,
+  reapplyModifications,
+};
+
+export type { ChecksumEntry, UserModification, ReapplyResult };

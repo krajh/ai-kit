@@ -6,8 +6,8 @@ set -euo pipefail
 # WSL/Linux/macOS with cosign keyless verification
 
 show_logo() {
-  cat << 'EOF'
- ___  _____      _   _______ _____ 
+  cat <<'EOF'
+  ___  _____      _   _______ _____ 
  / _ \|_   _|    | | / /_   _|_   _|
 / /_\ \ | |______| |/ /  | |   | |  
 |  _  | | |______|    \  | |   | |  
@@ -25,6 +25,7 @@ TIMESTAMP="$(date -u +%Y%m%d%H%M%SZ)"
 BACKUP_PATH="$BACKUP_ROOT/ai-kit-$TIMESTAMP"
 VERSIONS_DIR="$TARGET_DIR/versions"
 CURRENT_LINK="$TARGET_DIR/current"
+CHECKSUMS_FILE=".ai-kit-checksums"
 
 # Top-level items that OpenCode reads from ~/.config/opencode.
 # We keep the real content in versions/<tag>/ and expose it via symlinks.
@@ -54,26 +55,26 @@ NO_PROMPT=false
 POSITIONAL=()
 while [ $# -gt 0 ]; do
   case "$1" in
-    -v|--verbose)
-      VERBOSE=true
-      shift
-      ;;
-    -h|--help|help)
-      POSITIONAL=("help")
-      shift
-      ;;
-    --no-prompt)
-      NO_PROMPT=true
-      shift
-      ;;
-    --)
-      shift
-      break
-      ;;
-    *)
-      POSITIONAL+=("$1")
-      shift
-      ;;
+  -v | --verbose)
+    VERBOSE=true
+    shift
+    ;;
+  -h | --help | help)
+    POSITIONAL=("help")
+    shift
+    ;;
+  --no-prompt)
+    NO_PROMPT=true
+    shift
+    ;;
+  --)
+    shift
+    break
+    ;;
+  *)
+    POSITIONAL+=("$1")
+    shift
+    ;;
   esac
 done
 
@@ -144,9 +145,9 @@ write_env_key() {
   # Copy existing .env while removing any prior entries for this key
   while IFS= read -r line || [ -n "$line" ]; do
     case "$line" in
-      "${key_name}"=*)
-        continue
-        ;;
+    "${key_name}"=*)
+      continue
+      ;;
     esac
     printf "%s\n" "$line" >>"$tmp"
   done <"$env_file"
@@ -269,11 +270,11 @@ ensure_aitoolingkey() {
 # Detect OS and architecture
 detect_platform() {
   local os kernel arch
-  
+
   os="$(uname -s)"
   kernel="$(uname -r)"
   arch="$(uname -m)"
-  
+
   # Check for WSL
   if grep -qi microsoft /proc/version 2>/dev/null || grep -qi wsl /proc/version 2>/dev/null; then
     log_ok "Detected WSL environment"
@@ -287,45 +288,45 @@ detect_platform() {
   else
     die "This installer only supports WSL, Linux, and macOS. Detected: $os"
   fi
-  
+
   # Check architecture
   if [ "$arch" != "x86_64" ] && [ "$arch" != "amd64" ] && [ "$arch" != "arm64" ]; then
     die "This installer only supports x86_64/amd64/arm64 architecture. Detected: $arch"
   fi
-  
+
   # Normalize architecture for cosign binary selection
   if [ "$arch" = "x86_64" ] || [ "$arch" = "amd64" ]; then
     PLATFORM_ARCH="amd64"
   elif [ "$arch" = "arm64" ]; then
     PLATFORM_ARCH="arm64"
   fi
-  
+
   log "Platform: $os $kernel ($arch)"
 }
 
 # Check prerequisites
 check_prerequisites() {
   local missing=()
-  
+
   for cmd in curl tar mkdir; do
     if ! command -v "$cmd" >/dev/null 2>&1; then
       missing+=("$cmd")
     fi
   done
-  
+
   if [ ${#missing[@]} -gt 0 ]; then
     die "Missing required commands: ${missing[*]}. Please install them and try again."
   fi
-  
+
   log_ok "All prerequisites found"
 }
 
 # Download cosign binary if needed
 ensure_cosign() {
   local cosign_bin cosign_url cosign_binary_name
-  
+
   cosign_bin="$TARGET_DIR/bin/cosign"
-  
+
   # Determine the correct cosign binary based on platform
   cosign_binary_name="cosign-${PLATFORM_OS}-${PLATFORM_ARCH}"
   cosign_url="https://github.com/sigstore/cosign/releases/download/${COSIGN_VERSION}/${cosign_binary_name}"
@@ -338,14 +339,14 @@ ensure_cosign() {
   mkdir -p "$TARGET_DIR/bin"
   local tmp
   tmp="$(mktemp)"
-  
+
   log "Downloading cosign ${COSIGN_VERSION} for ${PLATFORM_OS}/${PLATFORM_ARCH}..."
-  
+
   if ! curl -fsSL "$cosign_url" -o "$tmp"; then
     rm -f "$tmp"
     die "Failed to download cosign from $cosign_url"
   fi
-  
+
   # Note: SHA256 verification skipped for non-linux platforms
   # The pinned hash (COSIGN_SHA256) is specifically for cosign-linux-amd64
   if [ "$PLATFORM_OS" = "linux" ] && [ "$PLATFORM_ARCH" = "amd64" ]; then
@@ -373,7 +374,7 @@ ensure_cosign() {
   fi
 
   mv "$tmp" "$cosign_bin"
-  
+
   log_ok "cosign ${COSIGN_VERSION} ready"
   echo "$cosign_bin"
 }
@@ -381,22 +382,22 @@ ensure_cosign() {
 # Verify tarball signature with cosign keyless
 verify_tarball() {
   local tarball="$1" bundle="$2" tag="$3" cosign_bin expected_identity
-  
+
   if [ "$DRY_RUN" = true ]; then
     log "Dry run: would verify signature for $tarball"
     return 0
   fi
-  
+
   if [ "$SKIP_VERIFY" = "true" ]; then
     log_warn "Signature verification skipped (SKIP_VERIFY=true)"
     return 0
   fi
-  
+
   log "Verifying tarball signature (cosign keyless bundle)..."
   cosign_bin="$(ensure_cosign)"
 
   expected_identity="${COSIGN_IDENTITY_PREFIX}${tag}"
-  
+
   if ! "$cosign_bin" verify-blob \
     --bundle "$bundle" \
     --certificate-identity "$expected_identity" \
@@ -404,7 +405,7 @@ verify_tarball() {
     "$tarball" >/dev/null 2>&1; then
     die "Tarball signature verification failed for $tarball. Set SKIP_VERIFY=true to skip verification."
   fi
-  
+
   log_ok "Tarball signature verified"
 }
 
@@ -420,20 +421,20 @@ validate_tarball_entries() {
 # Download release artifacts
 download_release() {
   local tag version_dir manifest_url tarball_url
-  
+
   # Determine tag (use latest if not specified)
   tag="${1:-latest}"
-  
+
   if [ "$tag" = "latest" ]; then
     log "Fetching latest release information..."
-    
+
     # Try to fetch latest release tag from GitHub API
     if [ -n "${GITHUB_TOKEN:-}" ]; then
       tag="$(curl -fsSL -H "Authorization: Bearer \"$GITHUB_TOKEN\"" https://api.github.com/repos/krajh/ai-kit/releases/latest 2>/dev/null | grep '"tag_name"' | head -1 | cut -d'"' -f4)"
     else
       tag="$(curl -fsSL https://api.github.com/repos/krajh/ai-kit/releases/latest 2>/dev/null | grep '"tag_name"' | head -1 | cut -d'"' -f4)"
     fi
-    
+
     # If API call failed, try using the Atom feed (more stable than HTML scraping)
     if [ -z "$tag" ]; then
       log_warn "GitHub API unavailable, trying releases feed..."
@@ -444,27 +445,27 @@ download_release() {
         tag=""
       fi
     fi
-    
+
     if [ -z "$tag" ]; then
       die "Could not determine latest release tag. Please specify a version explicitly (e.g., ./ai-kit-install install v0.1.3)"
     fi
   fi
-  
+
   log "Using release tag: $tag"
-  
+
   version_dir="$VERSIONS_DIR/$tag"
   mkdir -p "$version_dir"
-  
+
   manifest_url="https://github.com/krajh/ai-kit/releases/download/${tag}/manifest.json"
   tarball_url="https://github.com/krajh/ai-kit/releases/download/${tag}/ai-kit-${tag}.tar.gz"
   local bundle_url
   bundle_url="https://github.com/krajh/ai-kit/releases/download/${tag}/ai-kit-${tag}.bundle.json"
-  
+
   log "Downloading manifest from $manifest_url..."
   if ! curl -fsSL "$manifest_url" -o "$version_dir/manifest.json"; then
     die "Failed to download manifest"
   fi
-  
+
   log "Downloading tarball from $tarball_url..."
   if ! curl -fsSL "$tarball_url" -o "$version_dir/ai-kit-${tag}.tar.gz"; then
     die "Failed to download tarball"
@@ -482,7 +483,7 @@ download_release() {
   if [ -n "$expected_sha" ] && [ "$expected_sha" != "$actual_sha" ]; then
     die "Tarball sha256 mismatch"
   fi
-  
+
   log_ok "Release artifacts downloaded to $version_dir"
   echo "$tag"
 }
@@ -490,14 +491,14 @@ download_release() {
 # Extract tarball to version directory
 extract_tarball() {
   local tag="$1" version_dir
-  
+
   version_dir="$VERSIONS_DIR/$tag"
-  
+
   if [ "$DRY_RUN" = true ]; then
     log "Dry run: would extract tarball to $version_dir"
     return 0
   fi
-  
+
   verify_tarball "$version_dir/ai-kit-${tag}.tar.gz" "$version_dir/ai-kit-${tag}.bundle.json" "$tag"
   validate_tarball_entries "$version_dir/ai-kit-${tag}.tar.gz"
 
@@ -511,7 +512,7 @@ extract_tarball() {
     "$version_dir/ai-kit-${tag}.tar.gz" \
     "$version_dir/ai-kit-${tag}.bundle.json" \
     "$version_dir/manifest.json" 2>/dev/null || true
-  
+
   log_ok "Tarball extracted"
 }
 
@@ -552,39 +553,39 @@ activate_version() {
 # Preserve .env and local/ directories
 preserve_local_state() {
   local backup_env backup_local
-  
+
   if [ ! -d "$TARGET_DIR" ]; then
     return 0
   fi
-  
+
   backup_env="$(mktemp)"
   backup_local="$(mktemp -d)"
-  
+
   if [ -f "$TARGET_DIR/.env" ]; then
     log "Preserving .env file..."
     cp "$TARGET_DIR/.env" "$backup_env"
   fi
-  
+
   if [ -d "$TARGET_DIR/local" ]; then
     log "Preserving local/ directory..."
     cp -r "$TARGET_DIR/local" "$backup_local/"
   fi
-  
+
   echo "$backup_env:$backup_local"
 }
 
 # Restore .env and local/ directories
 restore_local_state() {
   local backup_info="$1" backup_env backup_local
-  
+
   IFS=':' read -r backup_env backup_local <<<"$backup_info"
-  
+
   if [ -f "$backup_env" ] && [ -s "$backup_env" ]; then
     log "Restoring .env file..."
     cp "$backup_env" "$TARGET_DIR/.env"
     rm -f "$backup_env"
   fi
-  
+
   if [ -d "$backup_local/local" ]; then
     log "Restoring local/ directory..."
     cp -r "$backup_local/local" "$TARGET_DIR/"
@@ -592,32 +593,262 @@ restore_local_state() {
   fi
 }
 
+# ---------------------------------------------------------------------------
+# Personalisation-safe update helpers
+# ---------------------------------------------------------------------------
+
+# Cross-platform SHA256 helper (Linux: sha256sum, macOS: shasum -a 256)
+file_sha256() {
+  local file="$1"
+  if command -v sha256sum >/dev/null 2>&1; then
+    sha256sum "$file" | awk '{print $1}'
+  elif command -v shasum >/dev/null 2>&1; then
+    shasum -a 256 "$file" | awk '{print $1}'
+  else
+    die "Neither sha256sum nor shasum found"
+  fi
+}
+
+# Compute SHA256 checksums of all files in a version directory and store them.
+# Called immediately after extraction so the checksums reflect the original
+# kit state *before* any user personalisation.
+compute_checksums() {
+  local version_dir="$1"
+  local checksums_file="$version_dir/$CHECKSUMS_FILE"
+
+  if [ "$DRY_RUN" = true ]; then
+    log "Dry run: would compute checksums for $version_dir"
+    return 0
+  fi
+
+  # Generate relative-path checksums (one per file, excluding the manifest itself)
+  (
+    cd "$version_dir" || exit 1
+    find . -type f ! -name "$CHECKSUMS_FILE" -print0 |
+      sort -z |
+      while IFS= read -r -d '' f; do
+        printf "%s  %s\n" "$(file_sha256 "$f")" "$f"
+      done
+  ) >"$checksums_file"
+
+  log_ok "Checksums manifest written ($(wc -l <"$checksums_file") files)"
+}
+
+# Compare current version files against stored checksums.
+# Outputs lines:  M <relpath>  (modified)   A <relpath>  (added by user)
+# Returns 0 if personalised files were found, 1 otherwise.
+detect_user_modifications() {
+  local version_dir="$1"
+  local checksums_file="$version_dir/$CHECKSUMS_FILE"
+
+  if [ ! -f "$checksums_file" ]; then
+    log_warn "No checksums manifest found in current version."
+    log_warn "Cannot detect personalisations (version predates this feature)."
+    return 1
+  fi
+
+  local found=false
+
+  # Check each tracked file for modification
+  while IFS= read -r line; do
+    [ -z "$line" ] && continue
+    local expected_hash file_rel
+    expected_hash="${line%%  *}"
+    file_rel="${line#*  }"
+    local file_abs="$version_dir/$file_rel"
+
+    if [ ! -f "$file_abs" ]; then
+      # User deleted a tracked file — note but don't stash
+      continue
+    fi
+
+    local actual_hash
+    actual_hash="$(file_sha256 "$file_abs")"
+    if [ "$expected_hash" != "$actual_hash" ]; then
+      printf "M %s\n" "$file_rel"
+      found=true
+    fi
+  done <"$checksums_file"
+
+  # Detect user-added files (not in the original checksums)
+  (
+    cd "$version_dir" || exit 1
+    find . -type f ! -name "$CHECKSUMS_FILE" -print0 |
+      sort -z |
+      while IFS= read -r -d '' f; do
+        if ! grep -qF "  $f" "$checksums_file"; then
+          printf "A %s\n" "$f"
+          found=true
+        fi
+      done
+  )
+
+  if [ "$found" = true ]; then
+    return 0
+  fi
+  return 1
+}
+
+# Copy user-modified/added files into a temporary stash directory.
+stash_modifications() {
+  local version_dir="$1"
+  local stash_dir="$2"
+
+  mkdir -p "$stash_dir"
+
+  while IFS= read -r line; do
+    [ -z "$line" ] && continue
+    local type file_rel
+    type="${line%% *}"
+    file_rel="${line#* }"
+    local src="$version_dir/$file_rel"
+    local dst="$stash_dir/$file_rel"
+
+    mkdir -p "$(dirname "$dst")"
+    cp "$src" "$dst"
+
+    case "$type" in
+    M) log "  Stashed modified: $file_rel" ;;
+    A) log "  Stashed added:    $file_rel" ;;
+    esac
+  done
+}
+
+# Prompt the user to resolve a single conflict (interactive).
+# Falls back to keeping the new version with a .user sidecar in non-interactive mode.
+handle_conflict() {
+  local rel_path="$1"
+  local user_file="$2"
+  local new_file="$3"
+
+  if [ "$NO_PROMPT" = true ] || [ ! -t 0 ]; then
+    cp "$user_file" "${new_file}.user"
+    log_warn "  Conflict: $rel_path (kept new version; your version saved as ${rel_path}.user)"
+    return
+  fi
+
+  log_warn "  Conflict: $rel_path"
+  log "  Both your version and the new release modified this file."
+  printf "  [k]eep yours / [o]verwrite with new / [d]iff / [s]kip? " >&2
+
+  while true; do
+    local choice
+    IFS= read -r -n 1 choice
+    printf "\n" >&2
+
+    case "$choice" in
+    k | K)
+      cp "$user_file" "$new_file"
+      log_ok "  Kept your version: $rel_path"
+      break
+      ;;
+    o | O)
+      log_ok "  Using new version: $rel_path"
+      break
+      ;;
+    d | D)
+      if command -v diff >/dev/null 2>&1; then
+        printf "\n" >&2
+        diff --color=auto -u "$new_file" "$user_file" >&2 || true
+        printf "\n" >&2
+      else
+        log_warn "  diff not available"
+      fi
+      printf "  [k]eep yours / [o]verwrite with new / [s]kip? " >&2
+      ;;
+    s | S)
+      cp "$user_file" "${new_file}.user"
+      log "  Skipped: $rel_path (your version saved as ${rel_path}.user)"
+      break
+      ;;
+    *)
+      printf "  [k]eep / [o]verwrite / [d]iff / [s]kip? " >&2
+      ;;
+    esac
+  done
+}
+
+# Reapply stashed personalisations onto the new version directory.
+# Uses a 3-way strategy:
+#   old original == new file  →  only user changed → apply user's version
+#   old original != new file  →  both changed      → conflict
+#   file not in new version   →  user-added         → copy over
+reapply_modifications() {
+  local new_version_dir="$1"
+  local stash_dir="$2"
+  local old_checksums_file="$3"
+
+  local applied=0 conflicts=0 added=0
+
+  while IFS= read -r stashed_file; do
+    local rel_path="${stashed_file#"$stash_dir"/}"
+    local new_file="$new_version_dir/$rel_path"
+
+    if [ ! -f "$new_file" ]; then
+      # File doesn't exist in new version — user-added, just copy it over
+      mkdir -p "$(dirname "$new_file")"
+      cp "$stashed_file" "$new_file"
+      log_ok "  Restored user-added: $rel_path"
+      added=$((added + 1))
+      continue
+    fi
+
+    # File exists in both. Was it also changed in the new release?
+    local old_hash new_hash
+    old_hash="$(grep "  \./${rel_path#./}$" "$old_checksums_file" 2>/dev/null | awk '{print $1}' | head -1)"
+    new_hash="$(file_sha256 "$new_file")"
+
+    if [ -z "$old_hash" ]; then
+      # File didn't exist in old version but exists in both user stash and new
+      handle_conflict "$rel_path" "$stashed_file" "$new_file"
+      conflicts=$((conflicts + 1))
+      continue
+    fi
+
+    if [ "$old_hash" = "$new_hash" ]; then
+      # New release didn't change this file — safe to apply user's version
+      cp "$stashed_file" "$new_file"
+      log_ok "  Applied personalisation: $rel_path"
+      applied=$((applied + 1))
+    else
+      # Both user and new release modified this file — conflict
+      handle_conflict "$rel_path" "$stashed_file" "$new_file"
+      conflicts=$((conflicts + 1))
+    fi
+  done < <(find "$stash_dir" -type f)
+
+  log "Personalisation summary: $applied applied, $added user-added restored, $conflicts conflicts"
+}
+
 # Install fresh configuration
 cmd_install() {
   local tag version_dir
-  
+
   show_logo
   echo ""
   log "Starting fresh installation..."
   detect_platform
   check_prerequisites
-  
+
   if [ -d "$TARGET_DIR" ]; then
     die "Installation directory already exists at $TARGET_DIR. Use 'update' to refresh or remove the directory manually."
   fi
-  
+
   # Download release
   tag="$(download_release "${1:-latest}")"
   version_dir="$VERSIONS_DIR/$tag"
 
   # Extract
   extract_tarball "$tag"
-  
+
+  # Store baseline checksums so future updates can detect personalizations
+  compute_checksums "$version_dir"
+
   mkdir -p "$TARGET_DIR"
   activate_version "$tag"
 
   ensure_aitoolingkey
-  
+
   log_ok "Installation complete at $TARGET_DIR"
   log "Run 'opencode' to begin using the configuration."
 }
@@ -625,17 +856,18 @@ cmd_install() {
 # Update existing installation
 cmd_update() {
   local tag backup_info version_dir
-  
+  local current_version_dir="" stash_dir="" old_checksums_backup="" modifications=""
+
   show_logo
   echo ""
   log "Starting update..."
   detect_platform
   check_prerequisites
-  
+
   if [ ! -d "$TARGET_DIR" ]; then
     die "No existing installation found at $TARGET_DIR. Use 'install' for fresh installation."
   fi
-  
+
   # Backup existing config
   if [ "$DRY_RUN" = false ]; then
     mkdir -p "$BACKUP_ROOT"
@@ -644,27 +876,68 @@ cmd_update() {
   else
     log "Dry run: would archive to $BACKUP_PATH"
   fi
-  
-  # Preserve local state
+
+  # ── Personalisation detection ──────────────────────────────────────
+  if [ -L "$CURRENT_LINK" ]; then
+    current_version_dir="$(readlink -f "$CURRENT_LINK")"
+  fi
+
+  if [ -n "$current_version_dir" ] && [ -f "$current_version_dir/$CHECKSUMS_FILE" ]; then
+    modifications="$(detect_user_modifications "$current_version_dir")"
+    if [ -n "$modifications" ]; then
+      local mod_count
+      mod_count="$(echo "$modifications" | wc -l | tr -d ' ')"
+      log "Detected $mod_count personalised file(s):"
+      echo "$modifications" | while IFS= read -r line; do
+        log "  $line"
+      done
+
+      stash_dir="$(mktemp -d)"
+      stash_modifications "$current_version_dir" "$stash_dir" "$modifications"
+
+      # Keep a copy of the old checksums for 3-way conflict detection
+      old_checksums_backup="$(mktemp)"
+      cp "$current_version_dir/$CHECKSUMS_FILE" "$old_checksums_backup"
+    else
+      log "No personalised files detected — clean update."
+    fi
+  elif [ -n "$current_version_dir" ]; then
+    log_warn "No checksums manifest in current version. Personalisation detection unavailable."
+    log_warn "Your changes (if any) inside the version directory will not be preserved."
+    log_warn "Future updates will support this after this upgrade completes."
+  fi
+
+  # Preserve local state (.env, local/)
   backup_info="$(preserve_local_state)"
-  
+
   # Download release
   tag="$(download_release "${1:-latest}")"
   version_dir="$VERSIONS_DIR/$tag"
 
   # Extract
   extract_tarball "$tag"
-  
+
+  # Store baseline checksums for the new version BEFORE applying personalisations
+  compute_checksums "$version_dir"
+
+  # ── Reapply personalisations ───────────────────────────────────────
+  if [ -n "$stash_dir" ] && [ -d "$stash_dir" ]; then
+    log "Reapplying personalised files to $tag..."
+    reapply_modifications "$version_dir" "$stash_dir" "$old_checksums_backup"
+    rm -rf "$stash_dir"
+    rm -f "$old_checksums_backup"
+  fi
+
   # Activate
   activate_version "$tag"
-  
+
   # Restore local state
   if [ "$DRY_RUN" = false ]; then
     restore_local_state "$backup_info"
   fi
 
   ensure_aitoolingkey
-  
+
   log_ok "Update complete"
   log "Run 'opencode' to use the updated configuration."
 }
@@ -675,16 +948,16 @@ cmd_status() {
     log "No installation found at $TARGET_DIR"
     return 1
   fi
-  
+
   log "Installation status:"
   log "  Location: $TARGET_DIR"
-  
+
   if [ -L "$CURRENT_LINK" ]; then
     local current_version
     current_version="$(readlink "$CURRENT_LINK" | xargs basename)"
     log "  Current version: $current_version"
   fi
-  
+
   if [ -d "$VERSIONS_DIR" ]; then
     log "  Available versions:"
     for version_dir in "$VERSIONS_DIR"/*; do
@@ -695,11 +968,11 @@ cmd_status() {
       fi
     done
   fi
-  
+
   if [ -f "$TARGET_DIR/.env" ]; then
     log_ok ".env file is present"
   fi
-  
+
   if [ -d "$TARGET_DIR/local" ]; then
     log_ok "local/ directory is present"
   fi
@@ -708,19 +981,19 @@ cmd_status() {
 # Rollback to previous version
 cmd_rollback() {
   local latest_backup
-  
+
   if [ ! -d "$BACKUP_ROOT" ]; then
     die "No backups found at $BACKUP_ROOT"
   fi
-  
+
   latest_backup="$(ls -td "$BACKUP_ROOT"/ai-kit-* 2>/dev/null | head -1)"
-  
+
   if [ -z "$latest_backup" ]; then
     die "No backups found"
   fi
-  
+
   log "Rolling back to: $latest_backup"
-  
+
   if [ "$DRY_RUN" = false ]; then
     rm -rf "$TARGET_DIR"
     cp -r "$latest_backup" "$TARGET_DIR"
@@ -734,10 +1007,10 @@ cmd_rollback() {
 cmd_dry_run() {
   DRY_RUN=true
   log "Running in DRY RUN mode - no changes will be made"
-  
+
   detect_platform
   check_prerequisites
-  
+
   if [ -d "$TARGET_DIR" ]; then
     log "Existing installation found at $TARGET_DIR"
     cmd_update "${1:-latest}"
@@ -745,7 +1018,7 @@ cmd_dry_run() {
     log "No existing installation found"
     cmd_install "${1:-latest}"
   fi
-  
+
   log_ok "Dry run complete"
 }
 
@@ -787,35 +1060,45 @@ NOTES:
     export AITOOLINGKEY="your-key" [BASE_URL="https://api.example.com"]
     curl -fsSL ... | bash
 
+PERSONALISATION SAFETY:
+  The 'update' command automatically detects files you've modified or added
+  inside the active version directory. Your changes are stashed, the new
+  version is applied, and your personalisations are reapplied via 3-way merge.
+
+  Interactive mode:  conflicts prompt [k]eep/[o]verwrite/[d]iff/[s]kip
+  Non-interactive:   new version wins; your file saved as <name>.user
+
+  Files outside the version directory (.env, local/) are always preserved.
+
 EOF
 }
 
 # Main entry point
 main() {
   case "${COMMAND}" in
-    install)
-      cmd_install "${TAG:-latest}"
-      ;;
-    update)
-      cmd_update "${TAG:-latest}"
-      ;;
-    status)
-      cmd_status
-      ;;
-    rollback)
-      cmd_rollback
-      ;;
-    dry-run)
-      cmd_dry_run "${TAG:-latest}"
-      ;;
-    -h|--help|help)
-      show_help
-      ;;
-    *)
-      log_error "Unknown command: $COMMAND"
-      show_help
-      exit 1
-      ;;
+  install)
+    cmd_install "${TAG:-latest}"
+    ;;
+  update)
+    cmd_update "${TAG:-latest}"
+    ;;
+  status)
+    cmd_status
+    ;;
+  rollback)
+    cmd_rollback
+    ;;
+  dry-run)
+    cmd_dry_run "${TAG:-latest}"
+    ;;
+  -h | --help | help)
+    show_help
+    ;;
+  *)
+    log_error "Unknown command: $COMMAND"
+    show_help
+    exit 1
+    ;;
   esac
 }
 
