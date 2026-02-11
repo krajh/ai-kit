@@ -197,20 +197,27 @@ SKIP_VERIFY=true ./ai-kit-install install
 
 ### Adding Your Own Agents
 
-1. **Create Agent Definition**: Copy an existing agent definition (e.g., `agent/implementer.md`) as a template
-2. **Edit Agent Profile**:
-   - Focus on technical capabilities and expertise
-   - Use professional, neutral language
-   - Provide clear escalation paths and decision criteria
-3. **Register in Configuration**: Add to `opencode.json` agents list
-4. **Update AGENTS.md**: Document your agent in the agent matrix
+1. **Read the Guide**: See `docs/PERSONA_DEFINITION_GUIDE.md` for comprehensive best practices
+2. **Create Agent Definition**: Copy an existing agent definition (e.g., `agent/implementer.md`) as a template
+3. **Edit Agent Profile**:
+   - Define clear role, capabilities, and scope boundaries
+   - Embed delegation protocol requirements
+   - Specify escalation criteria and quality gates
+   - Choose communication style (professional or personality-rich)
+4. **Register in Configuration**: Add to `opencode.json` agents list
+5. **Update AGENTS.md**: Document your agent in the agent matrix
+6. **Test**: Validate protocol compliance and boundary recognition
 
 ### Corporate Guidelines
 
 - ✅ Focus on technical capabilities and expertise
-- ✅ Use professional, neutral language
+- ✅ Use professional, neutral language (or personality-rich with clear boundaries)
 - ✅ Provide clear escalation paths and decision criteria
 - ✅ Include accountability metrics and quality gates
+- ✅ Embed delegation protocol requirements (non-negotiable)
+
+**For detailed guidance**, including examples, anti-patterns, and testing strategies, see:
+- **`docs/PERSONA_DEFINITION_GUIDE.md`** - Comprehensive persona definition guide
 
 ## Directory Structure
 

@@ -90,10 +90,13 @@ Load skills on-demand based on your task. Skills are loaded via: `skill({ name: 
 
 To add your own agents:
 
-1. Copy `agent/templates/specialist.md.template` to `agent/<name>.md` with a descriptive name.
-2. Describe capabilities, constraints, and preferred work style.
-3. Mention relevant tools, files, or protocols.
-4. Register the agent in `opencode.json` and update this table if needed.
+1. **Read the persona definition guide**: See `docs/PERSONA_DEFINITION_GUIDE.md` for comprehensive best practices, examples, and anti-patterns.
+2. Copy an existing agent (e.g., `agent/implementer.md`) to `agent/<name>.md` with a descriptive name.
+3. Describe capabilities, constraints, and preferred work style following the guide's template.
+4. Embed delegation protocol requirements (STATUS format, escalations, quality gates).
+5. Define clear scope boundaries (in scope / out of scope / escalate to user).
+6. Register the agent in `opencode.json` and update this table if needed.
+7. Test against protocol compliance scenarios.
 
 ## 8) Verification loop
 
