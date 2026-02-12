@@ -45,8 +45,8 @@
           "name": "GPT 5.2",
           "temperature": true
         },
-        "claude-sonnet-4-5-20250929": {
-          "id": "claude-sonnet-4-5-20250929",
+        "ant-claude-sonnet-4-5": {
+          "id": "ant-claude-sonnet-4-5",
           "name": "Claude Sonnet 4.5",
           "temperature": true
         },
