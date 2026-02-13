@@ -49,9 +49,11 @@ curl -fsSL "https://github.com/krajh/ai-kit/releases/latest/download/install" | 
 ### npm (Node.js projects) — Coming Soon
 
 > **🚧 Not yet published.** The npm package `@brisingr-kr/core` is not available on the npm registry yet. Use the [curl | bash](#automatic-curl--bash) method above for now. This section documents the intended usage once the package is published.
+>
+> **Prerequisite:** Bun is required to run the lifecycle scripts.
 
 ```bash
-npm install --save-dev @brisingr-kr/core
+bun add -d @brisingr-kr/core
 ```
 
 This will automatically symlink the kit files into `~/.config/opencode/`:
