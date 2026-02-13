@@ -47,6 +47,8 @@ const KIT_LINK_ITEMS = [
 const CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000;
 const CHECKSUMS_FILE = ".ai-kit-checksums";
 
+const DISABLED = process.env.OPENCODE_AI_KIT_UPDATER_DISABLED === "1";
+
 const GITHUB_RELEASE_LATEST_API =
   "https://api.github.com/repos/krajh/ai-kit/releases/latest";
 
@@ -667,6 +669,11 @@ function isNpmDistributed(): boolean {
 }
 
 const AiKitUpdaterPlugin: Plugin = async () => {
+  if (DISABLED) {
+    console.log("[ai-kit-updater] disabled via OPENCODE_AI_KIT_UPDATER_DISABLED=1");
+    return {};
+  }
+
   if (isNpmDistributed()) {
     // npm handles versioning — updater is a no-op
     return {};
