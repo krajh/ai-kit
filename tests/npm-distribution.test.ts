@@ -1,5 +1,5 @@
 /**
- * Tests for @ai-kit/core npm distribution scripts.
+ * Tests for @brisingr-kr/core npm distribution scripts.
  *
  * Covers postinstall (symlink creation, checksum tracking, personalisation safety)
  * and preuninstall (symlink cleanup, marker-based scoping).

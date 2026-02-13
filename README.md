@@ -46,21 +46,21 @@ curl -fsSL "https://github.com/krajh/ai-kit/releases/latest/download/install" | 
   bash -s -- --command update
 ```
 
-### npm (Node.js projects)
+### npm (Node.js projects) — Coming Soon
 
-If your project uses Node.js, you can install ai-kit as a dev dependency:
+> **🚧 Not yet published.** The npm package `@brisingr-kr/core` is not available on the npm registry yet. Use the [curl | bash](#automatic-curl--bash) method above for now. This section documents the intended usage once the package is published.
 
 ```bash
-npm install --save-dev @ai-kit/core
+npm install --save-dev @brisingr-kr/core
 ```
 
-This automatically symlinks the kit files into `~/.config/opencode/`:
+This will automatically symlink the kit files into `~/.config/opencode/`:
 
 - `opencode.json`, `AGENTS.md`, `agents/`, `skills/`, `protocols/`, `plugins/`
 
-Each symlink points into `node_modules/@ai-kit/core/kit/`, so the kit stays in sync with your pinned version.
+Each symlink points into `node_modules/@brisingr-kr/core/kit/`, so the kit stays in sync with your pinned version.
 
-**Uninstalling** (`npm uninstall @ai-kit/core`) cleanly removes only its own symlinks — any user-created files are preserved.
+**Uninstalling** (`npm uninstall @brisingr-kr/core`) cleanly removes only its own symlinks — any user-created files are preserved.
 
 #### Personalisation safety (npm)
 
