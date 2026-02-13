@@ -669,7 +669,26 @@ function isNpmDistributed(): boolean {
 }
 
 const AiKitUpdaterPlugin: Plugin = async () => {
-  // Auto-update disabled — will be re-enabled once npm distribution is live
+  if (DISABLED) {
+    console.log("[ai-kit-updater] disabled via OPENCODE_AI_KIT_UPDATER_DISABLED=1");
+    return {};
+  }
+
+  if (isNpmDistributed()) {
+    // npm handles versioning — updater is a no-op
+    return {};
+  }
+
+  try {
+    await applyStagedUpdateOnStartup();
+  } catch {
+    // never block startup
+  }
+
+  checkAndStageUpdate().catch(() => {
+    // never block startup
+  });
+
   return {};
 };
 
