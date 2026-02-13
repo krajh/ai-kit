@@ -654,7 +654,24 @@ async function checkAndStageUpdate(): Promise<void> {
   await writeState(state);
 }
 
+const NPM_MARKER = join(OPENCODE_HOME, ".ai-kit-npm");
+
+function isNpmDistributed(): boolean {
+  try {
+    const { statSync } = require("node:fs");
+    statSync(NPM_MARKER);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 const AiKitUpdaterPlugin: Plugin = async () => {
+  if (isNpmDistributed()) {
+    // npm handles versioning — updater is a no-op
+    return {};
+  }
+
   try {
     await applyStagedUpdateOnStartup();
   } catch {

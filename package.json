@@ -1,9 +1,34 @@
 {
-  "name": "ai-kit",
-  "private": true,
+  "name": "@ai-kit/core",
+  "version": "0.4.0",
+  "description": "OpenCode configuration kit — agents, skills, protocols, and plugins for AI-assisted development",
+  "type": "module",
   "scripts": {
     "test": "bun test",
-    "fmt": "bunx prettier --check --ignore-unknown ."
+    "fmt": "bunx prettier --check --ignore-unknown .",
+    "build": "bun build src/postinstall.ts --outdir dist --target node && bun build src/preuninstall.ts --outdir dist --target node",
+    "build-kit": "bun src/build-kit.ts",
+    "prepublishOnly": "bun run build-kit && bun run build",
+    "postinstall": "node dist/postinstall.js",
+    "preuninstall": "node dist/preuninstall.js"
+  },
+  "files": [
+    "dist/",
+    "kit/",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "opencode",
+    "ai-kit",
+    "agents",
+    "skills",
+    "plugins"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/krajh/ai-kit.git"
   },
   "dependencies": {
     "@opencode-ai/plugin": "1.1.41"
