@@ -1,7 +1,7 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 
 /**
- * @ai-kit/core preuninstall
+ * @brisingr-kr/core preuninstall
  *
  * Removes symlinks created by postinstall.
  * Only removes links that point to our kit directory — never touches user files.
@@ -58,7 +58,7 @@ export function readMarker(ocHome: string): MarkerData | null {
 export function main(): void {
   const ocHome = getOpenCodeHome();
 
-  console.log(`\n@ai-kit/core preuninstall`);
+  console.log(`\n@brisingr-kr/core preuninstall`);
   console.log(`  target: ${ocHome}`);
 
   const marker = readMarker(ocHome);
@@ -121,7 +121,7 @@ if (isDirectExecution) {
     main();
   } catch (error) {
     console.error(
-      `\n  [X] @ai-kit/core preuninstall failed:`,
+      `\n  [X] @brisingr-kr/core preuninstall failed:`,
       error instanceof Error ? error.message : String(error)
     );
   }

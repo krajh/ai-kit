@@ -1,7 +1,7 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 
 /**
- * @ai-kit/core postinstall
+ * @brisingr-kr/core postinstall
  *
  * Creates symlinks from ~/.config/opencode/ → this package's kit/ directory.
  * Handles personalisation safety: detects user-modified files and preserves them.
@@ -227,7 +227,7 @@ export function main(): void {
   const ocHome = getOpenCodeHome();
   const kitDir = getKitDir();
 
-  console.log(`\n@ai-kit/core postinstall`);
+  console.log(`\n@brisingr-kr/core postinstall`);
   console.log(`  target: ${ocHome}`);
   console.log(`  source: ${kitDir}`);
 
@@ -264,7 +264,7 @@ export function main(): void {
   // Write marker so the updater plugin knows we're npm-distributed
   writeMarker(ocHome, kitDir);
 
-  console.log(`\n  [OK] @ai-kit/core v${getPackageVersion()} installed successfully\n`);
+  console.log(`\n  [OK] @brisingr-kr/core v${getPackageVersion()} installed successfully\n`);
 }
 
 // Only auto-execute when run directly (not when imported for testing)
@@ -279,7 +279,7 @@ if (isDirectExecution) {
     main();
   } catch (error) {
     console.error(
-      `\n  [X] @ai-kit/core postinstall failed:`,
+      `\n  [X] @brisingr-kr/core postinstall failed:`,
       error instanceof Error ? error.message : String(error)
     );
     // Don't exit(1) — postinstall failures shouldn't block npm install
