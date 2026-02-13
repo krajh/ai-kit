@@ -46,6 +46,41 @@ curl -fsSL "https://github.com/krajh/ai-kit/releases/latest/download/install" | 
   bash -s -- --command update
 ```
 
+### npm (Node.js projects)
+
+If your project uses Node.js, you can install ai-kit as a dev dependency:
+
+```bash
+npm install --save-dev @ai-kit/core
+```
+
+This automatically symlinks the kit files into `~/.config/opencode/`:
+
+- `opencode.json`, `AGENTS.md`, `agents/`, `skills/`, `protocols/`, `plugins/`
+
+Each symlink points into `node_modules/@ai-kit/core/kit/`, so the kit stays in sync with your pinned version.
+
+**Uninstalling** (`npm uninstall @ai-kit/core`) cleanly removes only its own symlinks — any user-created files are preserved.
+
+#### Personalisation safety (npm)
+
+If you've customised a file that ai-kit also manages (e.g. `~/.config/opencode/opencode.json`), the postinstall script will:
+
+1. Detect the user-modified file
+2. Back it up as `<filename>.user-backup`
+3. Replace it with the kit's symlink
+
+This ensures you never silently lose your customisations.
+
+#### When to use npm vs curl | bash
+
+| Method         | Best for                                              |
+| -------------- | ----------------------------------------------------- |
+| `npm install`  | Node.js projects, version pinning via `package.json`  |
+| `curl \| bash` | System-wide install, non-Node projects, CI pipelines  |
+
+> **Note:** The npm distribution does not include the auto-updater plugin. Version updates happen through normal `npm update` workflows.
+
 ### Manual (download installer)
 
 1. **Pick a release**: <https://github.com/krajh/ai-kit/releases>
