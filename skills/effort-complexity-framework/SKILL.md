@@ -9,7 +9,7 @@ description: Standardized task assessment using Effort (Trivial/Small/Medium/Lar
 
 **Created:** February 10, 2026  
 **Version:** 1.0  
-**Authority:** Master Kai, Delegation Protocols v1.4
+**Authority:** User, Delegation Protocols v1.4
 
 ---
 
@@ -24,7 +24,7 @@ description: Standardized task assessment using Effort (Trivial/Small/Medium/Lar
 
 **Auto-loaded for:**
 
-- Rias when coordinating delegation
+- Coordinator when coordinating delegation
 - Agents receiving Fidelity 2+ delegation
 
 ---
@@ -205,7 +205,7 @@ PLAN FOR APPROVAL:
 ## Escalation Format (with Effort/Complexity)
 
 ```
-ESCALATION TO RIAS:
+ESCALATION TO COORDINATOR:
 - BLOCKER: [clear description]
 - CONTEXT: [what you were trying to accomplish]
 - ATTEMPTED: [what you've already tried]

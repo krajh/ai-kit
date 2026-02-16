@@ -26,7 +26,7 @@ Use when tasks are independent and can run concurrently.
 Rules:
 
 - Each agent has clear acceptance criteria.
-- One integrator (usually `rias-queen`) owns merge/synthesis.
+- One integrator (usually `coordinator`) owns merge/synthesis.
 
 ### 3) Mesh handoff (collaborative investigation)
 

@@ -225,25 +225,25 @@ but branch apply experimental-refactor  # or unapply to revert
 
 ### Pattern 4: Multi-Agent Parallel Work
 
-**Scenario:** Rias orchestrating Marin (backend) + Mittelt (frontend) + Grayfia (infra)
+**Scenario:** Coordinator orchestrating implementer (backend) + implementer (frontend) + strategist (infra)
 
 ```bash
 # Initialize project
 but project add /path/to/project
 
 # Create branches for each agent's work
-but branch create backend-api -d        # Marin's domain
-but branch create frontend-ui           # Mittelt's domain
-but branch create infrastructure        # Grayfia's domain
+but branch create backend-api -d        # Backend implementer's domain
+but branch create frontend-ui           # Frontend implementer's domain
+but branch create infrastructure        # Strategist's domain
 
 # Each agent commits to their own branch
-# (Marin works on API)
+# (Backend implementer works on API)
 but branch commit backend-api -m "Add user service endpoints"
 
-# (Mittelt works on UI, parallel to Marin)
+# (Frontend implementer works on UI, parallel)
 but branch commit frontend-ui -m "Build user management UI"
 
-# (Grayfia sets up deployment, parallel to both)
+# (Strategist sets up deployment, parallel to both)
 but branch commit infrastructure -m "Configure k8s deployment"
 
 # All work happens simultaneously without conflicts
@@ -274,7 +274,7 @@ but branch commit feature-b -m "Modify shared module method B"
 
 ## Integration with Peerage Workflow
 
-### For Rias (Coordinator)
+### For Coordinator
 
 **Use GitButler for:**
 
@@ -290,17 +290,17 @@ but branch commit feature-b -m "Modify shared module method B"
 but project add /path/to/project
 
 # Create branches for each specialist
-but branch create marin-backend
-but branch create mittelt-frontend
-but branch create grayfia-infra
-but branch create guillotine-review
+but branch create implementer-backend
+but branch create implementer-frontend
+but branch create strategist-infra
+but branch create reviewer-review
 
 # Agents commit to their branches independently
-# Rias tests integration by applying all branches
-# Rias creates stacked series for dependent work
+# Coordinator tests integration by applying all branches
+# Coordinator creates stacked series for dependent work
 ```
 
-### For Specialists (Marin, Mittelt, Xenovia, etc.)
+### For Specialists (implementer, strategist, reviewer, etc.)
 
 **Use GitButler for:**
 
@@ -507,4 +507,4 @@ Load this skill when:
 ---
 
 **Last Updated:** February 9, 2026  
-**Maintained by:** Rias Gremory (Coordinator)
+**Maintained by:** Coordinator
