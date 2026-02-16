@@ -1,7 +1,8 @@
 import { tool } from "@opencode-ai/plugin";
 
-import { createReadStream } from "node:fs";
-import * as readline from "node:readline";
+import { Database } from "bun:sqlite";
+
+import { existsSync } from "node:fs";
 
 import { deriveProjectIdSync } from "./project-id";
 
@@ -28,7 +29,7 @@ export type EpisodicRecentResponse = {
   success: boolean;
   events: EpisodicRecentEvent[];
   count: number;
-  source: "jsonl";
+  source: "sqlite";
   error?: string;
 };
 
@@ -50,25 +51,11 @@ export type EpisodicArtifactsResponse = {
   error?: string;
 };
 
-type JsonlToolEvent = {
-  session_id?: string;
-  agent_id?: string;
-  tool_name?: string;
-  tool_args?: Record<string, unknown>;
-  tool_output?: string;
-  success?: boolean;
-  duration_ms?: number;
-  task_id?: string;
-  timestamp?: number;
-  project_id?: string;
-};
-
 // ============================================================================
 // Constants
 // ============================================================================
 
-const DEFAULT_LOG_PATH =
-  "/home/kailashr/.config/opencode/logs/episodic-memory.jsonl";
+const DEFAULT_DB_PATH = `${process.env.HOME ?? "/tmp"}/.local/share/opencode/opencode.db`;
 
 // ============================================================================
 // Utilities
@@ -79,14 +66,6 @@ function toIso(ms: number | undefined): string | undefined {
   return new Date(ms).toISOString();
 }
 
-function passesToolNameFilter(
-  toolName: string | undefined,
-  allowed: string[] | null | undefined,
-): boolean {
-  if (!allowed || allowed.length === 0) return true;
-  return allowed.includes(toolName ?? "");
-}
-
 function passesTypeFilter(
   type: string,
   allowed: string[] | null | undefined,
@@ -95,17 +74,19 @@ function passesTypeFilter(
   return allowed.includes(type);
 }
 
-function uniqKey(
-  event: JsonlToolEvent,
-  type: ArtifactType,
-  value: string,
-): string {
+function uniqKey(context: {
+  project_id?: string;
+  session_id?: string;
+  task_id?: string;
+  type: ArtifactType;
+  value: string;
+}): string {
   return [
-    type,
-    value,
-    event.project_id ?? "",
-    event.session_id ?? "",
-    event.task_id ?? "",
+    context.type,
+    context.value,
+    context.project_id ?? "",
+    context.session_id ?? "",
+    context.task_id ?? "",
   ].join("::");
 }
 
@@ -116,7 +97,7 @@ function extractFilesFromPatchText(patchText: string): string[] {
   // *** Update File: path
   // *** Delete File: path
   const re = /^\*\*\* (?:Add|Update|Delete) File: (.+)$/gm;
-  for (const match of patchText.matchAll(re)) {
+  for (const match of Array.from(patchText.matchAll(re))) {
     const p = match[1]?.trim();
     if (p) out.push(p);
   }
@@ -125,17 +106,17 @@ function extractFilesFromPatchText(patchText: string): string[] {
 
 function firstCommitHashFromGitCommitOutput(out: string): string | null {
   // Typical output: "[branch abc1234] message" or a full hash sometimes.
-  const m = out.match(/\b[0-9a-f]{7,40}\b/i);
-  return m ? m[0] : null;
+  const m = out.match(/\[[^\]]+\s+([0-9a-f]{7,40})\]|\b([0-9a-f]{7,40})\b/i);
+  return m ? (m[1] ?? m[2] ?? null) : null;
 }
 
 function extractUrls(text: string): string[] {
   const urls = new Set<string>();
   const re = /https?:\/\/[^\s)\]}>\"']+/g;
-  for (const m of text.matchAll(re)) {
+  for (const m of Array.from(text.matchAll(re))) {
     urls.add(m[0]);
   }
-  return [...urls];
+  return Array.from(urls);
 }
 
 function toShimArtifact(row: {
@@ -189,16 +170,139 @@ function toShimArtifact(row: {
   };
 }
 
-async function readJsonl(
-  path: string,
-  onLine: (line: string) => void | Promise<void>,
-): Promise<void> {
-  const stream = createReadStream(path, { encoding: "utf-8" });
-  const rl = readline.createInterface({ input: stream, crlfDelay: Infinity });
-  for await (const line of rl) {
-    if (!line.trim()) continue;
-    await onLine(line);
+function parseJson<T>(input: string | null): T | null {
+  if (!input) return null;
+  try {
+    return JSON.parse(input) as T;
+  } catch {
+    return null;
   }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === "object" && !Array.isArray(value);
+}
+
+function safeStringify(value: unknown): string | undefined {
+  if (value == null) return undefined;
+  if (typeof value === "string") return value;
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(value);
+  }
+}
+
+function getDbPath(): string {
+  return process.env.OPENCODE_DB_PATH ?? DEFAULT_DB_PATH;
+}
+
+function formatDbError(error: unknown): string {
+  const message = error instanceof Error ? error.message : String(error);
+  if (/SQLITE_BUSY|database is locked/i.test(message)) {
+    return "SQLite database is locked (SQLITE_BUSY). Close other OpenCode instances and retry.";
+  }
+  return message;
+}
+
+function clampLimit(limit: number | undefined, max: number): number {
+  if (typeof limit !== "number" || !Number.isFinite(limit)) return 50;
+  return Math.min(Math.max(limit, 1), max);
+}
+
+type ToolPartRow = {
+  part_id: string;
+  message_id: string | null;
+  session_id: string | null;
+  time_created: number | null;
+  part_data: string | null;
+  message_data: string | null;
+};
+
+type ToolPartData = {
+  type?: string;
+  tool?: string;
+  state?: {
+    status?: unknown;
+    input?: unknown;
+    output?: unknown;
+    time?: { start?: number; end?: number };
+  };
+};
+
+type ToolPartQueryArgs = {
+  session_id?: string;
+  task_id?: string;
+  agent_id?: string;
+  tool_names?: string[];
+  limit: number;
+};
+
+function buildToolPartsQuery(args: ToolPartQueryArgs): {
+  sql: string;
+  params: Array<string | number>;
+} {
+  const where: string[] = ["json_extract(part.data, '$.type') = 'tool'"];
+  const params: Array<string | number> = [];
+
+  const projectId = deriveProjectIdSync();
+  where.push("session.project_id = ?");
+  params.push(projectId);
+
+  if (args.session_id) {
+    where.push("part.session_id = ?");
+    params.push(args.session_id);
+  }
+
+  if (args.task_id) {
+    where.push("json_extract(part.data, '$.state.input.task_id') = ?");
+    params.push(args.task_id);
+  }
+
+  if (args.agent_id) {
+    where.push("json_extract(part.data, '$.state.input.agent_id') = ?");
+    params.push(args.agent_id);
+  }
+
+  if (args.tool_names && args.tool_names.length > 0) {
+    const placeholders = args.tool_names.map(() => "?").join(", ");
+    where.push(`json_extract(part.data, '$.tool') IN (${placeholders})`);
+    params.push(...args.tool_names);
+  }
+
+  const sql = `
+    SELECT
+      part.id AS part_id,
+      part.message_id AS message_id,
+      part.session_id AS session_id,
+      part.time_created AS time_created,
+      part.data AS part_data,
+      message.data AS message_data
+    FROM part
+    LEFT JOIN message ON message.id = part.message_id
+    LEFT JOIN session ON session.id = part.session_id
+    WHERE ${where.join(" AND ")}
+    ORDER BY part.time_created DESC
+    LIMIT ?
+  `;
+
+  params.push(args.limit ?? 50);
+  return { sql, params };
+}
+
+function parseStatus(status: unknown): boolean | undefined {
+  if (typeof status === "boolean") return status;
+  if (typeof status === "string") {
+    const normalized = status.toLowerCase();
+    if (["success", "completed", "ok"].includes(normalized)) return true;
+    if (
+      ["failed", "error", "rejected", "canceled", "cancelled"].includes(
+        normalized,
+      )
+    )
+      return false;
+  }
+  return undefined;
 }
 
 // ============================================================================
@@ -212,67 +316,89 @@ async function executeRecent(args: {
   tool_names?: string[];
   limit: number;
 }): Promise<string> {
-  const logPath = process.env.OPENCODE_EPISODIC_LOG_PATH ?? DEFAULT_LOG_PATH;
-  const projectId = deriveProjectIdSync();
-  const toolNames = args.tool_names ?? null;
-  const limit = args.limit ?? 50;
+  const dbPath = getDbPath();
+  const limit = clampLimit(args.limit, 500);
 
   try {
-    const events: EpisodicRecentEvent[] = [];
+    if (!existsSync(dbPath)) {
+      throw new Error(`SQLite database not found at ${dbPath}`);
+    }
 
-    await readJsonl(logPath, (line) => {
-      let ev: JsonlToolEvent | null = null;
-      try {
-        ev = JSON.parse(line) as JsonlToolEvent;
-      } catch {
-        // Gracefully skip malformed JSON lines
-        return;
+    let db: Database | null = null;
+    try {
+      db = new Database(dbPath, { readonly: true });
+      const events: EpisodicRecentEvent[] = [];
+
+      const { sql, params } = buildToolPartsQuery({
+        session_id: args.session_id,
+        task_id: args.task_id,
+        agent_id: args.agent_id,
+        tool_names: args.tool_names,
+        limit,
+      });
+
+      const rows = db.query(sql).all(...params) as ToolPartRow[];
+
+      for (const row of rows) {
+        const partData = parseJson<ToolPartData>(row.part_data);
+        if (!partData || partData.type !== "tool") continue;
+
+        const state = partData.state ?? {};
+        const toolName =
+          typeof partData.tool === "string" ? partData.tool : undefined;
+        const toolArgs = isRecord(state.input) ? state.input : undefined;
+        const toolOutput = safeStringify(state.output);
+        const status = parseStatus(state.status);
+
+        const start =
+          typeof state.time?.start === "number" ? state.time.start : undefined;
+        const end =
+          typeof state.time?.end === "number" ? state.time.end : undefined;
+        const timestamp = end ?? start ?? row.time_created ?? undefined;
+        const duration =
+          typeof start === "number" && typeof end === "number" && end >= start
+            ? end - start
+            : undefined;
+
+        const taskId =
+          toolArgs && typeof toolArgs.task_id === "string"
+            ? toolArgs.task_id
+            : undefined;
+        const agentId =
+          toolArgs && typeof toolArgs.agent_id === "string"
+            ? toolArgs.agent_id
+            : undefined;
+
+        events.push({
+          session_id: row.session_id ?? undefined,
+          task_id: taskId,
+          agent_id: agentId,
+          tool_name: toolName,
+          tool_args: toolArgs,
+          tool_output: toolOutput,
+          success: status,
+          duration_ms: duration,
+          timestamp,
+          created_at: toIso(timestamp),
+        });
       }
 
-      // Repo scoping: only return events written for this repo
-      if (ev.project_id && ev.project_id !== projectId) return;
-
-      // Apply filters
-      if (args.session_id && ev.session_id !== args.session_id) return;
-      if (args.task_id && ev.task_id !== args.task_id) return;
-      if (args.agent_id && ev.agent_id !== args.agent_id) return;
-      if (!passesToolNameFilter(ev.tool_name, toolNames)) return;
-
-      const createdAt = toIso(ev.timestamp);
-
-      events.push({
-        session_id: ev.session_id,
-        task_id: ev.task_id,
-        agent_id: ev.agent_id,
-        tool_name: ev.tool_name,
-        tool_args: ev.tool_args,
-        tool_output: ev.tool_output,
-        success: ev.success,
-        duration_ms: ev.duration_ms,
-        timestamp: ev.timestamp,
-        created_at: createdAt,
-      });
-    });
-
-    // Sort by timestamp DESC (newest first)
-    events.sort((a, b) => (b.timestamp ?? 0) - (a.timestamp ?? 0));
-
-    // Apply limit
-    const result = events.slice(0, limit);
-
-    return JSON.stringify({
-      success: true,
-      events: result,
-      count: result.length,
-      source: "jsonl",
-    } satisfies EpisodicRecentResponse);
+      return JSON.stringify({
+        success: true,
+        events,
+        count: events.length,
+        source: "sqlite",
+      } satisfies EpisodicRecentResponse);
+    } finally {
+      db?.close();
+    }
   } catch (error) {
     return JSON.stringify({
       success: false,
       events: [],
       count: 0,
-      source: "jsonl",
-      error: error instanceof Error ? error.message : String(error),
+      source: "sqlite",
+      error: formatDbError(error),
     } satisfies EpisodicRecentResponse);
   }
 }
@@ -287,152 +413,202 @@ async function executeArtifacts(args: {
   artifact_types?: string[];
   limit: number;
 }): Promise<string> {
-  const logPath = process.env.OPENCODE_EPISODIC_LOG_PATH ?? DEFAULT_LOG_PATH;
+  const dbPath = getDbPath();
   const projectId = deriveProjectIdSync();
   const artifactTypes = args.artifact_types ?? null;
-  const limit = args.limit ?? 50;
+  const limit = clampLimit(args.limit, 500);
 
   try {
-    const dedupe = new Set<string>();
-    const rows: Array<{
-      type: string;
-      value: string;
-      created_at?: string;
-      task_id?: string;
-      session_id?: string;
-      meta?: Record<string, unknown>;
-      created_ms?: number;
-    }> = [];
+    if (!existsSync(dbPath)) {
+      throw new Error(`SQLite database not found at ${dbPath}`);
+    }
 
-    await readJsonl(logPath, (line) => {
-      let ev: JsonlToolEvent | null = null;
-      try {
-        ev = JSON.parse(line) as JsonlToolEvent;
-      } catch {
-        return;
-      }
+    let db: Database | null = null;
+    try {
+      db = new Database(dbPath, { readonly: true });
+      const dedupe = new Set<string>();
+      const rows: Array<{
+        type: string;
+        value: string;
+        created_at?: string;
+        task_id?: string;
+        session_id?: string;
+        meta?: Record<string, unknown>;
+        created_ms?: number;
+      }> = [];
 
-      // Repo scoping: only return events written for this repo.
-      if (ev.project_id && ev.project_id !== projectId) return;
-      if (args.session_id && ev.session_id !== args.session_id) return;
-      if (args.task_id && ev.task_id !== args.task_id) return;
+      // Scan 5x requested limit (heuristic) to compensate for filtering.
+      const scanLimit = Math.min(Math.max(limit * 5, limit), 1000);
+      const { sql, params } = buildToolPartsQuery({
+        session_id: args.session_id,
+        task_id: args.task_id,
+        limit: scanLimit,
+      });
 
-      const createdAt = toIso(ev.timestamp);
-      const commonMeta: Record<string, unknown> = {
-        source_tool_name: ev.tool_name,
-        source_agent_id: ev.agent_id,
-      };
+      const toolRows = db.query(sql).all(...params) as ToolPartRow[];
 
-      const toolName = String(ev.tool_name ?? "");
-      const toolArgs = ev.tool_args ?? {};
-      const toolOut = typeof ev.tool_output === "string" ? ev.tool_output : "";
+      for (const row of toolRows) {
+        const partData = parseJson<ToolPartData>(row.part_data);
+        if (!partData || partData.type !== "tool") continue;
 
-      // FILE artifacts
-      if (passesTypeFilter("file", artifactTypes)) {
-        if (toolName === "write" || toolName === "edit") {
-          const fp =
-            toolArgs["filePath"] ??
-            toolArgs["relative_path"] ??
-            toolArgs["path"];
-          if (typeof fp === "string" && fp.trim()) {
-            const key = uniqKey(ev, "file", fp);
-            if (!dedupe.has(key)) {
-              dedupe.add(key);
-              rows.push({
+        const state = partData.state ?? {};
+        const toolName = typeof partData.tool === "string" ? partData.tool : "";
+        const toolArgs = isRecord(state.input) ? state.input : {};
+        const toolOut = safeStringify(state.output) ?? "";
+
+        const start =
+          typeof state.time?.start === "number" ? state.time.start : undefined;
+        const end =
+          typeof state.time?.end === "number" ? state.time.end : undefined;
+        const timestamp = end ?? start ?? row.time_created ?? undefined;
+        const createdAt = toIso(timestamp);
+        const createdMs = timestamp ?? undefined;
+
+        const taskId =
+          typeof toolArgs.task_id === "string" ? toolArgs.task_id : undefined;
+        const agentId =
+          typeof toolArgs.agent_id === "string" ? toolArgs.agent_id : undefined;
+
+        const commonMeta: Record<string, unknown> = {
+          source_tool_name: toolName,
+          source_agent_id: agentId,
+        };
+
+        // FILE artifacts
+        if (passesTypeFilter("file", artifactTypes)) {
+          if (toolName === "write" || toolName === "edit") {
+            const fp =
+              toolArgs["filePath"] ??
+              toolArgs["relative_path"] ??
+              toolArgs["path"];
+            if (typeof fp === "string" && fp.trim()) {
+              const key = uniqKey({
+                project_id: projectId,
+                session_id: row.session_id ?? undefined,
+                task_id: taskId,
                 type: "file",
                 value: fp,
-                created_at: createdAt,
-                created_ms: ev.timestamp,
-                task_id: ev.task_id,
-                session_id: ev.session_id,
-                meta: commonMeta,
               });
-            }
-          }
-        }
-
-        if (toolName === "apply_patch") {
-          const patchText = toolArgs["patchText"];
-          if (typeof patchText === "string") {
-            for (const fp of extractFilesFromPatchText(patchText)) {
-              const key = uniqKey(ev, "file", fp);
-              if (dedupe.has(key)) continue;
-              dedupe.add(key);
-              rows.push({
-                type: "file",
-                value: fp,
-                created_at: createdAt,
-                created_ms: ev.timestamp,
-                task_id: ev.task_id,
-                session_id: ev.session_id,
-                meta: { ...commonMeta, source: "apply_patch" },
-              });
-            }
-          }
-        }
-      }
-
-      // GIT COMMIT artifacts
-      if (passesTypeFilter("git_commit", artifactTypes)) {
-        if (toolName === "bash") {
-          const cmd =
-            typeof toolArgs["command"] === "string" ? toolArgs["command"] : "";
-          if (cmd.includes("git commit")) {
-            const commit = firstCommitHashFromGitCommitOutput(toolOut);
-            if (commit) {
-              const key = uniqKey(ev, "git_commit", commit);
               if (!dedupe.has(key)) {
                 dedupe.add(key);
                 rows.push({
-                  type: "git_commit",
-                  value: commit,
+                  type: "file",
+                  value: fp,
                   created_at: createdAt,
-                  created_ms: ev.timestamp,
-                  task_id: ev.task_id,
-                  session_id: ev.session_id,
-                  meta: { ...commonMeta, command: cmd },
+                  created_ms: createdMs,
+                  task_id: taskId,
+                  session_id: row.session_id ?? undefined,
+                  meta: commonMeta,
+                });
+              }
+            }
+          }
+
+          if (toolName === "apply_patch") {
+            const patchText = toolArgs["patchText"];
+            if (typeof patchText === "string") {
+              for (const fp of extractFilesFromPatchText(patchText)) {
+                const key = uniqKey({
+                  project_id: projectId,
+                  session_id: row.session_id ?? undefined,
+                  task_id: taskId,
+                  type: "file",
+                  value: fp,
+                });
+                if (dedupe.has(key)) continue;
+                dedupe.add(key);
+                rows.push({
+                  type: "file",
+                  value: fp,
+                  created_at: createdAt,
+                  created_ms: createdMs,
+                  task_id: taskId,
+                  session_id: row.session_id ?? undefined,
+                  meta: { ...commonMeta, source: "apply_patch" },
                 });
               }
             }
           }
         }
-      }
 
-      // URL artifacts
-      if (passesTypeFilter("url", artifactTypes)) {
-        const urls = extractUrls(toolOut);
-        for (const u of urls) {
-          const key = uniqKey(ev, "url", u);
-          if (dedupe.has(key)) continue;
-          dedupe.add(key);
-          rows.push({
-            type: "url",
-            value: u,
-            created_at: createdAt,
-            created_ms: ev.timestamp,
-            task_id: ev.task_id,
-            session_id: ev.session_id,
-            meta: commonMeta,
-          });
+        // GIT COMMIT artifacts
+        if (passesTypeFilter("git_commit", artifactTypes)) {
+          if (toolName === "bash") {
+            const cmd =
+              typeof toolArgs["command"] === "string"
+                ? toolArgs["command"]
+                : "";
+            if (cmd.includes("git commit")) {
+              const commit = firstCommitHashFromGitCommitOutput(toolOut);
+              if (commit) {
+                const key = uniqKey({
+                  project_id: projectId,
+                  session_id: row.session_id ?? undefined,
+                  task_id: taskId,
+                  type: "git_commit",
+                  value: commit,
+                });
+                if (!dedupe.has(key)) {
+                  dedupe.add(key);
+                  rows.push({
+                    type: "git_commit",
+                    value: commit,
+                    created_at: createdAt,
+                    created_ms: createdMs,
+                    task_id: taskId,
+                    session_id: row.session_id ?? undefined,
+                    meta: { ...commonMeta, command: cmd },
+                  });
+                }
+              }
+            }
+          }
+        }
+
+        // URL artifacts
+        if (passesTypeFilter("url", artifactTypes)) {
+          const urls = extractUrls(toolOut);
+          for (const u of Array.from(urls)) {
+            const key = uniqKey({
+              project_id: projectId,
+              session_id: row.session_id ?? undefined,
+              task_id: taskId,
+              type: "url",
+              value: u,
+            });
+            if (dedupe.has(key)) continue;
+            dedupe.add(key);
+            rows.push({
+              type: "url",
+              value: u,
+              created_at: createdAt,
+              created_ms: createdMs,
+              task_id: taskId,
+              session_id: row.session_id ?? undefined,
+              meta: commonMeta,
+            });
+          }
         }
       }
-    });
 
-    // Prefer newest artifacts first.
-    rows.sort((a, b) => (b.created_ms ?? 0) - (a.created_ms ?? 0));
-    const artifacts = rows.slice(0, limit).map((r) => toShimArtifact(r));
+      // Prefer newest artifacts first.
+      rows.sort((a, b) => (b.created_ms ?? 0) - (a.created_ms ?? 0));
+      const artifacts = rows.slice(0, limit).map((r) => toShimArtifact(r));
 
-    return JSON.stringify({
-      success: true,
-      artifacts,
-      count: artifacts.length,
-    } satisfies EpisodicArtifactsResponse);
+      return JSON.stringify({
+        success: true,
+        artifacts,
+        count: artifacts.length,
+      } satisfies EpisodicArtifactsResponse);
+    } finally {
+      db?.close();
+    }
   } catch (error) {
     return JSON.stringify({
       success: false,
       artifacts: [],
       count: 0,
-      error: error instanceof Error ? error.message : String(error),
+      error: formatDbError(error),
     } satisfies EpisodicArtifactsResponse);
   }
 }

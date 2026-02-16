@@ -72,3 +72,47 @@ For multi-step tasks, state a brief plan:
 ```
 
 Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
+
+## 5. Edit Tool Best Practices
+
+**Edit failures are mostly preventable. Follow these rules before calling `edit`.**
+
+1. **ALWAYS read the file before editing.**
+   - Avoids stale assumptions and "must-read-first" violations.
+2. **Use enough surrounding context in `oldString`.**
+   - Include 3–5 lines of surrounding context so the match is unique.
+3. **Never send `oldString` identical to `newString`.**
+   - Verify the strings differ to avoid no-op edits.
+4. **Verify file paths with `glob` before editing.**
+   - Many "oldString not found" errors come from wrong paths or stale content.
+5. **Preserve exact indentation.**
+   - Copy whitespace exactly as it appears in the file.
+6. **Prefer `edit` over `write` for targeted changes.**
+   - Use `write` only when creating a new file.
+
+## 6. Compress Tool Boundary Selection
+
+**Boundary uniqueness matters more than length. Use precise, unique strings.**
+
+### Boundary String Selection Rules
+
+- ✅ Include specific technical terms (tool names, file paths, function names)
+- ✅ Include proper names (agent names, project names)
+- ✅ Use exact code syntax for technical content
+- ❌ Don't use generic agent phrases ("Let me", "Now we're talking", "Would you like")
+- ❌ Don't use generic sign-offs ("Your call", "Just say the word")
+- ❌ Don't pick strings from system-reminder tags or XML wrappers
+
+### Pre-compress Checklist
+
+- Does this phrase appear ONLY ONCE in the conversation?
+- Is it from MY text or user text (not injected system text)?
+- Is the `startString` BEFORE the `endString` in conversation order?
+- Are both strings non-empty?
+
+### Good vs Bad Examples
+
+- ❌ BAD: `"Let me"` → too generic, appears many times
+- ❌ BAD: `"Now we're talking"` → repeated agent personality phrase
+- ✅ GOOD: `"session-analytics tool found 166 webfetch"` → unique technical content
+- ✅ GOOD: `"Shall I start research first, then implement?"` → unique with clear intent
