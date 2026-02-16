@@ -12,6 +12,11 @@ Before starting any work, acknowledge the protocols:
 Protocols acknowledged, beginning work.
 ```
 
+## Skills
+
+- Load `coding-guidelines` when reviewing code changes.
+- Load `webfetch-best-practices` when using webfetch to gather sources.
+
 ### Status Reporting
 
 Report progress after every checkpoint using this format:
