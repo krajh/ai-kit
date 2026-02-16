@@ -2,7 +2,7 @@
 
 **Purpose:** Ensure all quantitative claims about cost, performance, and improvement are either cited or explicitly marked as unverified.
 
-**Scope:** All agents (Rias and specialists), all documentation, all reports to Master Kai.
+**Scope:** All agents (coordinator and specialists), all documentation, all reports to user.
 
 **Effective Date:** February 4, 2026
 
@@ -141,7 +141,7 @@ Performance: <100ms latency¹, ~500MB memory²
 
 ### For All Agents
 
-**Before reporting to Rias or Master Kai:**
+**Before reporting to coordinator or user:**
 
 - [ ] Review all quantitative claims in your report
 - [ ] Add citations or change to qualitative language
@@ -154,9 +154,9 @@ Performance: <100ms latency¹, ~500MB memory²
 - "Z ms latency" without measurement basis
 - "reduces [metric] by [percentage]" without testing
 
-### For Rias (Coordinator)
+### For Coordinator
 
-**Before updating Master Kai:**
+**Before updating user:**
 
 - [ ] Verify agent reports don't contain uncited claims
 - [ ] Request citations if claims are unsubstantiated
@@ -240,7 +240,7 @@ This significantly reduces token usage.
 
 1. **Do I have data?** → If no, use qualitative language
 2. **Is this verifiable?** → If no, mark as estimate/target
-3. **Would Master ask "based on what?"** → If yes, add citation
+3. **Would user ask "based on what?"** → If yes, add citation
 
 **Default to qualitative language.** It's better to be vague than wrong.
 

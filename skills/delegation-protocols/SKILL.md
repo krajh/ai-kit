@@ -23,8 +23,8 @@ Enforce Delegation Protocols v1.4 across all delegations with copy/paste templat
 - Status format: "STATUS UPDATE - COMPLETED: [X], STARTING/CONTINUING: [Y], PROGRESS: [Z if continuing], BLOCKERS: [None or specific]"
 - SKILL CHECK on first STATUS UPDATE: "SKILL CHECK: loaded [skill-a] OR none applicable"
 - One task at a time; finish before switching
-- If blocked after 2 attempts, escalate IMMEDIATELY to Rias
-- Blocker format: "ESCALATION TO RIAS - BLOCKER: [what], CONTEXT: [why], ATTEMPTED: [what tried], NEED: [what needed], EFFORT BLOCKED: [Trivial/Small/Medium/Large/Epic], SCOPE IMPACT: [impact]"
+- If blocked after 2 attempts, escalate IMMEDIATELY to coordinator
+- Blocker format: "ESCALATION TO COORDINATOR - BLOCKER: [what], CONTEXT: [why], ATTEMPTED: [what tried], NEED: [what needed], EFFORT BLOCKED: [Trivial/Small/Medium/Large/Epic], SCOPE IMPACT: [impact]"
 - Treat uncertainty/questions/decisions as blockers; present options
 - Cross-session escalation: return control using MANDATORY CROSS-SESSION ESCALATION PROCEDURE
 - Update todo status immediately upon completion
@@ -163,12 +163,12 @@ Submit PLAN FOR APPROVAL before implementation:
 
 ## Pre-flight Checklist (Before Delegating)
 
-**BEFORE EVERY DELEGATION, RIAS MUST:**
+**BEFORE EVERY DELEGATION, COORDINATOR MUST:**
 
 1. Define _one_ deliverable and acceptance criteria.
 2. Specify allowed tools + required checks (e.g. `verify-loop`).
 3. If task is architectural or cross-cutting: require **PLAN FOR APPROVAL**.
-4. Decide who is coordinator (Rias) vs implementer (agent).
+4. Decide who is coordinator vs implementer (agent).
 5. Establish the next checkpoint you expect (agent-defined is OK).
 6. **Verify delegation includes MANDATORY PROTOCOLS v1.4 block** (see above).
 
@@ -176,7 +176,7 @@ Submit PLAN FOR APPROVAL before implementation:
 
 ## Post-Delegation Verification Checklist
 
-**AFTER EVERY DELEGATION, RIAS MUST:**
+**AFTER EVERY DELEGATION, COORDINATOR MUST:**
 
 - [ ] **Protocol included:** MANDATORY PROTOCOLS v1.4 present
 - [ ] **Fidelity level set:** F1/F2/F3 appropriate
@@ -205,7 +205,7 @@ Submit PLAN FOR APPROVAL before implementation:
 **Agent escalates with:**
 
 ```
-ESCALATION TO RIAS:
+ESCALATION TO COORDINATOR:
 - BLOCKER: [description]
 - CONTEXT: [what trying to accomplish]
 - ATTEMPTED: [what tried]
@@ -214,7 +214,7 @@ ESCALATION TO RIAS:
 - SCOPE IMPACT: [impact on deliverables]
 ```
 
-**Rias responds with:**
+**Coordinator responds with:**
 
 ```
 Acknowledged, [Agent]. [Action taken or routing].
@@ -227,7 +227,7 @@ You're unblocked - proceed with [next step].
 **Agent escalates with:**
 
 ```
-QUESTION FOR RIAS/MASTER:
+QUESTION FOR COORDINATOR:
 - CONTEXT: [what working on]
 - QUESTION: [specific question/decision point]
 - OPTIONS: [2-3 approaches with trade-offs]
@@ -236,7 +236,7 @@ QUESTION FOR RIAS/MASTER:
 - SCOPE IMPACT: [what's blocked]
 ```
 
-**Rias responds with:**
+**Coordinator responds with:**
 
 ```
 DECISION: [Approved approach or guidance]
@@ -253,7 +253,7 @@ You're clear - proceed with [specific action].
 
 ```
 ---
-[ALERT] ESCALATION TO RIAS - RETURNING CONTROL
+[ALERT] ESCALATION TO COORDINATOR - RETURNING CONTROL
 ---
 
 AGENT: [Name]
@@ -277,11 +277,11 @@ SCOPE IMPACT:
 WAITING STATE: [What doing while blocked]
 
 ---
-[PAUSED] Awaiting Rias's response to continue
+[PAUSED] Awaiting coordinator's response to continue
 ---
 ```
 
-**Rias responds in agent's session with:**
+**Coordinator responds in agent's session with:**
 
 ```
 ESCALATION RESOLVED - [Agent Name]
@@ -332,7 +332,7 @@ You're unblocked - proceed with [specific action].
 - [ ] Agent missing STATUS UPDATE after checkpoint completion
 - [ ] Agent missing SKILL CHECK on first STATUS UPDATE
 
-**Rias self-check:**
+**Coordinator self-check:**
 
 - [ ] Delegated without MANDATORY PROTOCOLS block
 - [ ] Missed verification after delegation
@@ -359,14 +359,14 @@ You're unblocked - proceed with [specific action].
 **Persistent:**
 
 ```
-Escalating to Master Kai: Agent [X] repeatedly failing to [protocol]. Recommend review.
+Escalating to user: Agent [X] repeatedly failing to [protocol]. Recommend review.
 ```
 
 ---
 
 ## Quick Reference Card
 
-| Situation                | Agent Action             | Rias Action                                  |
+| Situation                | Agent Action             | Coordinator Action                           |
 | ------------------------ | ------------------------ | -------------------------------------------- |
 | Starting work            | Acknowledge protocols    | Verify compliance                            |
 | Checkpoint complete      | STATUS UPDATE            | Monitor (status-snapshot if material change) |
@@ -396,7 +396,7 @@ Escalating to Master Kai: Agent [X] repeatedly failing to [protocol]. Recommend 
 ## Handoff Pattern (Clean, Low-Noise)
 
 - Implementer finishes checkpoint → posts STATUS UPDATE + exact commands run + file paths changed.
-- Rias responds with: "Proceed / adjust / stop" and sets next checkpoint.
+- Coordinator responds with: "Proceed / adjust / stop" and sets next checkpoint.
 
 ---
 

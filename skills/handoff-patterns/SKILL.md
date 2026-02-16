@@ -1,6 +1,6 @@
 ---
 name: handoff-patterns
-description: Five handoff types to prevent context loss - Sequential (validate before proceed), Parallel (Rias integrates), Mesh (collaborative investigation), Escalation (immediate with return-control), Verification gate (tests+rollback). Includes handoff manifest template.
+description: Five handoff types to prevent context loss - Sequential (validate before proceed), Parallel (coordinator integrates), Mesh (collaborative investigation), Escalation (immediate with return-control), Verification gate (tests+rollback). Includes handoff manifest template.
 ---
 
 # Handoff Patterns
@@ -24,7 +24,7 @@ description: Five handoff types to prevent context loss - Sequential (validate b
 
 **Auto-loaded for:**
 
-- Rias when orchestrating multi-agent work
+- Coordinator when orchestrating multi-agent work
 - Agents participating in multi-phase workflows
 
 ---
@@ -51,13 +51,13 @@ Agent A completes Phase 1 → Agent B validates A's output → Agent B proceeds 
 **Example:**
 
 ```
-Yoruichi (architect): Designs API contracts
+Strategist: Designs API contracts
 ↓ (handoff with API spec)
-Xenovia (backend): Validates spec, implements endpoints
+Implementer: Validates spec, implements endpoints
 ↓ (handoff with implementation)
-Guillotine (reviewer): Reviews code quality + test coverage
+Reviewer: Reviews code quality + test coverage
 ↓ (handoff with approval)
-Grayfia (cloud): Deploys to staging
+Strategist: Deploys to staging
 ```
 
 **Red Flags:**
@@ -75,26 +75,26 @@ Grayfia (cloud): Deploys to staging
 **Pattern:**
 
 ```
-Rias delegates Task A → Agent X (parallel)
-Rias delegates Task B → Agent Y (parallel)
+Coordinator delegates Task A → Agent X (parallel)
+Coordinator delegates Task B → Agent Y (parallel)
 ↓
-Rias integrates/merges results
+Coordinator integrates/merges results
 ```
 
 **Rules:**
 
 - ✓ Each agent has **clear, independent acceptance criteria**
-- ✓ One integrator (usually Rias) owns **merge/synthesis**
-- ✓ Agents report progress independently to Rias
-- ✓ Rias monitors for **unexpected dependencies** and routes
+- ✓ One integrator (usually coordinator) owns **merge/synthesis**
+- ✓ Agents report progress independently to coordinator
+- ✓ Coordinator monitors for **unexpected dependencies** and routes
 
 **Example:**
 
 ```
-Mittelt: Build frontend components (parallel)
-Xenovia: Build backend API (parallel)
+Implementer: Build frontend components (parallel)
+Implementer: Build backend API (parallel)
 ↓
-Rapi: Integrate FE+BE (merge phase)
+Coordinator: Integrate FE+BE (merge phase)
 ```
 
 **Red Flags:**
@@ -123,17 +123,17 @@ Agents converge on unified hypothesis tree
 
 - ✓ Agents share **intermediate findings early** (don't wait for "final answer")
 - ✓ Converge on **one hypothesis tree** (don't produce competing "final answers")
-- ✓ Rias synthesizes findings into unified diagnosis
+- ✓ Coordinator synthesizes findings into unified diagnosis
 - ✓ Use **shared investigation log** (Mai Context DB or checkpoint)
 
 **Example:**
 
 ```
-Kuroka: Investigates application logs → "DB queries timing out"
-Diesel: Profiles query performance → "Queries are fast in isolation"
-Grayfia: Checks infra metrics → "DB connection pool exhausted"
+Implementer: Investigates application logs → "DB queries timing out"
+Implementer: Profiles query performance → "Queries are fast in isolation"
+Strategist: Checks infra metrics → "DB connection pool exhausted"
 ↓
-Rias: Synthesizes → "Root cause: connection pool leak under load"
+Coordinator: Synthesizes → "Root cause: connection pool leak under load"
 ```
 
 **Red Flags:**
@@ -151,9 +151,9 @@ Rias: Synthesizes → "Root cause: connection pool leak under load"
 **Pattern:**
 
 ```
-Agent encounters blocker → escalates to Rias with context
+Agent encounters blocker → escalates to coordinator with context
 ↓
-Rias routes to appropriate resolver (Master Kai, specialist, or resource provider)
+Coordinator routes to appropriate resolver (user, specialist, or resource provider)
 ↓
 Resolver provides decision/resource → Agent unblocked
 ```
@@ -163,12 +163,12 @@ Resolver provides decision/resource → Agent unblocked
 - ✓ Escalate **immediately** (don't guess, don't spin)
 - ✓ Include: **context, what was tried, options considered**
 - ✓ Use **return-control block** for cross-session escalations
-- ✓ Rias acknowledges within 1 coordinator turn
+- ✓ Coordinator acknowledges within 1 coordinator turn
 
 **Escalation Format:**
 
 ```
-ESCALATION TO RIAS:
+ESCALATION TO COORDINATOR:
 - BLOCKER: [clear description]
 - CONTEXT: [what you were trying to accomplish]
 - ATTEMPTED: [what you've already tried - be specific]
@@ -182,7 +182,7 @@ ESCALATION TO RIAS:
 
 ```
 ---
-[ALERT] ESCALATION TO RIAS - RETURNING CONTROL
+[ALERT] ESCALATION TO COORDINATOR - RETURNING CONTROL
 ---
 
 AGENT: [Your name]
@@ -207,7 +207,7 @@ SCOPE IMPACT:
 WAITING STATE: [What you're doing while blocked]
 
 ---
-[PAUSED] PAUSED - Awaiting Rias's response to continue
+[PAUSED] PAUSED - Awaiting coordinator's response to continue
 ---
 ```
 
@@ -342,7 +342,7 @@ HANDOFF
 **During execution:**
 
 - Agents report checkpoints using STATUS UPDATE format
-- Rias monitors for handoff boundaries
+- Coordinator monitors for handoff boundaries
 - Escalations use mandatory return-control block
 
 **After completion:**
@@ -378,7 +378,7 @@ HANDOFF
 ### ❌ **Parallel Work with Hidden Dependencies**
 
 - **Bad:** Agents discover shared dependency mid-work, block each other
-- **Good:** Rias identifies dependencies upfront, sequences work appropriately
+- **Good:** Coordinator identifies dependencies upfront, sequences work appropriately
 - **Why:** Avoids thrashing and rework
 
 ---

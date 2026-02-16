@@ -191,7 +191,7 @@ async function checkLogPaths(): Promise<CheckResult> {
   const logBase = join(process.cwd(), "logs");
   const expected = [
     "episodic-memory.jsonl",
-    "rias-monitoring.jsonl",
+    "coordinator-monitoring.jsonl",
     "context-monitor.jsonl",
     "auto-checkpoints.jsonl",
     "roadmap-sync.jsonl",

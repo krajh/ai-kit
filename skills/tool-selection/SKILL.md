@@ -217,12 +217,12 @@ memory({ mode: "list", limit: 10 });
 
 ---
 
-### Todo Management (Rias-only)
+### Todo Management (coordinator-only)
 
 **`todowrite` / `todoread`:**
 
 - Use only for orchestration tracking
-- Rias-only by policy
+- Coordinator-only by policy
 
 ---
 
@@ -284,13 +284,13 @@ bun .opencode/tools/checkpoint.ts --name "milestone" --sync  # Sync to Mai
 
 ---
 
-### `status-snapshot` (Rias-only)
+### `status-snapshot` (coordinator-only)
 
 Read and summarize `.opencode/status.json` for fast status updates
 
 ---
 
-### `blocker-tracker` (Rias-only)
+### `blocker-tracker` (coordinator-only)
 
 Create/update blockers in `.opencode/status.json`
 
@@ -318,7 +318,7 @@ bun .opencode/tools/episodic-memory-query.ts --mode artifacts --artifact-types '
 1. Unsure? Start with `glob` (names) or `grep` (content)
 2. If needed: Serena (symbols), ast-grep (patterns), rg (text)
 
-**Coordinate:** `task` (with Protocols v1.4) + (Rias-only) todo tools
+**Coordinate:** `task` (with Protocols v1.4) + (coordinator-only) todo tools
 
 **Context:** Mai Context DB (durable) + opencode-mem (ephemeral)
 
