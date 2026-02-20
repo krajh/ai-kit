@@ -321,6 +321,99 @@ check_prerequisites() {
   log_ok "All prerequisites found"
 }
 
+# Detect and install OpenCode CLI if not present
+ensure_opencode() {
+  # Check if OpenCode is installed
+  if command -v opencode >/dev/null 2>&1; then
+    local current_version
+    current_version="$(opencode --version 2>/dev/null || echo "unknown")"
+    log_ok "OpenCode CLI found (version: $current_version)"
+    return 0
+  fi
+
+  # OpenCode not found - offer to install
+  local can_prompt=false
+  if [ "$DRY_RUN" != true ] && [ "$NO_PROMPT" != true ] && [ -t 0 ]; then
+    can_prompt=true
+  fi
+
+  if [ "$DRY_RUN" = true ]; then
+    log "Dry run: would install OpenCode CLI"
+    return 0
+  fi
+
+  if [ "$NO_PROMPT" = true ] && [ "$can_prompt" = false ]; then
+    die "OpenCode CLI is not installed and --no-prompt is set. Install OpenCode first: https://opencode.ai"
+  fi
+
+  if [ "$can_prompt" = true ]; then
+    printf "\n" >&2
+    printf "╔══════════════════════════════════════════════════════════════╗\n" >&2
+    printf "║  OpenCode CLI Not Found                                     ║\n" >&2
+    printf "╠══════════════════════════════════════════════════════════════╣\n" >&2
+    printf "║  OpenCode is required to use this kit.                      ║\n" >&2
+    printf "║  Install now? [Y/n]:                                        ║\n" >&2
+    printf "╚══════════════════════════════════════════════════════════════╝\n" >&2
+    printf "\n" >&2
+
+    local response
+    printf "Install OpenCode? [Y/n]: " >&2
+    IFS= read -r response
+    printf "\n" >&2
+
+    if [[ "$response" =~ ^[Nn]$ ]]; then
+      die "OpenCode CLI is required. Install from: https://opencode.ai"
+    fi
+  fi
+
+  # Install OpenCode CLI
+  log "Installing OpenCode CLI..."
+
+  local install_script
+  install_script="$(mktemp)"
+
+  # Detect platform for installation
+  local os arch
+  os="$(uname -s)"
+  arch="$(uname -m)"
+
+  if [ "$arch" = "x86_64" ] || [ "$arch" = "amd64" ]; then
+    arch="x86_64"
+  elif [ "$arch" = "arm64" ]; then
+    arch="aarch64"
+  fi
+
+  # Download and run OpenCode install script
+  local opencode_install_url="https://opencode.ai/install"
+  
+  if ! curl -fsSL "$opencode_install_url" -o "$install_script"; then
+    rm -f "$install_script"
+    die "Failed to download OpenCode installer"
+  fi
+
+  chmod +x "$install_script"
+
+  # Run the installer
+  if ! "$install_script" --prefix "$TARGET_DIR/bin" 2>&1; then
+    rm -f "$install_script"
+    die "OpenCode installation failed"
+  fi
+
+  rm -f "$install_script"
+
+  # Add to PATH for current session
+  export PATH="$TARGET_DIR/bin:$PATH"
+
+  # Verify installation
+  if ! command -v opencode >/dev/null 2>&1; then
+    die "OpenCode installed but not found in PATH. Add $TARGET_DIR/bin to your PATH."
+  fi
+
+  local installed_version
+  installed_version="$(opencode --version 2>/dev/null || echo "unknown")"
+  log_ok "OpenCode CLI installed (version: $installed_version)"
+}
+
 # Download cosign binary if needed
 ensure_cosign() {
   local cosign_bin cosign_url cosign_binary_name
@@ -830,6 +923,9 @@ cmd_install() {
   detect_platform
   check_prerequisites
 
+  # Check and install OpenCode if needed
+  ensure_opencode
+
   if [ -d "$TARGET_DIR" ]; then
     die "Installation directory already exists at $TARGET_DIR. Use 'update' to refresh or remove the directory manually."
   fi
@@ -863,6 +959,9 @@ cmd_update() {
   log "Starting update..."
   detect_platform
   check_prerequisites
+
+  # Check and install OpenCode if needed
+  ensure_opencode
 
   if [ ! -d "$TARGET_DIR" ]; then
     die "No existing installation found at $TARGET_DIR. Use 'install' for fresh installation."

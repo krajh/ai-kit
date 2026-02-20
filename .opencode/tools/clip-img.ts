@@ -30,27 +30,41 @@ export default tool({
       const winPathResult = await Bun.$`wslpath -w ${fullPath}`.text();
       const winPath = winPathResult.trim();
 
-      // Detect which PowerShell is available (prefer pwsh.exe for speed)
-      let psCommand = "powershell.exe";
-      try {
-        await Bun.$`command -v pwsh.exe`.quiet();
-        psCommand = "pwsh.exe"; // ~50-100ms startup vs 200-500ms for powershell.exe
-      } catch {
-        // Check full paths for PowerShell in WSL
-        const pwshPath = "/mnt/c/Program Files/PowerShell/7/pwsh.exe";
-        const ps5Path = "/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe";
-        
+      // Detect which PowerShell is available in WSL
+      // Try pwsh.exe first (PowerShell 7+), then fall back to powershell.exe (5.1)
+      let psCommand: string | undefined;
+      
+      // Define possible PowerShell paths in WSL - PowerShell 7 at standard location
+      const pwshPaths = [
+        "/mnt/c/Program Files/PowerShell/7/pwsh.exe",
+        "/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe",
+      ];
+      
+      // Check each path in order
+      for (const psPath of pwshPaths) {
         try {
-          await Bun.$`test -f ${pwshPath}`.quiet();
-          psCommand = pwshPath;
+          await Bun.$`test -f ${psPath}`.quiet();
+          psCommand = psPath;
+          break;
         } catch {
-          try {
-            await Bun.$`test -f ${ps5Path}`.quiet();
-            psCommand = ps5Path;
-          } catch {
-            return `[X] Error: No PowerShell found. Install PowerShell or ensure it's in PATH.`;
-          }
+          // Path doesn't exist, try next
         }
+      }
+      
+      if (!psCommand) {
+        // Try using wsl-aware command detection
+        try {
+          const whichPwsh = await Bun.$`which pwsh.exe`.text();
+          if (whichPwsh.trim()) {
+            psCommand = "pwsh.exe";
+          }
+        } catch {
+          // Not in PATH either
+        }
+      }
+      
+      if (!psCommand) {
+        return `[X] Error: No PowerShell found. Install PowerShell 7+ or ensure Windows PowerShell is accessible.`;
       }
 
       // Use PowerShell to save clipboard image
