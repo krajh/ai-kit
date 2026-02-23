@@ -43,6 +43,7 @@ const STAGING_DIR = join(OPENCODE_HOME, "staging");
 const STATE_DIR = join(OPENCODE_HOME, "state");
 const STATE_FILE = join(STATE_DIR, "ai-kit-update.json");
 const CURRENT_LINK = join(OPENCODE_HOME, "current");
+const INCOMING_DIR = ".ai-kit-incoming";
 
 const KIT_LINK_ITEMS = [
   "opencode.json",
@@ -98,11 +99,6 @@ interface FetchResponseLike {
   ok: boolean;
   json(): Promise<unknown>;
   arrayBuffer(): Promise<ArrayBuffer>;
-}
-
-interface ReapplyResult {
-  applied: string[];
-  conflicts: string[];
 }
 
 // ---------------------------------------------------------------------------
@@ -177,62 +173,17 @@ async function stashModifications(
   }
 }
 
-async function reapplyModifications(
-  oldManifest: AiKitManifest,
-  newVersionDir: string,
-  stashDir: string,
-  modifications: UserModification[],
-): Promise<ReapplyResult> {
-  const oldHashMap = new Map(
-    Object.entries(oldManifest.files).map(([path, entry]) => [
-      path,
-      entry.installedHash,
-    ]),
+async function stageIncomingFile(
+  relPath: string,
+  sourcePath: string,
+): Promise<void> {
+  const incomingPath = join(OPENCODE_HOME, INCOMING_DIR, relPath);
+  await mkdir(dirname(incomingPath), { recursive: true });
+  const content = await readFile(sourcePath);
+  await writeFile(incomingPath, content);
+  console.log(
+    `  [!] User-modified file detected, new version staged at ${INCOMING_DIR}/${relPath}`,
   );
-  const applied: string[] = [];
-  const conflicts: string[] = [];
-
-  for (const mod of modifications) {
-    const stashedFile = join(stashDir, mod.relativePath);
-    const newFile = join(newVersionDir, mod.relativePath);
-
-    let existsInNew = true;
-    try {
-      await stat(newFile);
-    } catch {
-      existsInNew = false;
-    }
-
-    if (!existsInNew) {
-      await mkdir(dirname(newFile), { recursive: true });
-      const content = await readFile(stashedFile);
-      await writeFile(newFile, content);
-      applied.push(mod.relativePath);
-      continue;
-    }
-
-    if (mod.type === "added") {
-      const content = await readFile(stashedFile);
-      await writeFile(`${newFile}.user`, content);
-      conflicts.push(mod.relativePath);
-      continue;
-    }
-
-    const oldHash = oldHashMap.get(mod.relativePath);
-    const newHash = computeFileHash(newFile);
-
-    if (oldHash && oldHash === newHash) {
-      const content = await readFile(stashedFile);
-      await writeFile(newFile, content);
-      applied.push(mod.relativePath);
-    } else {
-      const content = await readFile(stashedFile);
-      await writeFile(`${newFile}.user`, content);
-      conflicts.push(mod.relativePath);
-    }
-  }
-
-  return { applied, conflicts };
 }
 
 function shouldCheck(lastCheckTime: number): boolean {
@@ -448,7 +399,6 @@ async function applyStagedUpdate(tag: string): Promise<boolean> {
     // ── Detect personalisations in current version ──
     let modifications: UserModification[] = [];
     let oldManifest: AiKitManifest | null = null;
-    let stashDir: string | null = null;
     let currentVersionDir: string | null = null;
 
     try {
@@ -462,12 +412,6 @@ async function applyStagedUpdate(tag: string): Promise<boolean> {
       oldManifest = readManifest(currentVersionDir);
       modifications =
         await detectUserModificationsForVersion(currentVersionDir);
-
-      if (modifications.length > 0 && oldManifest) {
-        const { tmpdir } = await import("node:os");
-        stashDir = join(tmpdir(), `ai-kit-stash-${Date.now()}`);
-        await stashModifications(currentVersionDir, stashDir, modifications);
-      }
     }
 
     // ── Move staged → versions ──
@@ -481,23 +425,41 @@ async function applyStagedUpdate(tag: string): Promise<boolean> {
 
     if (!(await looksLikeKitRoot(versionPath))) return false;
 
-    // ── Compute checksums for new version (before reapply) ──
-    await computeManifestForVersion(versionPath, tag);
+    // ── Compute checksums for new version (before applying user files) ──
+    const newManifest = await computeManifestForVersion(versionPath, tag);
 
-    // ── Reapply personalisations ──
-    if (stashDir && oldManifest && modifications.length > 0) {
-      try {
-        await reapplyModifications(
-          oldManifest,
-          versionPath,
-          stashDir,
-          modifications,
-        );
-      } catch {
-        // Non-interactive: don't block update on reapply failure
-      } finally {
-        await rm(stashDir, { recursive: true, force: true }).catch(() => {});
+    // ── Preserve user modifications + stage incoming conflicts ──
+    if (currentVersionDir && oldManifest && modifications.length > 0) {
+      for (const mod of modifications) {
+        const userPath = join(currentVersionDir, mod.relativePath);
+        const newPath = join(versionPath, mod.relativePath);
+
+        let existsInNew = true;
+        try {
+          await stat(newPath);
+        } catch {
+          existsInNew = false;
+        }
+
+        if (existsInNew) {
+          await stageIncomingFile(mod.relativePath, newPath);
+        }
+
+        try {
+          await mkdir(dirname(newPath), { recursive: true });
+          const content = await readFile(userPath);
+          await writeFile(newPath, content);
+        } catch {
+          continue;
+        }
+
+        const oldEntry = oldManifest.files[mod.relativePath];
+        if (oldEntry) {
+          newManifest.files[mod.relativePath] = oldEntry;
+        }
       }
+
+      writeManifest(versionPath, newManifest);
     }
 
     // ── Flip symlink ──
@@ -637,8 +599,26 @@ async function checkAndStageUpdate(): Promise<void> {
 }
 
 const AiKitUpdaterPlugin: Plugin = async () => {
-  // Auto-update disabled — will be re-enabled once npm distribution is live
-  return {};
+  let didRun = false;
+
+  return {
+    event: async ({ event }) => {
+      if (event.type !== "session.created") return;
+      if (didRun) return;
+      didRun = true;
+
+      try {
+        await applyStagedUpdateOnStartup();
+        await checkAndStageUpdate();
+      } catch (error) {
+        console.warn(
+          `[!] ai-kit-updater failed: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+        );
+      }
+    },
+  };
 };
 
 export default AiKitUpdaterPlugin;
@@ -649,7 +629,6 @@ export {
   computeFileHash,
   detectUserModificationsForVersion,
   stashModifications,
-  reapplyModifications,
 };
 
-export type { UserModification, ReapplyResult };
+export type { UserModification };

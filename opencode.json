@@ -4,6 +4,7 @@
   "autoupdate": true,
   "default_agent": "coordinator",
   "plugin": [
+    "plugins/ai-kit-updater.ts",
     "@howaboua/opencode-roadmap-plugin@latest",
     "@tarquinen/opencode-dcp@latest",
     "opencode-mem@2.11.3"

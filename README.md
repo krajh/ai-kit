@@ -81,7 +81,7 @@ This ensures you never silently lose your customisations.
 | `npm install`  | Node.js projects, version pinning via `package.json` |
 | `curl \| bash` | System-wide install, non-Node projects, CI pipelines |
 
-> **Note:** The npm distribution does not include the auto-updater plugin. Version updates happen through normal `npm update` workflows.
+> **Note:** The npm distribution now includes the auto-updater plugin. It checks GitHub releases when OpenCode starts, but you should still use `npm update` to pick up package updates in Node projects.
 
 ### Manual (download installer)
 
@@ -254,7 +254,7 @@ Starting with the version that introduces checksum tracking, ai-kit protects you
 
 5. **Conflict resolution**:
    - **Interactive terminal** (manual `./ai-kit-install update`): you're prompted per conflict with `[k]eep yours / [o]verwrite with new / [d]iff / [s]kip`.
-   - **Non-interactive** (plugin auto-update, piped input, `--no-prompt`): the new upstream version wins, and your version is saved alongside it as `<filename>.user` so you can manually reconcile later.
+   - **Non-interactive (auto-updater)**: your file stays in place, and the new upstream version is staged under `.ai-kit-incoming/` for manual review via `ai-kit-install resolve`.
 
 #### Example
 

@@ -2,6 +2,7 @@ import { describe, it, expect } from "bun:test";
 import { mkdir, writeFile, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
+import AiKitUpdaterPlugin from "../plugins/ai-kit-updater";
 
 function parseVersion(tag: string): [number, number, number] | null {
   const match = tag.match(/^v?(\d+)\.(\d+)\.(\d+)$/);
@@ -121,5 +122,12 @@ describe("ai-kit-updater looksLikeKitRoot (essentials-only tarball)", () => {
     } finally {
       await rm(testDir, { recursive: true, force: true });
     }
+  });
+});
+
+describe("ai-kit-updater plugin hooks", () => {
+  it("registers an event hook", async () => {
+    const hooks = await AiKitUpdaterPlugin({} as never);
+    expect(typeof hooks.event).toBe("function");
   });
 });

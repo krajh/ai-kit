@@ -26,6 +26,7 @@ BACKUP_PATH="$BACKUP_ROOT/ai-kit-$TIMESTAMP"
 VERSIONS_DIR="$TARGET_DIR/versions"
 CURRENT_LINK="$TARGET_DIR/current"
 MANIFEST_FILE=".ai-kit-manifest.json"
+INCOMING_DIR=".ai-kit-incoming"
 
 # Top-level items that OpenCode reads from ~/.config/opencode.
 # We keep the real content in versions/<tag>/ and expose it via symlinks.
@@ -1111,6 +1112,23 @@ cmd_status() {
   if [ -d "$TARGET_DIR/local" ]; then
     log_ok "local/ directory is present"
   fi
+
+  if [ -d "$TARGET_DIR/$INCOMING_DIR" ]; then
+    local incoming_count
+    incoming_count="$((
+      find "$TARGET_DIR/$INCOMING_DIR" -type f 2>/dev/null | wc -l | tr -d ' '
+    ))"
+    if [ "$incoming_count" -eq 0 ]; then
+      log "No pending conflicts."
+    else
+      log_warn "Pending conflicts:"
+      find "$TARGET_DIR/$INCOMING_DIR" -type f 2>/dev/null | while IFS= read -r file; do
+        log "  ${file#"$TARGET_DIR/"}"
+      done
+    fi
+  else
+    log "No pending conflicts."
+  fi
 }
 
 # Rollback to previous version
@@ -1136,6 +1154,71 @@ cmd_rollback() {
   else
     log "Dry run: would restore from $latest_backup"
   fi
+}
+
+cmd_resolve() {
+  local mode="${1:-}"
+
+  if [ ! -d "$TARGET_DIR" ]; then
+    log "No installation found at $TARGET_DIR"
+    return 1
+  fi
+
+  if [ "$mode" != "--accept-incoming" ] && [ "$mode" != "--keep-mine" ]; then
+    log_error "Usage: ai-kit-install resolve --accept-incoming|--keep-mine"
+    return 1
+  fi
+
+  local incoming_path="$TARGET_DIR/$INCOMING_DIR"
+  if [ ! -d "$incoming_path" ]; then
+    log "No pending conflicts."
+    return 0
+  fi
+
+  local pending_files
+  pending_files="$(find "$incoming_path" -type f 2>/dev/null || true)"
+  if [ -z "$pending_files" ]; then
+    log "No pending conflicts."
+    return 0
+  fi
+
+  local current_version_dir=""
+  if [ -L "$CURRENT_LINK" ]; then
+    current_version_dir="$(readlink -f "$CURRENT_LINK")"
+  fi
+
+  local manifest_file=""
+  if [ -n "$current_version_dir" ] && [ -f "$current_version_dir/$MANIFEST_FILE" ]; then
+    manifest_file="$current_version_dir/$MANIFEST_FILE"
+  fi
+
+  while IFS= read -r incoming_file; do
+    [ -z "$incoming_file" ] && continue
+    local rel_path
+    rel_path="${incoming_file#"$incoming_path/"}"
+    local dest_path="$TARGET_DIR/$rel_path"
+
+    if [ "$mode" = "--accept-incoming" ]; then
+      mkdir -p "$(dirname "$dest_path")"
+      cp "$incoming_file" "$dest_path"
+
+      if [ -n "$manifest_file" ]; then
+        local hash
+        hash="$(file_sha256 "$dest_path")"
+        jq --arg p "$rel_path" --arg h "$hash" \
+          '.files[$p].installedHash = $h | .files[$p].sourceHash = $h' \
+          "$manifest_file" >"$manifest_file.tmp" && mv "$manifest_file.tmp" "$manifest_file"
+      fi
+
+      log_ok "Accepted incoming: $rel_path"
+    else
+      log_ok "Kept mine: $rel_path"
+    fi
+
+    rm -f "$incoming_file"
+  done <<<"$pending_files"
+
+  find "$incoming_path" -type d -empty -delete 2>/dev/null || true
 }
 
 # Dry run mode
@@ -1170,6 +1253,7 @@ COMMANDS:
   update [TAG]      Update existing installation (default: latest release)
   status            Show installation status
   rollback          Restore previous backup
+  resolve           Resolve staged conflicts (accept incoming or keep mine)
   dry-run [TAG]     Simulate installation without making changes
 
 OPTIONS:
@@ -1182,6 +1266,8 @@ EXAMPLES:
   ai-kit-install update
   ai-kit-install status
   ai-kit-install rollback
+  ai-kit-install resolve --accept-incoming
+  ai-kit-install resolve --keep-mine
   ai-kit-install dry-run
 
 ENVIRONMENT:
@@ -1222,6 +1308,9 @@ main() {
     ;;
   rollback)
     cmd_rollback
+    ;;
+  resolve)
+    cmd_resolve "${POSITIONAL[1]:-}"
     ;;
   dry-run)
     cmd_dry_run "${TAG:-latest}"
