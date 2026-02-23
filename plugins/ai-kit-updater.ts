@@ -44,6 +44,7 @@ const STATE_DIR = join(OPENCODE_HOME, "state");
 const STATE_FILE = join(STATE_DIR, "ai-kit-update.json");
 const CURRENT_LINK = join(OPENCODE_HOME, "current");
 const INCOMING_DIR = ".ai-kit-incoming";
+const NPM_MARKER_FILE = ".ai-kit-npm";
 
 const KIT_LINK_ITEMS = [
   "opencode.json",
@@ -201,6 +202,15 @@ async function readState(): Promise<UpdateState> {
     return parsed;
   } catch {
     return { lastCheckTime: 0, lastCheckedTag: "" };
+  }
+}
+
+async function isNpmDistributed(): Promise<boolean> {
+  try {
+    await stat(join(OPENCODE_HOME, NPM_MARKER_FILE));
+    return true;
+  } catch {
+    return false;
   }
 }
 
@@ -599,6 +609,13 @@ async function checkAndStageUpdate(): Promise<void> {
 }
 
 const AiKitUpdaterPlugin: Plugin = async () => {
+  if (await isNpmDistributed()) {
+    console.log(
+      "[ai-kit-updater] npm distribution detected — use `npm update -g @brisingr-kr/core` for updates",
+    );
+    return {};
+  }
+
   let didRun = false;
 
   return {
