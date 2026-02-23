@@ -25,7 +25,7 @@ TIMESTAMP="$(date -u +%Y%m%d%H%M%SZ)"
 BACKUP_PATH="$BACKUP_ROOT/ai-kit-$TIMESTAMP"
 VERSIONS_DIR="$TARGET_DIR/versions"
 CURRENT_LINK="$TARGET_DIR/current"
-CHECKSUMS_FILE=".ai-kit-checksums"
+MANIFEST_FILE=".ai-kit-manifest.json"
 
 # Top-level items that OpenCode reads from ~/.config/opencode.
 # We keep the real content in versions/<tag>/ and expose it via symlinks.
@@ -702,40 +702,75 @@ file_sha256() {
   fi
 }
 
-# Compute SHA256 checksums of all files in a version directory and store them.
-# Called immediately after extraction so the checksums reflect the original
-# kit state *before* any user personalisation.
-compute_checksums() {
+# Compute SHA256 hashes of all files in a version directory and store them
+# in .ai-kit-manifest.json. Called immediately after extraction so the hashes
+# reflect the original kit state *before* any user personalisation.
+compute_manifest() {
   local version_dir="$1"
-  local checksums_file="$version_dir/$CHECKSUMS_FILE"
+  local manifest_file="$version_dir/$MANIFEST_FILE"
 
   if [ "$DRY_RUN" = true ]; then
-    log "Dry run: would compute checksums for $version_dir"
+    log "Dry run: would compute manifest for $version_dir"
     return 0
   fi
 
-  # Generate relative-path checksums (one per file, excluding the manifest itself)
+  local version
+  version="$(basename "$version_dir")"
+  version="${version#v}"
+
+  local installed_at
+  installed_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+  local temp_file
+  temp_file="$(mktemp)"
+
+  {
+    printf '{\n'
+    printf '  "version": "%s",\n' "$version"
+    printf '  "installedAt": "%s",\n' "$installed_at"
+    printf '  "installedVia": "npm",\n'
+    printf '  "files": {'
+  } >"$temp_file"
+
+  local first=true
   (
     cd "$version_dir" || exit 1
-    find . -type f ! -name "$CHECKSUMS_FILE" -print0 |
+    find . -type f ! -name "$MANIFEST_FILE" -print0 |
       sort -z |
       while IFS= read -r -d '' f; do
-        printf "%s  %s\n" "$(file_sha256 "$f")" "$f"
+        local rel
+        rel="${f#./}"
+        local hash
+        hash="$(file_sha256 "$f")"
+        if [ "$first" = true ]; then
+          first=false
+        else
+          printf ',' >>"$temp_file"
+        fi
+        printf '\n    "%s": {"category":"managed","installedHash":"%s","sourceHash":"%s"}' \
+          "$rel" "$hash" "$hash" >>"$temp_file"
       done
-  ) >"$checksums_file"
+  )
 
-  log_ok "Checksums manifest written ($(wc -l <"$checksums_file") files)"
+  {
+    printf '\n  }\n}\n'
+  } >>"$temp_file"
+
+  mv "$temp_file" "$manifest_file"
+  local file_count
+  file_count="$(jq -r '.files | length' "$manifest_file" 2>/dev/null || echo "?")"
+  log_ok "Manifest written ($file_count files)"
 }
 
-# Compare current version files against stored checksums.
+# Compare current version files against stored manifest.
 # Outputs lines:  M <relpath>  (modified)   A <relpath>  (added by user)
 # Returns 0 if personalised files were found, 1 otherwise.
 detect_user_modifications() {
   local version_dir="$1"
-  local checksums_file="$version_dir/$CHECKSUMS_FILE"
+  local manifest_file="$version_dir/$MANIFEST_FILE"
 
-  if [ ! -f "$checksums_file" ]; then
-    log_warn "No checksums manifest found in current version."
+  if [ ! -f "$manifest_file" ]; then
+    log_warn "No manifest found in current version."
     log_warn "Cannot detect personalisations (version predates this feature)."
     return 1
   fi
@@ -743,34 +778,35 @@ detect_user_modifications() {
   local found=false
 
   # Check each tracked file for modification
-  while IFS= read -r line; do
-    [ -z "$line" ] && continue
-    local expected_hash file_rel
-    expected_hash="${line%%  *}"
-    file_rel="${line#*  }"
-    local file_abs="$version_dir/$file_rel"
+  local keys
+  keys="$(jq -r '.files | keys[]' "$manifest_file" 2>/dev/null || true)"
+  if [ -n "$keys" ]; then
+    while IFS= read -r rel; do
+      [ -z "$rel" ] && continue
+      local file_abs="$version_dir/$rel"
+      if [ ! -f "$file_abs" ]; then
+        continue
+      fi
+      local expected_hash actual_hash
+      expected_hash="$(jq -r --arg p "$rel" '.files[$p].installedHash' "$manifest_file")"
+      actual_hash="$(file_sha256 "$file_abs")"
+      if [ "$expected_hash" != "$actual_hash" ]; then
+        printf "M %s\n" "$rel"
+        found=true
+      fi
+    done <<<"$keys"
+  fi
 
-    if [ ! -f "$file_abs" ]; then
-      # User deleted a tracked file — note but don't stash
-      continue
-    fi
-
-    local actual_hash
-    actual_hash="$(file_sha256 "$file_abs")"
-    if [ "$expected_hash" != "$actual_hash" ]; then
-      printf "M %s\n" "$file_rel"
-      found=true
-    fi
-  done <"$checksums_file"
-
-  # Detect user-added files (not in the original checksums)
+  # Detect user-added files (not in the original manifest)
   (
     cd "$version_dir" || exit 1
-    find . -type f ! -name "$CHECKSUMS_FILE" -print0 |
+    find . -type f ! -name "$MANIFEST_FILE" -print0 |
       sort -z |
       while IFS= read -r -d '' f; do
-        if ! grep -qF "  $f" "$checksums_file"; then
-          printf "A %s\n" "$f"
+        local rel
+        rel="${f#./}"
+        if ! jq -e --arg p "$rel" '.files[$p]' "$manifest_file" >/dev/null 2>&1; then
+          printf "A %s\n" "$rel"
           found=true
         fi
       done
@@ -869,7 +905,7 @@ handle_conflict() {
 reapply_modifications() {
   local new_version_dir="$1"
   local stash_dir="$2"
-  local old_checksums_file="$3"
+  local old_manifest_file="$3"
 
   local applied=0 conflicts=0 added=0
 
@@ -888,10 +924,10 @@ reapply_modifications() {
 
     # File exists in both. Was it also changed in the new release?
     local old_hash new_hash
-    old_hash="$(grep "  \./${rel_path#./}$" "$old_checksums_file" 2>/dev/null | awk '{print $1}' | head -1)"
+    old_hash="$(jq -r --arg p "$rel_path" '.files[$p].installedHash' "$old_manifest_file" 2>/dev/null)"
     new_hash="$(file_sha256 "$new_file")"
 
-    if [ -z "$old_hash" ]; then
+    if [ -z "$old_hash" ] || [ "$old_hash" = "null" ]; then
       # File didn't exist in old version but exists in both user stash and new
       handle_conflict "$rel_path" "$stashed_file" "$new_file"
       conflicts=$((conflicts + 1))
@@ -937,8 +973,8 @@ cmd_install() {
   # Extract
   extract_tarball "$tag"
 
-  # Store baseline checksums so future updates can detect personalizations
-  compute_checksums "$version_dir"
+  # Store baseline manifest so future updates can detect personalizations
+  compute_manifest "$version_dir"
 
   mkdir -p "$TARGET_DIR"
   activate_version "$tag"
@@ -952,7 +988,7 @@ cmd_install() {
 # Update existing installation
 cmd_update() {
   local tag backup_info version_dir
-  local current_version_dir="" stash_dir="" old_checksums_backup="" modifications=""
+  local current_version_dir="" stash_dir="" old_manifest_backup="" modifications=""
 
   show_logo
   echo ""
@@ -981,7 +1017,7 @@ cmd_update() {
     current_version_dir="$(readlink -f "$CURRENT_LINK")"
   fi
 
-  if [ -n "$current_version_dir" ] && [ -f "$current_version_dir/$CHECKSUMS_FILE" ]; then
+  if [ -n "$current_version_dir" ] && [ -f "$current_version_dir/$MANIFEST_FILE" ]; then
     modifications="$(detect_user_modifications "$current_version_dir")"
     if [ -n "$modifications" ]; then
       local mod_count
@@ -994,14 +1030,14 @@ cmd_update() {
       stash_dir="$(mktemp -d)"
       stash_modifications "$current_version_dir" "$stash_dir" "$modifications"
 
-      # Keep a copy of the old checksums for 3-way conflict detection
-      old_checksums_backup="$(mktemp)"
-      cp "$current_version_dir/$CHECKSUMS_FILE" "$old_checksums_backup"
+      # Keep a copy of the old manifest for 3-way conflict detection
+      old_manifest_backup="$(mktemp)"
+      cp "$current_version_dir/$MANIFEST_FILE" "$old_manifest_backup"
     else
       log "No personalised files detected — clean update."
     fi
   elif [ -n "$current_version_dir" ]; then
-    log_warn "No checksums manifest in current version. Personalisation detection unavailable."
+    log_warn "No manifest in current version. Personalisation detection unavailable."
     log_warn "Your changes (if any) inside the version directory will not be preserved."
     log_warn "Future updates will support this after this upgrade completes."
   fi
@@ -1016,15 +1052,15 @@ cmd_update() {
   # Extract
   extract_tarball "$tag"
 
-  # Store baseline checksums for the new version BEFORE applying personalisations
-  compute_checksums "$version_dir"
+  # Store baseline manifest for the new version BEFORE applying personalisations
+  compute_manifest "$version_dir"
 
   # ── Reapply personalisations ───────────────────────────────────────
   if [ -n "$stash_dir" ] && [ -d "$stash_dir" ]; then
     log "Reapplying personalised files to $tag..."
-    reapply_modifications "$version_dir" "$stash_dir" "$old_checksums_backup"
+    reapply_modifications "$version_dir" "$stash_dir" "$old_manifest_backup"
     rm -rf "$stash_dir"
-    rm -f "$old_checksums_backup"
+    rm -f "$old_manifest_backup"
   fi
 
   # Activate

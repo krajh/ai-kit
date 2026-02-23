@@ -166,8 +166,8 @@ export function main(): void {
   const markerPath = join(ocHome, MARKER_FILE);
   if (existsSync(markerPath)) unlinkSync(markerPath);
 
-  const checksumsPath = join(ocHome, ".ai-kit-checksums");
-  if (existsSync(checksumsPath)) unlinkSync(checksumsPath);
+  const legacyChecksumsPath = join(ocHome, ".ai-kit-checksums");
+  if (existsSync(legacyChecksumsPath)) unlinkSync(legacyChecksumsPath);
 
   console.log(
     `\n  [OK] Cleanup complete: ${removed} removed, ${skipped} skipped (user files preserved)\n`,

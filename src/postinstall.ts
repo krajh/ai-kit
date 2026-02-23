@@ -7,7 +7,6 @@
  * Tracks installed files via .ai-kit-manifest.json and preserves user edits.
  */
 
-import { createHash } from "node:crypto";
 import {
   copyFileSync,
   existsSync,
@@ -17,10 +16,12 @@ import {
   statSync,
   writeFileSync,
 } from "node:fs";
+import { createHash } from "node:crypto";
 import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 
 import type { AiKitManifest, FileEntry } from "./types";
+import { readManifest, writeManifest } from "./lib/manifest";
 
 export const KIT_LINK_ITEMS = [
   "opencode.json",
@@ -33,7 +34,7 @@ export const KIT_LINK_ITEMS = [
 ] as const;
 
 export const MARKER_FILE = ".ai-kit-npm";
-export const MANIFEST_FILE = ".ai-kit-manifest.json";
+export { MANIFEST_FILE } from "./lib/manifest";
 export const INCOMING_DIR = ".ai-kit-incoming";
 
 export function getOpenCodeHome(): string {
@@ -67,24 +68,7 @@ export function walkFiles(dir: string): string[] {
   return results;
 }
 
-export function readManifest(ocHome: string): AiKitManifest | null {
-  const manifestPath = join(ocHome, MANIFEST_FILE);
-  if (!existsSync(manifestPath)) return null;
-
-  try {
-    return JSON.parse(readFileSync(manifestPath, "utf-8")) as AiKitManifest;
-  } catch {
-    return null;
-  }
-}
-
-export function writeManifest(ocHome: string, manifest: AiKitManifest): void {
-  writeFileSync(
-    join(ocHome, MANIFEST_FILE),
-    JSON.stringify(manifest, null, 2) + "\n",
-    "utf-8",
-  );
-}
+export { readManifest, writeManifest } from "./lib/manifest";
 
 function readJsonFile(filePath: string): Record<string, unknown> | null {
   try {

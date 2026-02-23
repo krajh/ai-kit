@@ -12,10 +12,19 @@ import {
   unlink,
   writeFile,
 } from "node:fs/promises";
-import { createHash } from "node:crypto";
 import { execFile } from "node:child_process";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
+
+import {
+  computeFileHash,
+  detectUserModifications,
+  readManifest,
+  writeManifest,
+  type AiKitManifest,
+  type UserModification,
+  MANIFEST_FILE,
+} from "../src/lib/manifest";
 
 /**
  * ai-kit updater (WSL/Linux-only v1)
@@ -45,13 +54,8 @@ const KIT_LINK_ITEMS = [
 ] as const;
 
 const CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000;
-const CHECKSUMS_FILE = ".ai-kit-checksums";
-
-const DISABLED = process.env.OPENCODE_AI_KIT_UPDATER_DISABLED === "1";
-
 const GITHUB_RELEASE_LATEST_API =
   "https://api.github.com/repos/krajh/ai-kit/releases/latest";
-
 const COSIGN_OIDC_ISSUER = "https://token.actions.githubusercontent.com";
 
 interface UpdateState {
@@ -96,16 +100,6 @@ interface FetchResponseLike {
   arrayBuffer(): Promise<ArrayBuffer>;
 }
 
-interface ChecksumEntry {
-  path: string;
-  hash: string;
-}
-
-interface UserModification {
-  type: "M" | "A";
-  relativePath: string;
-}
-
 interface ReapplyResult {
   applied: string[];
   conflicts: string[];
@@ -119,73 +113,53 @@ async function walkDirectory(dir: string, prefix = ""): Promise<string[]> {
   const entries = await readdir(dir, { withFileTypes: true });
   const results: string[] = [];
   for (const entry of entries) {
+    if (entry.name === MANIFEST_FILE) continue;
     const relPath = prefix ? `${prefix}/${entry.name}` : entry.name;
     if (entry.isDirectory()) {
       results.push(...(await walkDirectory(join(dir, entry.name), relPath)));
-    } else if (entry.isFile() && entry.name !== CHECKSUMS_FILE) {
+    } else if (entry.isFile()) {
       results.push(relPath);
     }
   }
   return results;
 }
 
-async function computeFileHash(filePath: string): Promise<string> {
-  const content = await readFile(filePath);
-  return createHash("sha256").update(content).digest("hex");
-}
-
-async function computeChecksums(versionDir: string): Promise<void> {
-  const files = await walkDirectory(versionDir);
-  const entries: ChecksumEntry[] = [];
-  for (const relPath of files) {
-    const hash = await computeFileHash(join(versionDir, relPath));
-    entries.push({ path: relPath, hash });
-  }
-  await writeFile(
-    join(versionDir, CHECKSUMS_FILE),
-    JSON.stringify(entries, null, 2),
-  );
-}
-
-async function readChecksums(
+async function computeManifestForVersion(
   versionDir: string,
-): Promise<ChecksumEntry[] | null> {
-  try {
-    const content = await readFile(join(versionDir, CHECKSUMS_FILE), "utf-8");
-    return JSON.parse(content) as ChecksumEntry[];
-  } catch {
-    return null;
+  tag: string,
+): Promise<AiKitManifest> {
+  const files = await walkDirectory(versionDir);
+  const entries: Record<
+    string,
+    { category: "managed"; installedHash: string; sourceHash: string }
+  > = {};
+
+  for (const relPath of files) {
+    const hash = computeFileHash(join(versionDir, relPath));
+    entries[relPath] = {
+      category: "managed",
+      installedHash: hash,
+      sourceHash: hash,
+    };
   }
+
+  const manifest: AiKitManifest = {
+    version: tag.replace(/^v/, ""),
+    installedAt: new Date().toISOString(),
+    installedVia: "npm",
+    files: entries,
+  };
+
+  writeManifest(versionDir, manifest);
+  return manifest;
 }
 
-async function detectUserModifications(
+async function detectUserModificationsForVersion(
   versionDir: string,
 ): Promise<UserModification[]> {
-  const checksums = await readChecksums(versionDir);
-  if (!checksums) return [];
-
-  const modifications: UserModification[] = [];
-  const knownPaths = new Set(checksums.map((e) => e.path));
-
-  for (const entry of checksums) {
-    try {
-      const currentHash = await computeFileHash(join(versionDir, entry.path));
-      if (currentHash !== entry.hash) {
-        modifications.push({ type: "M", relativePath: entry.path });
-      }
-    } catch {
-      // File deleted by user — skip
-    }
-  }
-
-  const currentFiles = await walkDirectory(versionDir);
-  for (const relPath of currentFiles) {
-    if (!knownPaths.has(relPath)) {
-      modifications.push({ type: "A", relativePath: relPath });
-    }
-  }
-
-  return modifications;
+  const manifest = readManifest(versionDir);
+  if (!manifest) return [];
+  return await detectUserModifications(versionDir, manifest);
 }
 
 async function stashModifications(
@@ -204,12 +178,17 @@ async function stashModifications(
 }
 
 async function reapplyModifications(
-  oldChecksums: ChecksumEntry[],
+  oldManifest: AiKitManifest,
   newVersionDir: string,
   stashDir: string,
   modifications: UserModification[],
 ): Promise<ReapplyResult> {
-  const oldHashMap = new Map(oldChecksums.map((e) => [e.path, e.hash]));
+  const oldHashMap = new Map(
+    Object.entries(oldManifest.files).map(([path, entry]) => [
+      path,
+      entry.installedHash,
+    ]),
+  );
   const applied: string[] = [];
   const conflicts: string[] = [];
 
@@ -232,7 +211,7 @@ async function reapplyModifications(
       continue;
     }
 
-    if (mod.type === "A") {
+    if (mod.type === "added") {
       const content = await readFile(stashedFile);
       await writeFile(`${newFile}.user`, content);
       conflicts.push(mod.relativePath);
@@ -240,7 +219,7 @@ async function reapplyModifications(
     }
 
     const oldHash = oldHashMap.get(mod.relativePath);
-    const newHash = await computeFileHash(newFile);
+    const newHash = computeFileHash(newFile);
 
     if (oldHash && oldHash === newHash) {
       const content = await readFile(stashedFile);
@@ -468,7 +447,7 @@ async function applyStagedUpdate(tag: string): Promise<boolean> {
   try {
     // ── Detect personalisations in current version ──
     let modifications: UserModification[] = [];
-    let oldChecksums: ChecksumEntry[] | null = null;
+    let oldManifest: AiKitManifest | null = null;
     let stashDir: string | null = null;
     let currentVersionDir: string | null = null;
 
@@ -480,10 +459,11 @@ async function applyStagedUpdate(tag: string): Promise<boolean> {
     }
 
     if (currentVersionDir) {
-      oldChecksums = await readChecksums(currentVersionDir);
-      modifications = await detectUserModifications(currentVersionDir);
+      oldManifest = readManifest(currentVersionDir);
+      modifications =
+        await detectUserModificationsForVersion(currentVersionDir);
 
-      if (modifications.length > 0 && oldChecksums) {
+      if (modifications.length > 0 && oldManifest) {
         const { tmpdir } = await import("node:os");
         stashDir = join(tmpdir(), `ai-kit-stash-${Date.now()}`);
         await stashModifications(currentVersionDir, stashDir, modifications);
@@ -502,13 +482,13 @@ async function applyStagedUpdate(tag: string): Promise<boolean> {
     if (!(await looksLikeKitRoot(versionPath))) return false;
 
     // ── Compute checksums for new version (before reapply) ──
-    await computeChecksums(versionPath);
+    await computeManifestForVersion(versionPath, tag);
 
     // ── Reapply personalisations ──
-    if (stashDir && oldChecksums && modifications.length > 0) {
+    if (stashDir && oldManifest && modifications.length > 0) {
       try {
         await reapplyModifications(
-          oldChecksums,
+          oldManifest,
           versionPath,
           stashDir,
           modifications,
@@ -656,18 +636,6 @@ async function checkAndStageUpdate(): Promise<void> {
   await writeState(state);
 }
 
-const NPM_MARKER = join(OPENCODE_HOME, ".ai-kit-npm");
-
-function isNpmDistributed(): boolean {
-  try {
-    const { statSync } = require("node:fs");
-    statSync(NPM_MARKER);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 const AiKitUpdaterPlugin: Plugin = async () => {
   // Auto-update disabled — will be re-enabled once npm distribution is live
   return {};
@@ -679,11 +647,9 @@ export default AiKitUpdaterPlugin;
 export {
   walkDirectory,
   computeFileHash,
-  computeChecksums,
-  readChecksums,
-  detectUserModifications,
+  detectUserModificationsForVersion,
   stashModifications,
   reapplyModifications,
 };
 
-export type { ChecksumEntry, UserModification, ReapplyResult };
+export type { UserModification, ReapplyResult };

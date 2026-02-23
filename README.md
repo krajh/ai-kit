@@ -237,7 +237,7 @@ Starting with the version that introduces checksum tracking, ai-kit protects you
 
 #### How it works
 
-1. **Checksum manifest** — On every `install` or `update`, ai-kit writes a `.ai-kit-checksums` file inside the version directory. It records the SHA-256 hash of every file as it was shipped, giving the updater a reference point for "original" content.
+1. **Checksum manifest** — On every `install` or `update`, ai-kit writes a `.ai-kit-manifest.json` file inside the version directory. It records the SHA-256 hash of every file as it was shipped, giving the updater a reference point for "original" content.
 
 2. **Modification detection** — Before applying a new version, the updater compares every file in the active version directory against its stored checksum. Files with a different hash are flagged as **modified** (`M`); files that exist on disk but aren't in the manifest are flagged as **user-added** (`A`).
 
@@ -335,7 +335,7 @@ These live outside the version directory and are never touched by updates:
 ├── skills -> current/skills
 ├── versions/                      # Installed versions
 │   └── v0.1.7/                    # Kit contents (agents/protocols/plugins/etc.)
-│       └── .ai-kit-checksums      # SHA-256 manifest of shipped files (personalisation tracking)
+│       └── .ai-kit-manifest.json  # SHA-256 manifest of shipped files (personalisation tracking)
 ├── staging/                       # Downloaded+extracted updates (applied on restart)
 ├── state/                         # Updater state (last check, staged tag)
 ├── bin/                           # Tooling used by the installer/updater (e.g., cosign)

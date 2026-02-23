@@ -6,18 +6,50 @@ import { tmpdir } from "node:os";
 import {
   walkDirectory,
   computeFileHash,
-  computeChecksums,
-  readChecksums,
-  detectUserModifications,
+  detectUserModificationsForVersion,
   stashModifications,
   reapplyModifications,
 } from "../plugins/ai-kit-updater";
-import type {
-  ChecksumEntry,
-  UserModification,
-} from "../plugins/ai-kit-updater";
+import type { UserModification } from "../src/lib/manifest";
+import {
+  readManifest,
+  writeManifest,
+  MANIFEST_FILE,
+  type AiKitManifest,
+} from "../src/lib/manifest";
 
-const CHECKSUMS_FILE = ".ai-kit-checksums";
+const buildManifest = (root: string): AiKitManifest => {
+  const files: AiKitManifest["files"] = {};
+
+  const addEntry = (relPath: string): void => {
+    const filePath = join(root, relPath);
+    try {
+      const hash = computeFileHash(filePath);
+      files[relPath] = {
+        category: "managed",
+        installedHash: hash,
+        sourceHash: hash,
+      };
+    } catch {
+      // ignore missing files
+    }
+  };
+
+  addEntry("a.txt");
+  addEntry("b.txt");
+  addEntry("agents/main.md");
+  addEntry("agents/helper.md");
+  addEntry("opencode.json");
+
+  const manifest: AiKitManifest = {
+    version: "v0.6.1",
+    installedAt: new Date().toISOString(),
+    installedVia: "npm",
+    files,
+  };
+  writeManifest(root, manifest);
+  return manifest;
+};
 
 let testRoot: string;
 
@@ -60,9 +92,9 @@ describe("walkDirectory", () => {
     ]);
   });
 
-  test("excludes checksums file", async () => {
+  test("excludes manifest file", async () => {
     await writeFile(join(testRoot, "a.txt"), "alpha");
-    await writeFile(join(testRoot, CHECKSUMS_FILE), "checksums");
+    await writeFile(join(testRoot, MANIFEST_FILE), "manifest");
 
     const result = await walkDirectory(testRoot);
     expect(result).toEqual(["a.txt"]);
@@ -83,7 +115,7 @@ describe("computeFileHash", () => {
     const filePath = join(testRoot, "hello.txt");
     await writeFile(filePath, "hello world");
 
-    const hash = await computeFileHash(filePath);
+    const hash = computeFileHash(filePath);
     // SHA256 of "hello world"
     expect(hash).toBe(
       "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9",
@@ -96,8 +128,8 @@ describe("computeFileHash", () => {
     await writeFile(file1, "content-a");
     await writeFile(file2, "content-b");
 
-    const hash1 = await computeFileHash(file1);
-    const hash2 = await computeFileHash(file2);
+    const hash1 = computeFileHash(file1);
+    const hash2 = computeFileHash(file2);
     expect(hash1).not.toBe(hash2);
   });
 
@@ -107,49 +139,46 @@ describe("computeFileHash", () => {
     await writeFile(file1, "identical");
     await writeFile(file2, "identical");
 
-    const hash1 = await computeFileHash(file1);
-    const hash2 = await computeFileHash(file2);
+    const hash1 = computeFileHash(file1);
+    const hash2 = computeFileHash(file2);
     expect(hash1).toBe(hash2);
   });
 });
 
 // ---------------------------------------------------------------------------
-// computeChecksums + readChecksums
+// readManifest / writeManifest
 // ---------------------------------------------------------------------------
 
-describe("computeChecksums / readChecksums", () => {
-  test("writes checksums file that can be read back", async () => {
-    await writeFile(join(testRoot, "a.txt"), "alpha");
-    await mkdir(join(testRoot, "sub"), { recursive: true });
-    await writeFile(join(testRoot, "sub", "b.txt"), "bravo");
+describe("readManifest / writeManifest", () => {
+  test("writes manifest file that can be read back", async () => {
+    const manifest: AiKitManifest = {
+      version: "v0.6.1",
+      installedAt: new Date().toISOString(),
+      installedVia: "npm",
+      files: {
+        "a.txt": {
+          category: "managed",
+          installedHash: "abc",
+          sourceHash: "abc",
+        },
+        "sub/b.txt": {
+          category: "managed",
+          installedHash: "def",
+          sourceHash: "def",
+        },
+      },
+    };
 
-    await computeChecksums(testRoot);
+    writeManifest(testRoot, manifest);
 
-    const entries = await readChecksums(testRoot);
-    expect(entries).not.toBeNull();
-    expect(entries!.length).toBe(2);
-
-    const paths = entries!.map((e) => e.path).sort();
-    expect(paths).toEqual(["a.txt", "sub/b.txt"]);
-
-    // Verify hashes are valid hex strings
-    for (const entry of entries!) {
-      expect(entry.hash).toMatch(/^[a-f0-9]{64}$/);
-    }
+    const loaded = readManifest(testRoot);
+    expect(loaded).not.toBeNull();
+    expect(Object.keys(loaded!.files).sort()).toEqual(["a.txt", "sub/b.txt"]);
   });
 
-  test("readChecksums returns null for missing checksums file", async () => {
-    const result = await readChecksums(testRoot);
+  test("readManifest returns null for missing manifest file", async () => {
+    const result = readManifest(testRoot);
     expect(result).toBeNull();
-  });
-
-  test("checksums file is not included in its own checksums", async () => {
-    await writeFile(join(testRoot, "file.txt"), "data");
-    await computeChecksums(testRoot);
-
-    const entries = await readChecksums(testRoot);
-    const paths = entries!.map((e) => e.path);
-    expect(paths).not.toContain(CHECKSUMS_FILE);
   });
 });
 
@@ -160,48 +189,48 @@ describe("computeChecksums / readChecksums", () => {
 describe("detectUserModifications", () => {
   test("returns empty when no modifications", async () => {
     await writeFile(join(testRoot, "a.txt"), "alpha");
-    await computeChecksums(testRoot);
+    buildManifest(testRoot);
 
-    const mods = await detectUserModifications(testRoot);
+    const mods = await detectUserModificationsForVersion(testRoot);
     expect(mods).toEqual([]);
   });
 
   test("detects modified file", async () => {
     await writeFile(join(testRoot, "a.txt"), "original");
-    await computeChecksums(testRoot);
+    buildManifest(testRoot);
 
     // Modify the file
     await writeFile(join(testRoot, "a.txt"), "modified");
 
-    const mods = await detectUserModifications(testRoot);
-    expect(mods).toEqual([{ type: "M", relativePath: "a.txt" }]);
+    const mods = await detectUserModificationsForVersion(testRoot);
+    expect(mods).toEqual([{ type: "modified", relativePath: "a.txt" }]);
   });
 
   test("detects user-added file", async () => {
     await writeFile(join(testRoot, "a.txt"), "original");
-    await computeChecksums(testRoot);
+    buildManifest(testRoot);
 
     // Add a new file
     await writeFile(join(testRoot, "custom.txt"), "user-added");
 
-    const mods = await detectUserModifications(testRoot);
-    expect(mods).toEqual([{ type: "A", relativePath: "custom.txt" }]);
+    const mods = await detectUserModificationsForVersion(testRoot);
+    expect(mods).toEqual([{ type: "added", relativePath: "custom.txt" }]);
   });
 
   test("detects both modified and added files", async () => {
     await writeFile(join(testRoot, "a.txt"), "original");
     await writeFile(join(testRoot, "b.txt"), "original-b");
-    await computeChecksums(testRoot);
+    buildManifest(testRoot);
 
     await writeFile(join(testRoot, "a.txt"), "modified");
     await writeFile(join(testRoot, "custom.txt"), "user-added");
 
-    const mods = await detectUserModifications(testRoot);
+    const mods = await detectUserModificationsForVersion(testRoot);
     const modifiedPaths = mods
-      .filter((m) => m.type === "M")
+      .filter((m) => m.type === "modified")
       .map((m) => m.relativePath);
     const addedPaths = mods
-      .filter((m) => m.type === "A")
+      .filter((m) => m.type === "added")
       .map((m) => m.relativePath);
 
     expect(modifiedPaths).toEqual(["a.txt"]);
@@ -211,32 +240,32 @@ describe("detectUserModifications", () => {
   test("ignores deleted files gracefully", async () => {
     await writeFile(join(testRoot, "a.txt"), "alpha");
     await writeFile(join(testRoot, "b.txt"), "bravo");
-    await computeChecksums(testRoot);
+    buildManifest(testRoot);
 
     // Delete one file
     await rm(join(testRoot, "a.txt"));
 
-    const mods = await detectUserModifications(testRoot);
+    const mods = await detectUserModificationsForVersion(testRoot);
     // Deleted file should not appear as modified
     expect(mods.find((m) => m.relativePath === "a.txt")).toBeUndefined();
   });
 
-  test("returns empty when no checksums file exists", async () => {
+  test("returns empty when no manifest file exists", async () => {
     await writeFile(join(testRoot, "a.txt"), "alpha");
-    const mods = await detectUserModifications(testRoot);
+    const mods = await detectUserModificationsForVersion(testRoot);
     expect(mods).toEqual([]);
   });
 
   test("detects user-added file in nested directory", async () => {
     await writeFile(join(testRoot, "a.txt"), "alpha");
-    await computeChecksums(testRoot);
+    buildManifest(testRoot);
 
     await mkdir(join(testRoot, "custom-dir"), { recursive: true });
     await writeFile(join(testRoot, "custom-dir", "my-tool.ts"), "tool code");
 
-    const mods = await detectUserModifications(testRoot);
+    const mods = await detectUserModificationsForVersion(testRoot);
     expect(mods).toEqual([
-      { type: "A", relativePath: "custom-dir/my-tool.ts" },
+      { type: "added", relativePath: "custom-dir/my-tool.ts" },
     ]);
   });
 });
@@ -253,8 +282,8 @@ describe("stashModifications", () => {
 
     const stashDir = join(testRoot, "_stash");
     const mods: UserModification[] = [
-      { type: "M", relativePath: "a.txt" },
-      { type: "M", relativePath: "sub/b.txt" },
+      { type: "modified", relativePath: "a.txt" },
+      { type: "modified", relativePath: "sub/b.txt" },
     ];
 
     await stashModifications(testRoot, stashDir, mods);
@@ -270,7 +299,7 @@ describe("stashModifications", () => {
 
     const stashDir = join(testRoot, "_stash");
     const mods: UserModification[] = [
-      { type: "A", relativePath: "custom.txt" },
+      { type: "added", relativePath: "custom.txt" },
     ];
 
     await stashModifications(testRoot, stashDir, mods);
@@ -285,7 +314,7 @@ describe("stashModifications", () => {
 
     const stashDir = join(testRoot, "_stash");
     const mods: UserModification[] = [
-      { type: "A", relativePath: "deep/nested/file.ts" },
+      { type: "added", relativePath: "deep/nested/file.ts" },
     ];
 
     await stashModifications(testRoot, stashDir, mods);
@@ -317,15 +346,24 @@ describe("reapplyModifications", () => {
     // User modified a file that doesn't exist in new version
     await writeFile(join(stashDir, "custom.txt"), "user-content");
 
-    const oldChecksums: ChecksumEntry[] = [
-      { path: "custom.txt", hash: "oldhash" },
-    ];
+    const oldManifest: AiKitManifest = {
+      version: "v0.6.0",
+      installedAt: new Date().toISOString(),
+      installedVia: "npm",
+      files: {
+        "custom.txt": {
+          category: "managed",
+          installedHash: "oldhash",
+          sourceHash: "oldhash",
+        },
+      },
+    };
     const mods: UserModification[] = [
-      { type: "M", relativePath: "custom.txt" },
+      { type: "modified", relativePath: "custom.txt" },
     ];
 
     const result = await reapplyModifications(
-      oldChecksums,
+      oldManifest,
       newVersionDir,
       stashDir,
       mods,
@@ -352,15 +390,24 @@ describe("reapplyModifications", () => {
     // User's modified version in stash
     await writeFile(join(stashDir, "config.txt"), "user-modified-content");
 
-    const oldChecksums: ChecksumEntry[] = [
-      { path: "config.txt", hash: originalHash },
-    ];
+    const oldManifest: AiKitManifest = {
+      version: "v0.6.0",
+      installedAt: new Date().toISOString(),
+      installedVia: "npm",
+      files: {
+        "config.txt": {
+          category: "managed",
+          installedHash: originalHash,
+          sourceHash: originalHash,
+        },
+      },
+    };
     const mods: UserModification[] = [
-      { type: "M", relativePath: "config.txt" },
+      { type: "modified", relativePath: "config.txt" },
     ];
 
     const result = await reapplyModifications(
-      oldChecksums,
+      oldManifest,
       newVersionDir,
       stashDir,
       mods,
@@ -379,15 +426,24 @@ describe("reapplyModifications", () => {
     await writeFile(join(newVersionDir, "config.txt"), "new-version-content");
     await writeFile(join(stashDir, "config.txt"), "user-modified-content");
 
-    const oldChecksums: ChecksumEntry[] = [
-      { path: "config.txt", hash: "completely-different-old-hash" },
-    ];
+    const oldManifest: AiKitManifest = {
+      version: "v0.6.0",
+      installedAt: new Date().toISOString(),
+      installedVia: "npm",
+      files: {
+        "config.txt": {
+          category: "managed",
+          installedHash: "completely-different-old-hash",
+          sourceHash: "completely-different-old-hash",
+        },
+      },
+    };
     const mods: UserModification[] = [
-      { type: "M", relativePath: "config.txt" },
+      { type: "modified", relativePath: "config.txt" },
     ];
 
     const result = await reapplyModifications(
-      oldChecksums,
+      oldManifest,
       newVersionDir,
       stashDir,
       mods,
@@ -414,13 +470,18 @@ describe("reapplyModifications", () => {
   test("copies user-added file when path doesn't exist in new version", async () => {
     await writeFile(join(stashDir, "my-tool.ts"), "custom tool code");
 
-    const oldChecksums: ChecksumEntry[] = [];
+    const oldManifest: AiKitManifest = {
+      version: "v0.6.0",
+      installedAt: new Date().toISOString(),
+      installedVia: "npm",
+      files: {},
+    };
     const mods: UserModification[] = [
-      { type: "A", relativePath: "my-tool.ts" },
+      { type: "added", relativePath: "my-tool.ts" },
     ];
 
     const result = await reapplyModifications(
-      oldChecksums,
+      oldManifest,
       newVersionDir,
       stashDir,
       mods,
@@ -436,13 +497,18 @@ describe("reapplyModifications", () => {
     await writeFile(join(newVersionDir, "same-name.ts"), "new-version-code");
     await writeFile(join(stashDir, "same-name.ts"), "user-custom-code");
 
-    const oldChecksums: ChecksumEntry[] = [];
+    const oldManifest: AiKitManifest = {
+      version: "v0.6.0",
+      installedAt: new Date().toISOString(),
+      installedVia: "npm",
+      files: {},
+    };
     const mods: UserModification[] = [
-      { type: "A", relativePath: "same-name.ts" },
+      { type: "added", relativePath: "same-name.ts" },
     ];
 
     const result = await reapplyModifications(
-      oldChecksums,
+      oldManifest,
       newVersionDir,
       stashDir,
       mods,
@@ -483,19 +549,32 @@ describe("reapplyModifications", () => {
     // User-added file, not in new version → applied
     await writeFile(join(stashDir, "added.txt"), "user-added");
 
-    const oldChecksums: ChecksumEntry[] = [
-      { path: "safe.txt", hash: unchangedHash },
-      { path: "risky.txt", hash: "old-risky-hash" },
-    ];
+    const oldManifest: AiKitManifest = {
+      version: "v0.6.0",
+      installedAt: new Date().toISOString(),
+      installedVia: "npm",
+      files: {
+        "safe.txt": {
+          category: "managed",
+          installedHash: unchangedHash,
+          sourceHash: unchangedHash,
+        },
+        "risky.txt": {
+          category: "managed",
+          installedHash: "old-risky-hash",
+          sourceHash: "old-risky-hash",
+        },
+      },
+    };
 
     const mods: UserModification[] = [
-      { type: "M", relativePath: "safe.txt" },
-      { type: "M", relativePath: "risky.txt" },
-      { type: "A", relativePath: "added.txt" },
+      { type: "modified", relativePath: "safe.txt" },
+      { type: "modified", relativePath: "risky.txt" },
+      { type: "added", relativePath: "added.txt" },
     ];
 
     const result = await reapplyModifications(
-      oldChecksums,
+      oldManifest,
       newVersionDir,
       stashDir,
       mods,
@@ -526,13 +605,18 @@ describe("reapplyModifications", () => {
       "# Custom Skill",
     );
 
-    const oldChecksums: ChecksumEntry[] = [];
+    const oldManifest: AiKitManifest = {
+      version: "v0.6.0",
+      installedAt: new Date().toISOString(),
+      installedVia: "npm",
+      files: {},
+    };
     const mods: UserModification[] = [
-      { type: "A", relativePath: "skills/custom/SKILL.md" },
+      { type: "added", relativePath: "skills/custom/SKILL.md" },
     ];
 
     const result = await reapplyModifications(
-      oldChecksums,
+      oldManifest,
       newVersionDir,
       stashDir,
       mods,
@@ -552,7 +636,7 @@ describe("reapplyModifications", () => {
 // ---------------------------------------------------------------------------
 
 describe("end-to-end personalisation workflow", () => {
-  test("full cycle: compute checksums → user modifies → detect → stash → reapply to new version", async () => {
+  test("full cycle: compute manifest → user modifies → detect → stash → reapply to new version", async () => {
     const oldVersionDir = join(testRoot, "v1");
     const newVersionDir = join(testRoot, "v2");
     const stashDir = join(testRoot, "stash");
@@ -566,8 +650,7 @@ describe("end-to-end personalisation workflow", () => {
     );
     await writeFile(join(oldVersionDir, "agents", "helper.md"), "# Helper v1");
 
-    // Compute checksums for old version
-    await computeChecksums(oldVersionDir);
+    const oldManifest = buildManifest(oldVersionDir);
 
     // User personalises
     await writeFile(
@@ -581,18 +664,17 @@ describe("end-to-end personalisation workflow", () => {
     );
 
     // Detect modifications
-    const mods = await detectUserModifications(oldVersionDir);
+    const mods = await detectUserModificationsForVersion(oldVersionDir);
     expect(mods.length).toBe(2);
 
     const modPaths = mods.map((m) => `${m.type}:${m.relativePath}`).sort();
     expect(modPaths).toEqual([
-      "A:agents/custom/my-agent.md",
-      "M:agents/main.md",
+      "added:agents/custom/my-agent.md",
+      "modified:agents/main.md",
     ]);
 
     // Stash modifications
-    const oldChecksums = await readChecksums(oldVersionDir);
-    expect(oldChecksums).not.toBeNull();
+    expect(oldManifest).not.toBeNull();
     await stashModifications(oldVersionDir, stashDir, mods);
 
     // Set up new version (main.md unchanged from v1 original)
@@ -612,7 +694,7 @@ describe("end-to-end personalisation workflow", () => {
 
     // Reapply modifications
     const result = await reapplyModifications(
-      oldChecksums!,
+      oldManifest,
       newVersionDir,
       stashDir,
       mods,
@@ -653,7 +735,7 @@ describe("end-to-end personalisation workflow", () => {
     // Set up old version
     await mkdir(oldVersionDir, { recursive: true });
     await writeFile(join(oldVersionDir, "config.json"), '{"key":"v1"}');
-    await computeChecksums(oldVersionDir);
+    const oldManifest = buildManifest(oldVersionDir);
 
     // User modifies
     await writeFile(
@@ -662,8 +744,7 @@ describe("end-to-end personalisation workflow", () => {
     );
 
     // Detect and stash
-    const mods = await detectUserModifications(oldVersionDir);
-    const oldChecksums = await readChecksums(oldVersionDir);
+    const mods = await detectUserModificationsForVersion(oldVersionDir);
     await stashModifications(oldVersionDir, stashDir, mods);
 
     // New version also changes config.json
@@ -672,7 +753,7 @@ describe("end-to-end personalisation workflow", () => {
 
     // Reapply
     const result = await reapplyModifications(
-      oldChecksums!,
+      oldManifest,
       newVersionDir,
       stashDir,
       mods,
