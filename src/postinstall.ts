@@ -37,6 +37,10 @@ export const MARKER_FILE = ".ai-kit-npm";
 export { MANIFEST_FILE } from "./lib/manifest";
 export const INCOMING_DIR = ".ai-kit-incoming";
 
+export interface InstallOptions {
+  configDir?: string;
+}
+
 export function getOpenCodeHome(): string {
   return process.env.OPENCODE_HOME ?? join(homedir(), ".config", "opencode");
 }
@@ -338,8 +342,10 @@ export function getPackageVersion(): string {
   }
 }
 
-export function main(): void {
-  const ocHome = getOpenCodeHome();
+export async function installAiKit(
+  options: InstallOptions = {},
+): Promise<void> {
+  const ocHome = options.configDir ?? getOpenCodeHome();
   const kitDir = getKitDir();
 
   console.log(`\n@brisingr-kr/core postinstall`);
@@ -357,6 +363,10 @@ export function main(): void {
   console.log(
     `\n  [OK] @brisingr-kr/core v${getPackageVersion()} installed successfully\n`,
   );
+}
+
+export function main(): void {
+  void installAiKit();
 }
 
 // Only auto-execute when run directly (not when imported for testing)
