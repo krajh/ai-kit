@@ -6,7 +6,7 @@
   "plugin": [
     "@howaboua/opencode-roadmap-plugin@latest",
     "@tarquinen/opencode-dcp@latest",
-    "opencode-mem"
+    "opencode-mem@2.11.3"
   ],
   "share": "manual",
   "tui": {
