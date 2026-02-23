@@ -124,3 +124,89 @@ The kit enforces the verification loop from the protocols. Always confirm:
 - Tests and lint pass
 - Documentation references updated
 - Status updates include `[OK]` / `[!]` tags when needed
+
+---
+
+## 9) Compound Engineering (Global)
+
+This section applies **globally** to every project. It's the discipline that makes your setup compound over time instead of degrading.
+
+### The Compound Step (Mandatory After Non-Trivial Work)
+
+The loop: **Plan → Work → Review → Compound → Repeat**
+
+After any bug fix, feature, or significant investigation:
+
+1. **Capture what worked** — Write a brief summary of the solution approach
+2. **Tag it for retrieval** — Add YAML frontmatter (problem type, tools used, outcome)
+3. **Update the system** — Add to `AGENTS.md`, a project-specific `SOLUTIONS/`, or Mai Context DB
+4. **Verify the learning** — Run `memory search "<problem keywords>"`. If the solution doesn't surface, the tagging is insufficient.
+
+**When to run the Compound Step (use effort-based triggers, not time):**
+
+- After any task rated Medium effort or above (F2+)
+- After any task that required 3+ retries or significant replanning
+- After discovering a non-obvious pattern or workaround
+- After any mistake the agent makes (add constraint to prevent recurrence)
+
+### Time Allocation: The 50/50 Rule
+
+Allocate engineering time as follows:
+
+- **50% — Feature work:** Implementing, debugging, delivering user value
+- **50% — System improvement:** Agent instructions, patterns, documentation, tooling, automation
+
+This inverts traditional engineering (~90/10). The system improvement half includes:
+
+- Updating `AGENTS.md` with new constraints
+- Creating reusable scripts/slash commands
+- Documenting solved problems in `docs/solutions/`
+- Improving verification and testing infrastructure
+
+### The Living Document Pattern
+
+`AGENTS.md` is not static — it grows with every session. After each mistake or frustration:
+
+1. Identify what the agent didn't know
+2. Add a constraint or preference to prevent recurrence
+3. Next session starts smarter
+
+**Rule:** AGENTS.md gets constraints and behavior rules only. Solutions, code patterns, and solved problems go in `docs/solutions/` or Mai Context DB.
+
+**Mistake → Instruction Loop:**
+
+```
+Error happens → Add constraint → Next session is smarter
+```
+
+This is the core of compound engineering: each session should leave the system better than it found it.
+
+### docs/solutions/ Pattern (Recommended for Projects)
+
+For project-specific work, create a searchable solution library:
+
+```
+docs/solutions/
+├── 2024-01-auth-setup.md      # Format: YYYY-MM-topic.md
+├── 2024-02-api-rate-limit.md
+└── README.md                  # Index with problem-type tags
+```
+
+Each solution file includes:
+
+- Problem statement
+- Approach taken
+- Key decisions and why
+- Tags for retrieval (e.g., `#api #performance #debugging`)
+
+---
+
+### Quick Reference: Compound Engineering Commands
+
+| Action                    | Command/Tool                                         |
+| ------------------------- | ---------------------------------------------------- |
+| Capture solution          | Use `record` skill → promotes to Mai                 |
+| Document decision         | Add to project `SOLUTIONS/` or Mai `decisions` table |
+| Add constraint            | Edit `AGENTS.md` (global) or project `AGENTS.md`     |
+| Find past solutions       | `memory search` or Mai semantic search               |
+| End-of-session reflection | Use `reflect` skill                                  |
