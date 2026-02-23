@@ -13,287 +13,199 @@ A lightweight, installer-first OpenCode configuration kit for teams.
 
 **Supports WSL, Linux, and macOS** (x86_64/amd64/arm64 architectures).
 
-## Quick Start
+## Installation
 
-### Automatic (curl | bash)
+### npm (recommended)
 
 ```bash
-curl -fsSL "https://github.com/krajh/ai-kit/releases/latest/download/install" | bash
+npm install -g @brisingr-kr/core
 ```
 
-This installs the kit **into OpenCode’s config directory**:
+This installs ai-kit globally and runs the setup script, which:
 
-- `~/.config/opencode/versions/<tag>/` (versioned content)
-- `~/.config/opencode/current` → the active version
+1. **Copies files** from the package into `~/.config/opencode/`
+2. **Writes `bunfig.toml`** with `trustedDependencies = ["protobufjs"]` to unblock `opencode-mem` install
+3. **Merges `opencode.json`** so your customisations aren't lost
+4. **Creates `.ai-kit-manifest.json`** to track files for updates
 
-To keep the config easy to use (and not nested), the installer exposes the kit at the top-level via symlinks:
+You get:
 
-- `~/.config/opencode/opencode.json` → `~/.config/opencode/current/opencode.json`
-- `~/.config/opencode/agents` → `~/.config/opencode/current/agents`
-- (same for `protocols/`, `skills/`, `plugins/`, `AGENTS.md`)
+- `AGENTS.md`, `agents/`, `skills/`, `protocols/`, `plugins/`
+- `opencode.json`, `bunfig.toml`
+- All configured and ready to use
 
-To pin a specific release:
+### Bash installer (download)
 
-```bash
-curl -fsSL "https://github.com/krajh/ai-kit/releases/latest/download/install" | \
-  bash -s -- --version v0.1.7
-```
-
-Update an existing install (download + apply immediately):
+For system-wide installs or non-Node projects:
 
 ```bash
-curl -fsSL "https://github.com/krajh/ai-kit/releases/latest/download/install" | \
-  bash -s -- --command update
-```
-
-### npm (Node.js projects) — Coming Soon
-
-> **🚧 Not yet published.** The npm package `@brisingr-kr/core` is not available on the npm registry yet. Use the [curl | bash](#automatic-curl--bash) method above for now. This section documents the intended usage once the package is published.
->
-> **Prerequisite:** Bun is required to run the lifecycle scripts.
-
-```bash
-bun add -d @brisingr-kr/core
-```
-
-This will automatically symlink the kit files into `~/.config/opencode/`:
-
-- `opencode.json`, `AGENTS.md`, `agents/`, `skills/`, `protocols/`, `plugins/`
-
-Each symlink points into `node_modules/@brisingr-kr/core/kit/`, so the kit stays in sync with your pinned version.
-
-**Uninstalling** (`npm uninstall @brisingr-kr/core`) cleanly removes only its own symlinks — any user-created files are preserved.
-
-#### Personalisation safety (npm)
-
-If you've customised a file that ai-kit also manages (e.g. `~/.config/opencode/opencode.json`), the postinstall script will:
-
-1. Detect the user-modified file
-2. Back it up as `<filename>.user-backup`
-3. Replace it with the kit's symlink
-
-This ensures you never silently lose your customisations.
-
-#### When to use npm vs curl | bash
-
-| Method         | Best for                                             |
-| -------------- | ---------------------------------------------------- |
-| `npm install`  | Node.js projects, version pinning via `package.json` |
-| `curl \| bash` | System-wide install, non-Node projects, CI pipelines |
-
-> **Note:** The npm distribution now includes the auto-updater plugin. It checks GitHub releases when OpenCode starts, but you should still use `npm update` to pick up package updates in Node projects.
-
-### Manual (download installer)
-
-1. **Pick a release**: <https://github.com/krajh/ai-kit/releases>
-2. **Download the installer** and run it:
-
-```bash
-TAG="v0.1.7"
-
-curl -fsSL -o ai-kit-install \
-  "https://github.com/krajh/ai-kit/releases/download/${TAG}/ai-kit-install"
+TAG=$(curl -s https://api.github.com/repos/krajh/ai-kit/releases/latest | grep '"tag_name"' | cut -d'"' -f4)
+curl -fsSL -o ai-kit-install "https://github.com/krajh/ai-kit/releases/download/${TAG}/ai-kit-install"
 chmod +x ai-kit-install
 ./ai-kit-install install
 ```
 
-### Installer options
+Or pin a specific version:
 
-The installer supports the following commands:
+```bash
+TAG="v0.6.3"
+curl -fsSL -o ai-kit-install "https://github.com/krajh/ai-kit/releases/download/${TAG}/ai-kit-install"
+chmod +x ai-kit-install
+./ai-kit-install install
+```
 
-| Command    | Description                                                                                                                          |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `install`  | Fresh installation of OpenCode configuration to `~/.config/opencode`.                                                                |
-| `update`   | Update an existing installation. Detects your personalisations, applies the new version, and reapplies your changes via 3-way merge. |
-| `status`   | Check the current installation status and version.                                                                                   |
-| `rollback` | Restore the previous configuration from backup.                                                                                      |
-| `dry-run`  | Validates prerequisites, simulates an install, and reports the actions without touching `~/.config/opencode`.                        |
+### After installation
 
-After installation, the installer is also available at:
+Check that everything installed correctly:
 
-- `~/.config/opencode/current/ai-kit-install`
+```bash
+ai-kit-install status
+```
 
-This kit will:
+You should see:
 
-- Set up OpenCode configuration for corporate use
-- Install protocols and agent definitions
-- Configure sensible defaults for team collaboration
+- Current version listed
+- No pending conflicts
+- `.env` and `local/` directories present
+
+## Updates
+
+ai-kit supports three ways to update:
+
+### Automatic (recommended for Node projects)
+
+```bash
+npm update -g @brisingr-kr/core
+```
+
+The auto-updater plugin (included in npm installs) also checks GitHub releases when OpenCode starts—at most once per 24h.
+
+### Manual (any install method)
+
+```bash
+ai-kit-install update
+```
+
+Or with npm:
+
+```bash
+npm update -g @brisingr-kr/core
+```
+
+### Handling conflicts
+
+If you've customised files that ai-kit also manages, the update process:
+
+1. **Detects your changes** using the `.ai-kit-manifest.json` checksum
+2. **Stages new versions** under `.ai-kit-incoming/` instead of overwriting
+3. **Prompts you** (interactive) or waits for resolution (auto-updater)
+
+Check what's pending:
+
+```bash
+ai-kit-install status
+```
+
+Resolve conflicts:
+
+```bash
+# Accept the new version (overwrite your changes)
+ai-kit-install resolve --accept-incoming
+
+# Keep your version (reject the update)
+ai-kit-install resolve --keep-mine
+```
+
+Your files are never silently lost. If there are conflicts, you resolve them explicitly.
+
+## Uninstall
+
+```bash
+npm uninstall -g @brisingr-kr/core
+```
+
+Or with the bash installer:
+
+```bash
+./ai-kit-install uninstall
+```
+
+This removes only ai-kit files that haven't been modified. Your customisations in `~/.config/opencode/local/` and `~/.config/opencode/.env` are always preserved.
 
 ## Requirements
 
-- **WSL 2** (Windows Subsystem for Linux), **Linux**, or **macOS** (x86_64/amd64/arm64 architecture)
-- **curl**, **tar**, **mkdir** (standard utilities)
+- **npm** (for Node.js projects) or **curl**, **tar** (for bash installer)
+- **WSL 2**, **Linux**, or **macOS** (x86_64/amd64/arm64 architecture)
 - No special privileges required
+- Bun is required to run postinstall/preuninstall scripts (installed with npm)
+
+## How It Works
+
+### File layout
+
+ai-kit copies files into `~/.config/opencode/`:
+
+```
+~/.config/opencode/
+├── opencode.json          # Deep-merged (your customisations preserved)
+├── AGENTS.md
+├── agents/
+├── skills/
+├── protocols/
+├── plugins/
+├── bunfig.toml            # Includes trustedDependencies for opencode-mem
+├── .ai-kit-manifest.json  # SHA-256 checksum tracking (for updates)
+├── .ai-kit-incoming/      # Staged conflicts (if update detects changes)
+├── local/                 # User-owned local customisations (never touched)
+└── .env                   # Environment variables (never touched)
+```
+
+### Customisation safety
+
+ai-kit protects your customisations across updates using `.ai-kit-manifest.json`:
+
+1. **Checksum tracking** — On install, ai-kit records the SHA-256 hash of every file
+2. **Modification detection** — Before updating, the updater compares current files against checksums to find what you changed
+3. **Staging** — If you've modified files, new versions are placed in `.ai-kit-incoming/` for you to review
+4. **Resolution** — You decide: accept the new version or keep yours via `ai-kit-install resolve`
+
+Your files are never overwritten silently.
+
+### Environment variables
+
+Two environment variables are configurable:
+
+| Variable       | Purpose                            | Default                      |
+| -------------- | ---------------------------------- | ---------------------------- |
+| `AITOOLINGKEY` | API key for the aitooling provider | Required; prompts if missing |
+| `BASE_URL`     | Override default API endpoint      | Optional                     |
+
+These are persisted to `~/.config/opencode/.env` during install and preserved across updates.
 
 ## What's Included
 
-### 📋 Protocols & Skills (Skill-First Approach)
+ai-kit ships with:
 
-This kit follows a **skill-first pattern**: load skills on-demand instead of referencing protocol files directly.
-
-| Protocol File             | Preferred Skill        |
-| ------------------------- | ---------------------- |
-| `DELEGATION_PROTOCOLS.md` | `delegation-protocols` |
-| `HANDOFF_PROTOCOLS.md`    | `handoff-patterns`     |
-| `TOOL_USAGE_GUIDE.md`     | `tool-selection`       |
-
-### 🤖 Agent Framework
-
-- **Professional Agent Definitions**: Corporate-friendly agent templates (coordinator, architect, implementer, reviewer, research, strategist)
-- **Agent Routing**: Clear selection criteria for optimal agent choice
-
-### ⚙️ Configuration
-
-- **opencode.json**: Production-ready configuration with plugin defaults
-- **Skills Library**: Playbooks for delegation, testing, and tool authoring
-- **Plugin Support**: Memory integration and roadmap management
+- **`AGENTS.md`** — Agent definitions and routing guide
+- **`agents/`** — Agent prompt templates (coordinator, strategist, implementer, reviewer, etc.)
+- **`skills/`** — Playbooks for delegation, testing, architecture, code quality, and more
+- **`protocols/`** — Operating standards and rulesets
+- **`plugins/`** — Auto-updater, memory integration, roadmap management
+- **`opencode.json`** — Production-ready configuration with sensible defaults
+- **`bunfig.toml`** — Bun configuration including trusted dependencies for package install
 
 ## Using Skills in Other Projects
 
-The installer symlinks all ai-kit skills to `~/.config/opencode/skills/`, making them available globally in any project you work on.
+After installation, all ai-kit skills are available globally in any project:
 
-```bash
-# After running ai-kit-install, skills are available globally:
-await skill({ name: "delegation-protocols" })
-await skill({ name: "handoff-patterns" })
-await skill({ name: "tool-selection" })
+```typescript
+// Load skills in any project
+await skill({ name: "delegation-protocols" });
+await skill({ name: "handoff-patterns" });
+await skill({ name: "effort-complexity-framework" });
 ```
 
-### How It Works
-
-The installer creates symlinks from:
-
-- `~/.config/opencode/current/skills/<skill-name>/` → `~/.config/opencode/skills/<skill-name>/`
-
-This means skills are discovered by OpenCode's runtime and listed in `<available_skills>` regardless of which directory you're working in.
-
-### Manual Setup (if not using installer)
-
-If you cloned the repo manually instead of using the installer:
-
-```bash
-# Symlink all ai-kit skills to make them globally available
-ln -sf $(pwd)/skills/* ~/.config/opencode/skills/
-```
-
-Or copy specific skills:
-
-```bash
-# Copy only the skills you need
-cp -r skills/delegation-protocols ~/.config/opencode/skills/
-cp -r skills/handoff-patterns ~/.config/opencode/skills/
-```
-
-## Environment Variables
-
-- **AITOOLINGKEY**: API key used by the `aitooling` provider in `opencode.json`.
-  - If missing, `ai-kit-install` will prompt (input hidden) during `install` and `update`, then persist it to `~/.config/opencode/.env`.
-  - In non-interactive environments (CI), the installer fails with instructions.
-  - To disable prompting (fail fast), pass `--no-prompt` to `ai-kit-install`.
-
-```bash
-# Prefer setting in your shell env (installer will persist it into ~/.config/opencode/.env)
-export AITOOLINGKEY="<your_key>"
-
-# Or run without prompting (CI)
-./ai-kit-install install --no-prompt
-```
-
-- **BASE_URL**: Optional base URL override for API endpoints.
-  - Only needed if you want to override the default base URL from `opencode.json`.
-  - If not set, the default from configuration will be used.
-  - Useful for custom API gateways or proxy services.
-
-```bash
-# Set both variables when using curl | bash
-export AITOOLINGKEY="<your_key>"
-export BASE_URL="https://api.example.com/v1"
-
-# Then run the installer
-curl -fsSL "https://github.com/krajh/ai-kit/releases/latest/download/install" | bash
-```
-
-- **SKIP_VERIFY**: Set to `true` to skip cryptographic signature verification of release artifacts. This may be necessary in restricted network environments where cosign cannot connect to the OIDC provider. **Security warning:** Enabling this bypasses authenticity checks and can allow tampered or malicious artifacts to be installed; use only in exceptional cases and in trusted, controlled environments, and never set it as a default.
-
-```bash
-# WARNING: Disables signature verification; use only in exceptional, trusted environments
-SKIP_VERIFY=true ./ai-kit-install install
-```
-
-### How Updates Work
-
-- **Automatic checks**: the `ai-kit-updater` plugin checks GitHub Releases at most once per 24h
-- **Staging**: new versions are downloaded and extracted into `~/.config/opencode/staging/<tag>/`
-- **Apply on restart**: on the next OpenCode start, the updater moves the staged version into `~/.config/opencode/versions/<tag>/` and flips `~/.config/opencode/current`
-- **Personalisation safety**: any files you've modified or added inside the active version directory are automatically detected, stashed, and reapplied after the update using a 3-way merge (see [Personalisation Safety](#personalisation-safety) below)
-- **Preservation**: Your user-owned files are always preserved:
-  - `~/.config/opencode/.env` (environment variables)
-  - `~/.config/opencode/local/` (custom configurations)
-- **Rollback**: previous installs are archived in `~/.config/opencode.backups/` for recovery
-
-### Personalisation Safety
-
-Starting with the version that introduces checksum tracking, ai-kit protects your in-place customisations across updates.
-
-#### How it works
-
-1. **Checksum manifest** — On every `install` or `update`, ai-kit writes a `.ai-kit-manifest.json` file inside the version directory. It records the SHA-256 hash of every file as it was shipped, giving the updater a reference point for "original" content.
-
-2. **Modification detection** — Before applying a new version, the updater compares every file in the active version directory against its stored checksum. Files with a different hash are flagged as **modified** (`M`); files that exist on disk but aren't in the manifest are flagged as **user-added** (`A`).
-
-3. **Stash** — Detected modifications are copied to a temporary stash directory, preserving their relative paths.
-
-4. **3-way merge** — After the new version is extracted, each stashed file is compared against both the old original and the new version:
-
-   | Old original       | New version        | User's version | Result                                                        |
-   | ------------------ | ------------------ | -------------- | ------------------------------------------------------------- |
-   | Same as new        | —                  | Different      | ✅ User's version applied (only the user changed it)          |
-   | Different from new | —                  | Different      | ⚠️ **Conflict** — both upstream and the user changed the file |
-   | N/A (user-added)   | File doesn't exist | —              | ✅ User's file copied into the new version                    |
-   | N/A (user-added)   | File exists        | —              | ⚠️ **Conflict** — upstream added a file with the same name    |
-
-5. **Conflict resolution**:
-   - **Interactive terminal** (manual `./ai-kit-install update`): you're prompted per conflict with `[k]eep yours / [o]verwrite with new / [d]iff / [s]kip`.
-   - **Non-interactive (auto-updater)**: your file stays in place, and the new upstream version is staged under `.ai-kit-incoming/` for manual review via `ai-kit-install resolve`.
-
-#### Example
-
-```
-$ ./ai-kit-install update
-
-Detecting user modifications...
-  M ./agents/implementer.md
-  A ./skills/my-custom-skill/SKILL.md
-Stashing 2 modified files...
-Downloading v0.3.2...
-Reapplying personalisations...
-  ✓ Applied: ./skills/my-custom-skill/SKILL.md (user-added)
-  ⚠ Conflict: ./agents/implementer.md (both user and upstream changed)
-    [k]eep yours / [o]verwrite with new / [d]iff / [s]kip? k
-  ✓ Kept user version: ./agents/implementer.md
-Personalisation complete: 1 applied, 1 conflict resolved.
-```
-
-#### Pre-feature upgrades
-
-If you're upgrading from a version that predates checksum tracking, the updater will print a one-time warning:
-
-```
-[!] No checksums manifest found (pre-feature version).
-    Your modifications cannot be detected this time.
-    Future updates will support personalisation safety.
-```
-
-After this upgrade completes, the new version's checksums are written, and all subsequent updates will have full personalisation protection.
-
-#### Files that are always preserved (outside the version directory)
-
-These live outside the version directory and are never touched by updates:
-
-| Path                        | Purpose                                    |
-| --------------------------- | ------------------------------------------ |
-| `~/.config/opencode/.env`   | Environment variables (AITOOLINGKEY, etc.) |
-| `~/.config/opencode/local/` | User-owned local customisations            |
+Skills are discoverable via `<available_skills>` in any session.
 
 ## Customization
 
@@ -321,66 +233,6 @@ These live outside the version directory and are never touched by updates:
 **For detailed guidance**, including examples, anti-patterns, and testing strategies, see:
 
 - **`docs/PERSONA_DEFINITION_GUIDE.md`** - Comprehensive persona definition guide
-
-## Directory Structure
-
-```
-~/.config/opencode/
-├── current -> versions/v0.1.7/     # Active version symlink
-├── opencode.json -> current/opencode.json
-├── AGENTS.md -> current/AGENTS.md
-├── agents -> current/agents
-├── plugins -> current/plugins
-├── protocols -> current/protocols
-├── skills -> current/skills
-├── versions/                      # Installed versions
-│   └── v0.1.7/                    # Kit contents (agents/protocols/plugins/etc.)
-│       └── .ai-kit-manifest.json  # SHA-256 manifest of shipped files (personalisation tracking)
-├── staging/                       # Downloaded+extracted updates (applied on restart)
-├── state/                         # Updater state (last check, staged tag)
-├── bin/                           # Tooling used by the installer/updater (e.g., cosign)
-├── local/                         # User-owned local customizations (preserved on update)
-├── .env                           # User-owned environment variables (preserved on update)
-└── ...                            # Kit files live under versions/<tag>/
-```
-
-## Usage
-
-### Configuration is active after installation. Select agents by technical need
-
-```bash
-# For system architecture
-# Use architect agent for design and planning
-
-# For implementation
-# Use implementer agent for coding tasks
-
-# For quality assurance
-# Use reviewer agent for code review
-```
-
-### Protocol Compliance
-
-All agents follow strict professional protocols:
-
-- Continuous progress reporting
-- Immediate escalation of blockers
-- Sequential task execution
-- Quality gate enforcement
-
-### Coordinator interaction guide
-
-- **Elect a coordinator before you begin.** The `coordinator` persona is intentionally left undefined so your team can pick or build the persona that matches your role model.
-- **Do not work in isolation.** All agent work must be routed through the coordinator: plan approvals, architectural decisions, and blocker escalations go through the coordinator, even if it means pausing in place.
-- **Keep the coordinator in the loop with short STATUS UPDATEs.** Follow the delegation protocol reporting format (COMPLETED / STARTING / CONTINUING with BLOCKERS) so the coordinator always has visibility.
-- **Use the coordinator as the final gate.** Before calling something “done,” share verification loop results and documentation updates with the coordinator for final sign-off.
-
-### Escalation and issue reporting
-
-- **Escalate through the `ESCALATION TO COORDINATOR` format** defined in `protocols/DELEGATION_PROTOCOLS.md`. Capture the blocker, context, attempts, needs, and impact in that same structure.
-- **Raise issues** (bugs, missing requirements, infrastructure access) by tagging them as `[!]` in your status updates and logging them in your shared issue tracker.
-- **Every agent is responsible** for the escalation cadence: even if the blocker seems minor, use the escalation template so the coordinator can track it formally.
-- **Escalations must happen immediately** when uncertainty, blockers, or decisions emerge—the coordinator should never guess or proceed without that signal.
 
 ## Support
 
