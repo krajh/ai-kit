@@ -12,18 +12,23 @@ import {
   lstatSync,
   readFileSync,
   readlinkSync,
+  readdirSync,
+  rmSync,
+  rmdirSync,
   unlinkSync,
 } from "node:fs";
+import { createHash } from "node:crypto";
 import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 
+import type { AiKitManifest } from "./types";
+
 export const MARKER_FILE = ".ai-kit-npm";
-export const CHECKSUMS_FILE = ".ai-kit-checksums";
+export const MANIFEST_FILE = ".ai-kit-manifest.json";
+export const INCOMING_DIR = ".ai-kit-incoming";
 
 export function getOpenCodeHome(): string {
-  return (
-    process.env.OPENCODE_HOME ?? join(homedir(), ".config", "opencode")
-  );
+  return process.env.OPENCODE_HOME ?? join(homedir(), ".config", "opencode");
 }
 
 export function isOurSymlink(linkPath: string, kitDir: string): boolean {
@@ -55,11 +60,78 @@ export function readMarker(ocHome: string): MarkerData | null {
   }
 }
 
+export function readManifest(ocHome: string): AiKitManifest | null {
+  const manifestPath = join(ocHome, MANIFEST_FILE);
+  if (!existsSync(manifestPath)) return null;
+
+  try {
+    return JSON.parse(readFileSync(manifestPath, "utf-8")) as AiKitManifest;
+  } catch {
+    return null;
+  }
+}
+
+export function sha256(filePath: string): string {
+  const content = readFileSync(filePath);
+  return createHash("sha256").update(content).digest("hex");
+}
+
+function removeIfEmpty(dirPath: string): void {
+  try {
+    const entries = readdirSync(dirPath);
+    if (entries.length === 0) {
+      rmdirSync(dirPath);
+    }
+  } catch {
+    // ignore
+  }
+}
+
+function cleanupManifestBased(ocHome: string, manifest: AiKitManifest): void {
+  let removed = 0;
+  let skipped = 0;
+
+  for (const [relPath, entry] of Object.entries(manifest.files)) {
+    const targetPath = join(ocHome, relPath);
+    if (!existsSync(targetPath) && !lstatExistsSafe(targetPath)) continue;
+
+    try {
+      const currentHash = sha256(targetPath);
+      if (currentHash === entry.installedHash) {
+        rmSync(targetPath, { recursive: true, force: true });
+        console.log(`  [OK] Removed ${relPath}`);
+        removed++;
+      } else {
+        console.log(`  [!] Leaving user-modified file: ${relPath}`);
+        skipped++;
+      }
+    } catch {
+      // skip unreadable files
+    }
+  }
+
+  const manifestPath = join(ocHome, MANIFEST_FILE);
+  if (existsSync(manifestPath)) unlinkSync(manifestPath);
+
+  const incomingPath = join(ocHome, INCOMING_DIR);
+  removeIfEmpty(incomingPath);
+
+  console.log(
+    `\n  [OK] Cleanup complete: ${removed} removed, ${skipped} skipped (user files preserved)\n`,
+  );
+}
+
 export function main(): void {
   const ocHome = getOpenCodeHome();
 
   console.log(`\n@brisingr-kr/core preuninstall`);
   console.log(`  target: ${ocHome}`);
+
+  const manifest = readManifest(ocHome);
+  if (manifest) {
+    cleanupManifestBased(ocHome, manifest);
+    return;
+  }
 
   const marker = readMarker(ocHome);
   if (!marker) {
@@ -83,20 +155,22 @@ export function main(): void {
       console.log(`  [OK] Removed symlink: ${item}`);
       removed++;
     } else {
-      console.log(`  [!] Skipped ${item} (not our symlink, user file preserved)`);
+      console.log(
+        `  [!] Skipped ${item} (not our symlink, user file preserved)`,
+      );
       skipped++;
     }
   }
 
-  // Clean up marker and checksums
+  // Clean up marker and legacy checksums
   const markerPath = join(ocHome, MARKER_FILE);
   if (existsSync(markerPath)) unlinkSync(markerPath);
 
-  const checksumsPath = join(ocHome, CHECKSUMS_FILE);
+  const checksumsPath = join(ocHome, ".ai-kit-checksums");
   if (existsSync(checksumsPath)) unlinkSync(checksumsPath);
 
   console.log(
-    `\n  [OK] Cleanup complete: ${removed} removed, ${skipped} skipped (user files preserved)\n`
+    `\n  [OK] Cleanup complete: ${removed} removed, ${skipped} skipped (user files preserved)\n`,
   );
 }
 
@@ -122,7 +196,7 @@ if (isDirectExecution) {
   } catch (error) {
     console.error(
       `\n  [X] @brisingr-kr/core preuninstall failed:`,
-      error instanceof Error ? error.message : String(error)
+      error instanceof Error ? error.message : String(error),
     );
   }
 }

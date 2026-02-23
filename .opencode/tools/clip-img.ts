@@ -33,13 +33,13 @@ export default tool({
       // Detect which PowerShell is available in WSL
       // Try pwsh.exe first (PowerShell 7+), then fall back to powershell.exe (5.1)
       let psCommand: string | undefined;
-      
+
       // Define possible PowerShell paths in WSL - PowerShell 7 at standard location
       const pwshPaths = [
         "/mnt/c/Program Files/PowerShell/7/pwsh.exe",
         "/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe",
       ];
-      
+
       // Check each path in order
       for (const psPath of pwshPaths) {
         try {
@@ -50,7 +50,7 @@ export default tool({
           // Path doesn't exist, try next
         }
       }
-      
+
       if (!psCommand) {
         // Try using wsl-aware command detection
         try {
@@ -62,7 +62,7 @@ export default tool({
           // Not in PATH either
         }
       }
-      
+
       if (!psCommand) {
         return `[X] Error: No PowerShell found. Install PowerShell 7+ or ensure Windows PowerShell is accessible.`;
       }
@@ -78,15 +78,16 @@ if ($img) {
 } else {
   exit 1
 }`;
-      
+
       await Bun.write(tmpScript, psScriptContent);
-      
+
       try {
         const winScriptPath = await Bun.$`wslpath -w ${tmpScript}`.text();
-        const psResult = await Bun.$`${psCommand} -NoProfile -ExecutionPolicy Bypass -File ${winScriptPath.trim()}`.quiet();
-        
+        const psResult =
+          await Bun.$`${psCommand} -NoProfile -ExecutionPolicy Bypass -File ${winScriptPath.trim()}`.quiet();
+
         await Bun.$`rm -f ${tmpScript}`.quiet();
-        
+
         if (psResult.exitCode === 0) {
           return `[OK] Image saved: ${fullPath}\n\nTo analyze this image, you can now reference it in your messages.`;
         } else {

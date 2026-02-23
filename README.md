@@ -76,10 +76,10 @@ This ensures you never silently lose your customisations.
 
 #### When to use npm vs curl | bash
 
-| Method         | Best for                                              |
-| -------------- | ----------------------------------------------------- |
-| `npm install`  | Node.js projects, version pinning via `package.json`  |
-| `curl \| bash` | System-wide install, non-Node projects, CI pipelines  |
+| Method         | Best for                                             |
+| -------------- | ---------------------------------------------------- |
+| `npm install`  | Node.js projects, version pinning via `package.json` |
+| `curl \| bash` | System-wide install, non-Node projects, CI pipelines |
 
 > **Note:** The npm distribution does not include the auto-updater plugin. Version updates happen through normal `npm update` workflows.
 

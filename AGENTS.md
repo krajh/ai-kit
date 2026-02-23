@@ -65,12 +65,13 @@ The ai-kit supports **corporate-first personas by default**, but allows customiz
 
 **Professional (default) vs. Personality-Rich:**
 
-| Approach           | When to Use                                  | Key Characteristics                                         |
-| ------------------ | -------------------------------------------- | ----------------------------------------------------------- |
-| **Professional**   | Regulated industries, audit-friendly docs    | Neutral tone, technical focus, standardized reporting       |
+| Approach             | When to Use                                 | Key Characteristics                                                |
+| -------------------- | ------------------------------------------- | ------------------------------------------------------------------ |
+| **Professional**     | Regulated industries, audit-friendly docs   | Neutral tone, technical focus, standardized reporting              |
 | **Personality-Rich** | Internal teams, complex domains, engagement | Distinct voice, metaphors, motivational language (with boundaries) |
 
 **Critical boundaries for personality-rich personas:**
+
 - Must follow delegation protocols exactly
 - Cannot override safety or security rules
 - Must escalate appropriately regardless of persona style

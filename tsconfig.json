@@ -8,5 +8,10 @@
     "strict": true,
     "skipLibCheck": true
   },
-  "include": ["src/**/*.ts", "plugins/**/*.ts", ".opencode/tools/**/*.ts", "tests/**/*.ts"]
+  "include": [
+    "src/**/*.ts",
+    "plugins/**/*.ts",
+    ".opencode/tools/**/*.ts",
+    "tests/**/*.ts"
+  ]
 }

@@ -56,7 +56,7 @@ function main(): void {
   }
 
   console.log(
-    `\n[kit-builder] Done: ${copied} items copied, ${skipped} skipped`
+    `\n[kit-builder] Done: ${copied} items copied, ${skipped} skipped`,
   );
 }
 

@@ -3,28 +3,24 @@
 /**
  * @brisingr-kr/core postinstall
  *
- * Creates symlinks from ~/.config/opencode/ → this package's kit/ directory.
- * Handles personalisation safety: detects user-modified files and preserves them.
- *
- * Symlinked items: opencode.json, AGENTS.md, agents/, skills/, protocols/, plugins/
+ * Copies files from this package's kit/ directory into ~/.config/opencode/.
+ * Tracks installed files via .ai-kit-manifest.json and preserves user edits.
  */
 
 import { createHash } from "node:crypto";
 import {
+  copyFileSync,
   existsSync,
-  lstatSync,
   mkdirSync,
   readFileSync,
-  readlinkSync,
   readdirSync,
-  renameSync,
   statSync,
-  symlinkSync,
-  unlinkSync,
   writeFileSync,
 } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
+
+import type { AiKitManifest, FileEntry } from "./types";
 
 export const KIT_LINK_ITEMS = [
   "opencode.json",
@@ -37,13 +33,11 @@ export const KIT_LINK_ITEMS = [
 ] as const;
 
 export const MARKER_FILE = ".ai-kit-npm";
-export const CHECKSUMS_FILE = ".ai-kit-checksums";
-export const BACKUP_SUFFIX = ".user-backup";
+export const MANIFEST_FILE = ".ai-kit-manifest.json";
+export const INCOMING_DIR = ".ai-kit-incoming";
 
 export function getOpenCodeHome(): string {
-  return (
-    process.env.OPENCODE_HOME ?? join(homedir(), ".config", "opencode")
-  );
+  return process.env.OPENCODE_HOME ?? join(homedir(), ".config", "opencode");
 }
 
 export function getKitDir(): string {
@@ -53,26 +47,6 @@ export function getKitDir(): string {
 export function sha256(filePath: string): string {
   const content = readFileSync(filePath);
   return createHash("sha256").update(content).digest("hex");
-}
-
-export function isSymlinkToKit(linkPath: string, kitDir: string): boolean {
-  try {
-    if (!lstatSync(linkPath).isSymbolicLink()) return false;
-    const target = readlinkSync(linkPath);
-    return resolve(dirname(linkPath), target).startsWith(kitDir);
-  } catch {
-    return false;
-  }
-}
-
-export function isOurSymlink(linkPath: string): boolean {
-  try {
-    if (!lstatSync(linkPath).isSymbolicLink()) return false;
-    const target = readlinkSync(linkPath);
-    return target.includes("@ai-kit") || target.includes("ai-kit");
-  } catch {
-    return false;
-  }
 }
 
 export function walkFiles(dir: string): string[] {
@@ -93,109 +67,265 @@ export function walkFiles(dir: string): string[] {
   return results;
 }
 
-export function computeChecksums(kitDir: string): Record<string, string> {
-  const checksums: Record<string, string> = {};
-  for (const item of KIT_LINK_ITEMS) {
-    const itemPath = join(kitDir, item);
-    if (!existsSync(itemPath)) continue;
-
-    const files = walkFiles(itemPath);
-    for (const file of files) {
-      const relPath = file.slice(kitDir.length + 1);
-      checksums[relPath] = sha256(file);
-    }
-  }
-  return checksums;
-}
-
-export function readStoredChecksums(
-  ocHome: string
-): Record<string, string> | null {
-  const checksumPath = join(ocHome, CHECKSUMS_FILE);
-  if (!existsSync(checksumPath)) return null;
+export function readManifest(ocHome: string): AiKitManifest | null {
+  const manifestPath = join(ocHome, MANIFEST_FILE);
+  if (!existsSync(manifestPath)) return null;
 
   try {
-    return JSON.parse(readFileSync(checksumPath, "utf-8"));
+    return JSON.parse(readFileSync(manifestPath, "utf-8")) as AiKitManifest;
   } catch {
     return null;
   }
 }
 
-export function writeChecksums(
-  ocHome: string,
-  checksums: Record<string, string>
-): void {
+export function writeManifest(ocHome: string, manifest: AiKitManifest): void {
   writeFileSync(
-    join(ocHome, CHECKSUMS_FILE),
-    JSON.stringify(checksums, null, 2) + "\n",
-    "utf-8"
+    join(ocHome, MANIFEST_FILE),
+    JSON.stringify(manifest, null, 2) + "\n",
+    "utf-8",
   );
 }
 
-export function backupUserFile(filePath: string): void {
-  const backupPath = filePath + BACKUP_SUFFIX;
-  console.log(`  [!] Backing up user-modified file: ${filePath} → ${backupPath}`);
-  renameSync(filePath, backupPath);
+function readJsonFile(filePath: string): Record<string, unknown> | null {
+  try {
+    const raw = readFileSync(filePath, "utf-8");
+    return JSON.parse(raw) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
 }
 
-export function detectUserModifications(
-  ocHome: string,
-  storedChecksums: Record<string, string>
-): string[] {
-  const modified: string[] = [];
+function writeJsonFile(filePath: string, data: Record<string, unknown>): void {
+  writeFileSync(filePath, JSON.stringify(data, null, 2) + "\n", "utf-8");
+}
 
-  for (const [relPath, storedHash] of Object.entries(storedChecksums)) {
-    const filePath = join(ocHome, relPath);
-    if (!existsSync(filePath)) continue;
-    if (lstatSync(filePath).isSymbolicLink()) continue;
+export function mergeJson(
+  installed: Record<string, unknown>,
+  incoming: Record<string, unknown>,
+  user: Record<string, unknown>,
+): Record<string, unknown> {
+  const merged: Record<string, unknown> = { ...incoming, ...user };
 
-    try {
-      const currentHash = sha256(filePath);
-      if (currentHash !== storedHash) {
-        modified.push(relPath);
-      }
-    } catch {
-      // skip unreadable files
+  for (const key of Object.keys(incoming)) {
+    if (Array.isArray(incoming[key]) && Array.isArray(user[key])) {
+      const userItems = (user[key] as unknown[]).filter(
+        (item) => !(incoming[key] as unknown[]).includes(item),
+      );
+      merged[key] = [...(incoming[key] as unknown[]), ...userItems];
     }
   }
 
-  return modified;
+  return merged;
 }
 
-export function safeCreateLink(
-  kitDir: string,
-  ocHome: string,
-  item: string
-): void {
-  const source = join(kitDir, item);
-  const target = join(ocHome, item);
+function ensureDirForFile(filePath: string): void {
+  mkdirSync(dirname(filePath), { recursive: true });
+}
 
-  if (!existsSync(source)) {
-    console.log(`  [!] Kit item not found, skipping: ${item}`);
+function copyFile(source: string, dest: string): void {
+  ensureDirForFile(dest);
+  copyFileSync(source, dest);
+}
+
+function stageIncoming(ocHome: string, relPath: string, source: string): void {
+  const incomingPath = join(ocHome, INCOMING_DIR, relPath);
+  copyFile(source, incomingPath);
+  console.log(
+    `  [!] User-modified file detected, new version staged at ${INCOMING_DIR}/${relPath}`,
+  );
+}
+
+function getCategoryForItem(item: string): FileEntry["category"] {
+  if (item === "opencode.json") return "merged";
+  if (item === "bunfig.toml") return "generated";
+  return "managed";
+}
+
+function updateManifestEntry(
+  manifest: AiKitManifest,
+  relPath: string,
+  category: FileEntry["category"],
+  source: string,
+  dest: string,
+): void {
+  manifest.files[relPath] = {
+    category,
+    installedHash: sha256(dest),
+    sourceHash: sha256(source),
+  };
+}
+
+function extractInstallSection(source: string): string | null {
+  const match = source.match(/^\[install\][\s\S]*?(?=^\[|\s*$)/m);
+  if (!match) return null;
+  return match[0].trimEnd();
+}
+
+function updateBunfigToml(
+  source: string,
+  dest: string,
+  entry: FileEntry | undefined,
+  manifest: AiKitManifest,
+): void {
+  if (!existsSync(dest)) {
+    copyFile(source, dest);
+    updateManifestEntry(manifest, "bunfig.toml", "generated", source, dest);
+    console.log("  [OK] bunfig.toml installed");
     return;
   }
 
-  try {
-    const targetStat = lstatSync(target);
-    const targetExists = true;
-
-    if (targetStat.isSymbolicLink()) {
-      if (isOurSymlink(target)) {
-        unlinkSync(target);
-      } else {
-        console.log(`  [!] ${item}: foreign symlink exists, replacing`);
-        unlinkSync(target);
-      }
-    } else {
-      backupUserFile(target);
+  if (entry) {
+    const currentHash = sha256(dest);
+    if (currentHash === entry.installedHash) {
+      copyFile(source, dest);
+      updateManifestEntry(manifest, "bunfig.toml", "generated", source, dest);
+      console.log("  [OK] bunfig.toml updated");
+      return;
     }
-  } catch (err: any) {
-    if (err.code !== "ENOENT") throw err;
-    // target doesn't exist, proceed
   }
 
-  symlinkSync(source, target);
-  console.log(`  [OK] ${item} → ${source}`);
+  const sourceHash = sha256(source);
+  const currentHash = sha256(dest);
+  if (!entry && currentHash === sourceHash) {
+    updateManifestEntry(manifest, "bunfig.toml", "generated", source, dest);
+    console.log("  [OK] bunfig.toml already up-to-date");
+    return;
+  }
+
+  const destContent = readFileSync(dest, "utf-8");
+  if (/^\[install\]/m.test(destContent)) {
+    console.log(
+      "  [!] bunfig.toml already contains [install] section, leaving user changes",
+    );
+    return;
+  }
+
+  const sourceContent = readFileSync(source, "utf-8");
+  const installSection = extractInstallSection(sourceContent);
+  if (!installSection) {
+    console.log(
+      "  [!] bunfig.toml missing [install] section in kit, skipping append",
+    );
+    return;
+  }
+
+  const nextContent = `${destContent.trimEnd()}\n\n${installSection}\n`;
+  writeFileSync(dest, nextContent, "utf-8");
+  console.log("  [OK] bunfig.toml appended with [install] section");
+}
+
+export function installKit(kitDir: string, ocHome: string): AiKitManifest {
+  mkdirSync(ocHome, { recursive: true });
+
+  const existingManifest = readManifest(ocHome);
+  const manifest = existingManifest ?? {
+    version: getPackageVersion(),
+    installedAt: new Date().toISOString(),
+    installedVia: "npm",
+    files: {},
+  };
+  const isFreshInstall = !existingManifest;
+
+  manifest.version = getPackageVersion();
+  manifest.installedAt = new Date().toISOString();
+
+  for (const item of KIT_LINK_ITEMS) {
+    const sourceRoot = join(kitDir, item);
+    if (!existsSync(sourceRoot)) {
+      console.log(`  [!] Kit item not found, skipping: ${item}`);
+      continue;
+    }
+
+    if (item === "bunfig.toml") {
+      updateBunfigToml(
+        sourceRoot,
+        join(ocHome, item),
+        manifest.files[item],
+        manifest,
+      );
+      continue;
+    }
+
+    const files = walkFiles(sourceRoot);
+    const category = getCategoryForItem(item);
+
+    for (const sourcePath of files) {
+      const relPath = sourcePath.slice(kitDir.length + 1);
+      const destPath = join(ocHome, relPath);
+      const entry = manifest.files[relPath];
+
+      if (category === "merged" && relPath === "opencode.json" && !entry) {
+        if (isFreshInstall && !existsSync(destPath)) {
+          copyFile(sourcePath, destPath);
+          updateManifestEntry(
+            manifest,
+            relPath,
+            category,
+            sourcePath,
+            destPath,
+          );
+          console.log("  [OK] opencode.json installed");
+        } else {
+          console.log(
+            `  [!] Skipping ${relPath}: exists but not in ai-kit manifest`,
+          );
+        }
+        continue;
+      }
+
+      if (!existsSync(destPath)) {
+        copyFile(sourcePath, destPath);
+        updateManifestEntry(manifest, relPath, category, sourcePath, destPath);
+        console.log(`  [OK] Installed ${relPath}`);
+        continue;
+      }
+
+      if (!entry) {
+        console.log(
+          `  [!] Skipping ${relPath}: exists but not in ai-kit manifest`,
+        );
+        continue;
+      }
+
+      if (category === "merged" && relPath === "opencode.json") {
+        const incoming = readJsonFile(sourcePath);
+        const user = readJsonFile(destPath);
+        if (!incoming || !user) {
+          stageIncoming(ocHome, relPath, sourcePath);
+          continue;
+        }
+
+        let installed = incoming;
+        if (entry) {
+          const currentHash = sha256(destPath);
+          installed = currentHash === entry.installedHash ? user : incoming;
+        }
+
+        const merged = mergeJson(installed ?? {}, incoming, user) as Record<
+          string,
+          unknown
+        >;
+        writeJsonFile(destPath, merged);
+        updateManifestEntry(manifest, relPath, category, sourcePath, destPath);
+        console.log("  [OK] opencode.json merged");
+        continue;
+      }
+
+      const currentHash = sha256(destPath);
+      if (currentHash === entry.installedHash) {
+        copyFile(sourcePath, destPath);
+        updateManifestEntry(manifest, relPath, category, sourcePath, destPath);
+        console.log(`  [OK] Updated ${relPath}`);
+        continue;
+      }
+
+      stageIncoming(ocHome, relPath, sourcePath);
+    }
+  }
+
+  writeManifest(ocHome, manifest);
+  writeMarker(ocHome, kitDir);
+  return manifest;
 }
 
 export function writeMarker(ocHome: string, kitDir: string): void {
@@ -209,14 +339,14 @@ export function writeMarker(ocHome: string, kitDir: string): void {
   writeFileSync(
     join(ocHome, MARKER_FILE),
     JSON.stringify(marker, null, 2) + "\n",
-    "utf-8"
+    "utf-8",
   );
 }
 
 export function getPackageVersion(): string {
   try {
     const pkg = JSON.parse(
-      readFileSync(join(__dirname, "..", "package.json"), "utf-8")
+      readFileSync(join(__dirname, "..", "package.json"), "utf-8"),
     );
     return pkg.version ?? "unknown";
   } catch {
@@ -238,34 +368,11 @@ export function main(): void {
     return;
   }
 
-  mkdirSync(ocHome, { recursive: true });
+  installKit(kitDir, ocHome);
 
-  // Detect user modifications before overwriting
-  const storedChecksums = readStoredChecksums(ocHome);
-  if (storedChecksums) {
-    const modified = detectUserModifications(ocHome, storedChecksums);
-    if (modified.length > 0) {
-      console.log(`\n  User-modified files detected:`);
-      for (const m of modified) {
-        console.log(`    - ${m}`);
-      }
-      console.log(`  These will be backed up with ${BACKUP_SUFFIX} suffix.\n`);
-    }
-  }
-
-  // Create symlinks
-  for (const item of KIT_LINK_ITEMS) {
-    safeCreateLink(kitDir, ocHome, item);
-  }
-
-  // Write checksums for next update
-  const newChecksums = computeChecksums(kitDir);
-  writeChecksums(ocHome, newChecksums);
-
-  // Write marker so the updater plugin knows we're npm-distributed
-  writeMarker(ocHome, kitDir);
-
-  console.log(`\n  [OK] @brisingr-kr/core v${getPackageVersion()} installed successfully\n`);
+  console.log(
+    `\n  [OK] @brisingr-kr/core v${getPackageVersion()} installed successfully\n`,
+  );
 }
 
 // Only auto-execute when run directly (not when imported for testing)
@@ -281,7 +388,7 @@ if (isDirectExecution) {
   } catch (error) {
     console.error(
       `\n  [X] @brisingr-kr/core postinstall failed:`,
-      error instanceof Error ? error.message : String(error)
+      error instanceof Error ? error.message : String(error),
     );
     // Don't exit(1) — postinstall failures shouldn't block npm install
   }
