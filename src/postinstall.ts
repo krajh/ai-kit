@@ -29,6 +29,7 @@ import { dirname, join, resolve } from "node:path";
 export const KIT_LINK_ITEMS = [
   "opencode.json",
   "AGENTS.md",
+  "bunfig.toml",
   "agents",
   "skills",
   "protocols",

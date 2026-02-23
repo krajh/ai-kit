@@ -20,6 +20,7 @@ const KIT_ITEMS = [
   { src: "plugins", type: "dir" },
   { src: "AGENTS.md", type: "file" },
   { src: "opencode.json", type: "file" },
+  { src: "bunfig.toml", type: "file" },
 ] as const;
 
 function main(): void {

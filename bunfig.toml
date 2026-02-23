@@ -1,0 +1,9 @@
+# Bun configuration for OpenCode
+# Shipped by @brisingr-kr/core — allows Bun to run required postinstall scripts
+# when OpenCode installs plugins listed in opencode.json.
+#
+# protobufjs is a transitive dependency of opencode-mem and requires its
+# postinstall to run in order for the plugin to initialise correctly.
+
+[install]
+trustedDependencies = ["protobufjs"]

@@ -27,7 +27,9 @@
   "memoryProvider": "openai-chat",
   "memoryModel": "gpt-4.1",
   "memoryApiUrl": "https://litellm.aitooling.mgsops.net",
-  "memoryApiKey": "sk-Oom9fGC9QwNBnAQlY-Y6eQ",
+  // Set your LiteLLM / OpenAI-compatible API key here or via the
+  // OPENCODE_MEM_API_KEY environment variable. Do not commit real keys.
+  "memoryApiKey": "",
   // User profile analysis (every 10 new memories)
   "userProfileAnalysisInterval": 10,
   "userProfileMaxPreferences": 20,
