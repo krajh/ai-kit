@@ -1,230 +1,137 @@
 # Troubleshooting
 
+This guide covers common issues with ai-kit installation and usage.
+
 ## BunInstallFailedError: opencode-mem
 
-**Error message:** `BunInstallFailedError` when installing `@brisingr-kr/core`, mentioning `protobufjs`
+**Cause:** The `protobufjs` package postinstall script is blocked by Bun's security policy.
 
-**Cause:** Bun's security policy blocks package postinstall scripts by default. The `opencode-mem` dependency uses protobufjs, which has a postinstall script that fails without explicit permission.
-
-**Fix:** The `bunfig.toml` shipped with ai-kit includes `trustedDependencies = ["protobufjs"]` to allow this. Make sure it has been applied:
+**Fix:** ai-kit ships a `bunfig.toml` that includes `trustedDependencies = ["protobufjs"]`. Make sure `~/.config/opencode/bunfig.toml` exists. If not, re-run installation:
 
 ```bash
-# Check that bunfig.toml exists
-cat ~/.config/opencode/bunfig.toml | grep trustedDependencies
-
-# Should output:
-# trustedDependencies = ["protobufjs"]
+./ai-kit-install install
 ```
 
-If missing or incorrect, reinstall ai-kit:
+## opencode.json Customizations Lost After Update
+
+This shouldn't happen in v0.6+. The installer uses file-copy with deep-merge for `opencode.json` — your keys always win.
+
+If customizations were lost:
+1. Restore from `~/.config/opencode/opencode.json.user-backup` if a backup exists
+2. Re-run installation: `./ai-kit-install install`
+
+## Conflicts After Update: Files in `.ai-kit-incoming/`
+
+When you update, if you've modified files that ai-kit also ships, the new versions are staged to `.ai-kit-incoming/` instead of overwriting your changes.
+
+**Resolve conflicts:**
 
 ```bash
-npm install -g @brisingr-kr/core
+# See pending conflicts
+./ai-kit-install status
+
+# Accept new version (overwrites your file)
+./ai-kit-install resolve --accept-incoming
+
+# Keep your version (discards incoming)
+./ai-kit-install resolve --keep-mine
 ```
 
-## opencode.json lost custom settings after update
+## Plugin Fails to Load After Install
 
-**Problem:** Your custom settings in `~/.config/opencode/opencode.json` disappeared after running an update.
-
-**Why:** This should not happen with ai-kit v0.6.0+. The postinstall script now **deep-merges** `opencode.json` instead of overwriting it, so your customisations are preserved.
-
-**If this happened anyway:** You were likely running an older version (pre-v0.6.0) that used symlinks instead of file-copy. The old mechanism didn't support merge.
-
-**Fix:** Reinstall to get the new behavior:
-
+**Check:** List installed plugins:
 ```bash
-npm install -g @brisingr-kr/core
+ls ~/.config/opencode/plugins/
 ```
 
-Your custom settings will be merged going forward.
-
-## Conflicts after update: files in `.ai-kit-incoming/`
-
-**What is `.ai-kit-incoming/`?** When ai-kit detects that you've modified a file it also manages, it stages the new upstream version in `.ai-kit-incoming/` instead of overwriting your version. This gives you a chance to review and decide.
-
-**Why did this happen?** The updater compared your files against the checksum manifest and found that you've edited a file that ai-kit also provides (e.g., `agents/implementer.md`, `protocols/DELEGATION_PROTOCOLS.md`).
-
-**Check what's pending:**
-
+**Fix:** Re-run installation:
 ```bash
-ai-kit-install status
+./ai-kit-install install
 ```
 
-You'll see a list of files in `.ai-kit-incoming/` that have conflicts.
+## Auto-updater Not Checking for Updates
 
-**Resolve:**
+The updater checks at most once every 24 hours.
 
+**Force a check:**
 ```bash
-# Accept the new upstream version (overwrite your changes)
-ai-kit-install resolve --accept-incoming
-
-# OR keep your version (reject the upstream changes)
-ai-kit-install resolve --keep-mine
-```
-
-Your files are never lost — you decide which version to keep.
-
-## Plugin fails to load after install
-
-**Error message:** Plugin not found, or "plugin X not initialized" in logs
-
-**Cause:** Plugin files were not copied during install, or the OpenCode session hasn't picked them up yet.
-
-**Check installation:**
-
-```bash
-# List plugin files in opencode config
-ls -la ~/.config/opencode/plugins/
-
-# You should see at least:
-# - ai-kit-updater.ts
-# - (other plugin files)
-```
-
-**Fix:**
-
-1. **Reinstall ai-kit:**
-
-   ```bash
-   npm install -g @brisingr-kr/core
-   ```
-
-2. **Restart OpenCode** (close and reopen your session, or exit and restart the process).
-
-3. **Verify plugins are loaded:**
-   ```bash
-   # In an OpenCode session, check available plugins via the runtime
-   # The log should show plugin initialization
-   ```
-
-## Auto-updater not checking for updates
-
-**Problem:** The auto-updater plugin hasn't checked GitHub for new releases recently.
-
-**Why:** The auto-updater checks **at most once per 24 hours** to avoid hammering GitHub. If you've already checked recently, it won't re-check until the 24h window expires.
-
-**Check last check time:**
-
-```bash
-cat ~/.config/opencode/state/ai-kit-update.json
-```
-
-You'll see:
-
-- `lastCheckTime` — Unix timestamp of last check
-- `stagedTag` — Version staged for next install (if any)
-
-**Force an immediate check:**
-
-```bash
-# Delete the state file to reset the timer
 rm ~/.config/opencode/state/ai-kit-update.json
-
-# Restart OpenCode — the updater will check immediately on next session start
+# Restart OpenCode
 ```
 
-## `npm install -g @brisingr-kr/core` hangs or fails
+## npm install -g Hangs or Fails
 
-**Problem:** npm install seems stuck or exits with an error.
+This is expected — npm installation is not the recommended path.
 
-**Possible causes:**
-
-1. **Network issue** — npm registry is unreachable
-   - Check: `npm ping` (should respond with `{Pinging registry...}`)
-   - Retry: `npm install -g @brisingr-kr/core --verbose`
-
-2. **Disk space** — Not enough space for node_modules
-   - Check: `df -h` on your home directory
-   - Need ~500MB free
-
-3. **Package missing or unpublished** — ai-kit package is not available yet
-   - Check: `npm search @brisingr-kr/core` (should list the package)
-
-**Fix:**
-
+**Use curl | bash instead:**
 ```bash
-# Clear npm cache
-npm cache clean --force
-
-# Retry install with verbose logging
-npm install -g @brisingr-kr/core --verbose
-
-# If still failing, check npm logs
-npm logs errors
+curl -fsSL "https://github.com/krajh/ai-kit/releases/latest/download/install" | bash
 ```
 
-## Bash installer command not found: `ai-kit-install`
+## Bash Installer Command Not Found
 
-**Problem:** After running the bash installer, you can't run `ai-kit-install` from the shell.
-
-**Why:** The installer is only added to `PATH` if you used npm install. For the bash installer, you need to reference the full path or make sure it's in `PATH`.
-
-**Fix:**
-
+Ensure the installer is in your PATH, or use the full path:
 ```bash
-# Full path (always works)
-~/.config/opencode/ai-kit-install status
-
-# OR add to PATH (add to ~/.bashrc or ~/.zshrc)
-export PATH="$HOME/.config/opencode:$PATH"
-
-# Then source the file or open a new terminal
-source ~/.bashrc
-ai-kit-install status  # Now works
+~/.config/opencode/current/ai-kit-install install
 ```
 
-## Environment variable AITOOLINGKEY not found
+## AITOOLINGKEY / OPENCODE_API_KEY Not Found
 
-**Problem:** During install, the script asks for `AITOOLINGKEY` and won't proceed without it.
-
-**Why:** ai-kit requires this API key to configure the aitooling provider in `opencode.json`.
-
-**Fix:**
-
-1. **Set the environment variable before installing:**
-
-   ```bash
-   export AITOOLINGKEY="your-api-key-here"
-   npm install -g @brisingr-kr/core
-   ```
-
-2. **Or use `--no-prompt` mode (CI/scripts):**
-
-   ```bash
-   # If AITOOLINGKEY is already set, this won't prompt
-   npm install -g @brisingr-kr/core
-   ```
-
-3. **If install already completed without the key:**
-   ```bash
-   # Add it to the .env file
-   echo 'AITOOLINGKEY=your-key' >> ~/.config/opencode/.env
-   ```
-
-The key is stored in `~/.config/opencode/.env` and is preserved across updates.
-
-## WSL path issues: ai-kit installs to Windows instead of WSL
-
-**Problem:** Files end up in `C:\Users\...` (Windows) instead of `/home/user/` (WSL).
-
-**Why:** OpenCode or npm is reading the Windows `%USERPROFILE%` instead of the WSL home.
-
-**Fix:**
+Set the environment variable before running OpenCode:
 
 ```bash
-# In your WSL terminal, verify you're using WSL paths
+export AITOOLINGKEY="your-key-here"
+# or
+export OPENCODE_API_KEY="your-key-here"
+```
+
+## WSL Path Issues
+
+If running on WSL and seeing path errors, ensure your home directory is correctly set:
+
+```bash
 echo $HOME
-# Should output: /home/username (not /mnt/c/Users/...)
-
-# Unset any Windows USERPROFILE that may be bleeding through
-unset USERPROFILE
-
-# Reinstall
-npm install -g @brisingr-kr/core
+ls -la ~/
 ```
 
-## Further help
+The installer expects standard WSL paths. If your Windows user folder is mounted at `/mnt/c/Users/`, consider setting up a Linux home directory.
 
-- **GitHub Issues**: [github.com/krajh/ai-kit/issues](https://github.com/krajh/ai-kit/issues)
-- **Documentation**: Check `README.md` for install methods and workflow
-- **Installation Guide**: See "Installation" and "Updates" sections in README
+## macOS-Specific Issues
+
+**Permission Denied when running installer:**
+
+```bash
+chmod +x ai-kit-install
+./ai-kit-install install
+```
+
+**Home directory not found:**
+
+If `echo $HOME` returns empty on macOS, set it explicitly:
+
+```bash
+export HOME=$USER
+./ai-kit-install install
+```
+
+**Apple Silicon (M1/M2/M3) Macs:**
+
+The installer should work natively on Apple Silicon. If you see architecture errors, ensure you're using the correct binary for your chip:
+
+```bash
+uname -m  # Should show arm64
+```
+
+**Bun not found:**
+
+Install Bun on macOS:
+
+```bash
+curl -fsSL https://bun.sh/install | bash
+source ~/.bashrc  # or ~/.zshrc
+```
+
+## Further Help
+
+- GitHub Issues: https://github.com/krajh/ai-kit/issues
+- Discussions: https://github.com/krajh/ai-kit/discussions

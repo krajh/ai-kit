@@ -4,10 +4,9 @@
   "autoupdate": true,
   "default_agent": "coordinator",
   "plugin": [
-    "plugins/ai-kit-updater.ts",
     "@howaboua/opencode-roadmap-plugin@latest",
     "@tarquinen/opencode-dcp@latest",
-    "opencode-mem@2.11.3"
+    "opencode-mem"
   ],
   "share": "manual",
   "tui": {
@@ -46,8 +45,8 @@
           "name": "GPT 5.2",
           "temperature": true
         },
-        "ant-claude-sonnet-4-5": {
-          "id": "ant-claude-sonnet-4-5",
+        "claude-sonnet-4-5-20250929": {
+          "id": "claude-sonnet-4-5-20250929",
           "name": "Claude Sonnet 4.5",
           "temperature": true
         },
@@ -166,8 +165,9 @@
   "model": "github-copilot/gpt-5.2-codex",
   "small_model": "github-copilot/claude-haiku-4.5",
   "instructions": [
-    "protocols/TOOL_USAGE_GUIDE.md",
-    "protocols/DELEGATION_PROTOCOLS.md"
+    "AGENTS.md",
+    "src/protocols/TOOL_USAGE_GUIDE.md",
+    "src/protocols/DELEGATION_PROTOCOLS.md"
   ],
   "watcher": {
     "ignore": [
@@ -183,7 +183,9 @@
       "external/context-db-mcp/venv/**"
     ]
   },
-  "permission": "allow",
+  "permission": {
+    "webfetch": "deny"
+  },
   "compaction": {
     "auto": true,
     "prune": true
@@ -197,32 +199,56 @@
     "strategist": {
       "description": "Systems architect for planning and decisions",
       "mode": "subagent",
-      "model": "github-copilot/gpt-5.2-codex",
-      "temperature": 0.3
+      "model": "aitooling/claude-haiku-4-5-20251001",
+      "temperature": 0.3,
+      "permission": {
+        "bash": "deny",
+        "write": "deny",
+        "edit": "deny"
+      }
     },
     "implementer": {
       "description": "Implementation specialist for disciplined execution",
       "mode": "subagent",
-      "model": "github-copilot/claude-haiku-4.5",
-      "temperature": 0.4
+      "model": "aitooling/claude-haiku-4-5-20251001",
+      "temperature": 0.4,
+      "permission": {
+        "webfetch": "allow"
+      }
     },
     "reviewer": {
       "description": "Code and documentation reviewer for quality assurance",
       "mode": "subagent",
-      "model": "github-copilot/claude-sonnet-4.5",
-      "temperature": 0.2
+      "model": "aitooling/claude-haiku-4-5-20251001",
+      "temperature": 0.2,
+      "permission": {
+        "bash": "deny",
+        "write": "deny",
+        "edit": "deny"
+      }
     },
     "research": {
       "description": "Research lead for discovery and requirements",
       "mode": "subagent",
-      "model": "github-copilot/gpt-5.2",
-      "temperature": 0.2
+      "model": "aitooling/claude-haiku-4-5-20251001",
+      "temperature": 0.2,
+      "permission": {
+        "webfetch": "allow",
+        "bash": "deny",
+        "write": "deny",
+        "edit": "deny"
+      }
     },
     "architect": {
       "description": "Big-picture architect who shapes roadmaps and trade-offs",
       "mode": "subagent",
-      "model": "github-copilot/gpt-5.2",
-      "temperature": 0.3
+      "model": "aitooling/claude-haiku-4-5-20251001",
+      "temperature": 0.3,
+      "permission": {
+        "bash": "deny",
+        "write": "deny",
+        "edit": "deny"
+      }
     }
   }
 }
