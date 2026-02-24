@@ -45,8 +45,8 @@
           "name": "GPT 5.2",
           "temperature": true
         },
-        "claude-sonnet-4-5-20250929": {
-          "id": "claude-sonnet-4-5-20250929",
+        "ant-claude-sonnet-4-5": {
+          "id": "ant-claude-sonnet-4-5",
           "name": "Claude Sonnet 4.5",
           "temperature": true
         },
@@ -79,6 +79,11 @@
           "name": "Claude Opus 4.1",
           "temperature": true
         },
+        "claude-opus-4.6": {
+          "id": "claude-opus-4.6",
+          "name": "Claude Opus 4.6",
+          "temperature": true
+        },
         "claude-sonnet-4": {
           "id": "claude-sonnet-4",
           "name": "Claude Sonnet 4",
@@ -87,6 +92,11 @@
         "claude-sonnet-4.5": {
           "id": "claude-sonnet-4.5",
           "name": "Claude Sonnet 4.5",
+          "temperature": true
+        },
+        "claude-sonnet-4.6": {
+          "id": "claude-sonnet-4.6",
+          "name": "Claude Sonnet 4.6",
           "temperature": true
         },
         "gemini-2.5-pro": {
@@ -127,32 +137,37 @@
         "gpt-5.1": {
           "id": "gpt-5.1",
           "name": "GPT-5.1",
-          "temperature": false
+          "temperature": true
         },
         "gpt-5.1-codex": {
           "id": "gpt-5.1-codex",
           "name": "GPT-5.1-Codex",
-          "temperature": false
+          "temperature": true
         },
         "gpt-5.1-codex-max": {
           "id": "gpt-5.1-codex-max",
           "name": "GPT-5.1-Codex-max",
-          "temperature": false
+          "temperature": true
         },
         "gpt-5.1-codex-mini": {
           "id": "gpt-5.1-codex-mini",
           "name": "GPT-5.1-Codex-mini",
-          "temperature": false
+          "temperature": true
         },
         "gpt-5.2": {
           "id": "gpt-5.2",
           "name": "GPT-5.2",
-          "temperature": false
+          "temperature": true
         },
         "gpt-5.2-codex": {
           "id": "gpt-5.2-codex",
           "name": "GPT-5.2-Codex",
-          "temperature": false
+          "temperature": true
+        },
+        "gpt-5.3-codex": {
+          "id": "gpt-5.3-codex",
+          "name": "GPT-5.3-Codex",
+          "temperature": true
         },
         "grok-code-fast-1": {
           "id": "grok-code-fast-1",
