@@ -166,8 +166,8 @@
   "small_model": "github-copilot/claude-haiku-4.5",
   "instructions": [
     "AGENTS.md",
-    "protocols/TOOL_USAGE_GUIDE.md",
-    "protocols/DELEGATION_PROTOCOLS.md"
+    "src/protocols/TOOL_USAGE_GUIDE.md",
+    "src/protocols/DELEGATION_PROTOCOLS.md"
   ],
   "watcher": {
     "ignore": [
@@ -183,7 +183,9 @@
       "external/context-db-mcp/venv/**"
     ]
   },
-  "permission": "allow",
+  "permission": {
+    "webfetch": "deny"
+  },
   "compaction": {
     "auto": true,
     "prune": true
@@ -198,31 +200,55 @@
       "description": "Systems architect for planning and decisions",
       "mode": "subagent",
       "model": "aitooling/claude-haiku-4-5-20251001",
-      "temperature": 0.3
+      "temperature": 0.3,
+      "permission": {
+        "bash": "deny",
+        "write": "deny",
+        "edit": "deny"
+      }
     },
     "implementer": {
       "description": "Implementation specialist for disciplined execution",
       "mode": "subagent",
       "model": "aitooling/claude-haiku-4-5-20251001",
-      "temperature": 0.4
+      "temperature": 0.4,
+      "permission": {
+        "webfetch": "allow"
+      }
     },
     "reviewer": {
       "description": "Code and documentation reviewer for quality assurance",
       "mode": "subagent",
       "model": "aitooling/claude-haiku-4-5-20251001",
-      "temperature": 0.2
+      "temperature": 0.2,
+      "permission": {
+        "bash": "deny",
+        "write": "deny",
+        "edit": "deny"
+      }
     },
     "research": {
       "description": "Research lead for discovery and requirements",
       "mode": "subagent",
       "model": "aitooling/claude-haiku-4-5-20251001",
-      "temperature": 0.2
+      "temperature": 0.2,
+      "permission": {
+        "webfetch": "allow",
+        "bash": "deny",
+        "write": "deny",
+        "edit": "deny"
+      }
     },
     "architect": {
       "description": "Big-picture architect who shapes roadmaps and trade-offs",
       "mode": "subagent",
       "model": "aitooling/claude-haiku-4-5-20251001",
-      "temperature": 0.3
+      "temperature": 0.3,
+      "permission": {
+        "bash": "deny",
+        "write": "deny",
+        "edit": "deny"
+      }
     }
   }
 }
