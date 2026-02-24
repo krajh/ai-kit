@@ -412,7 +412,7 @@ Escalating to user: Agent [X] repeatedly failing to [protocol]. Recommend review
 
 ## Related Skills
 
-- `peerage-assemble` - Agent selection patterns
+- `agent-selection` - Agent selection patterns
 - `effort-complexity-framework` - Task assessment (Effort + Complexity)
 - `mai-context-patterns` - When to use Mai DB vs memory vs checkpoint
 - `handoff-patterns` - 5 handoff types for multi-agent work

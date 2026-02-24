@@ -272,7 +272,7 @@ but branch commit feature-b -m "Modify shared module method B"
 
 ---
 
-## Integration with Peerage Workflow
+## Integration with Multi-Agent Workflow
 
 ### For Coordinator
 
