@@ -15,26 +15,7 @@ A lightweight, installer-first OpenCode configuration kit for teams.
 
 ## Installation
 
-### npm (recommended)
-
-```bash
-npm install -g @brisingr-kr/core
-```
-
-This installs ai-kit globally and runs the setup script, which:
-
-1. **Copies files** from the package into `~/.config/opencode/`
-2. **Writes `bunfig.toml`** with `trustedDependencies = ["protobufjs"]` to unblock `opencode-mem` install
-3. **Merges `opencode.json`** so your customisations aren't lost
-4. **Creates `.ai-kit-manifest.json`** to track files for updates
-
-You get:
-
-- `AGENTS.md`, `agents/`, `skills/`, `protocols/`, `plugins/`
-- `opencode.json`, `bunfig.toml`
-- All configured and ready to use
-
-### Bash installer (download)
+### Bash installer
 
 For system-wide installs or non-Node projects:
 
@@ -70,26 +51,12 @@ You should see:
 
 ## Updates
 
-ai-kit supports three ways to update:
+ai-kit supports one way to update:
 
-### Automatic (recommended for Node projects)
-
-```bash
-npm update -g @brisingr-kr/core
-```
-
-The auto-updater plugin (included in npm installs) also checks GitHub releases when OpenCode starts—at most once per 24h.
-
-### Manual (any install method)
+### Manual update
 
 ```bash
 ai-kit-install update
-```
-
-Or with npm:
-
-```bash
-npm update -g @brisingr-kr/core
 ```
 
 ### Handling conflicts
@@ -121,12 +88,6 @@ Your files are never silently lost. If there are conflicts, you resolve them exp
 ## Uninstall
 
 ```bash
-npm uninstall -g @brisingr-kr/core
-```
-
-Or with the bash installer:
-
-```bash
 ./ai-kit-install uninstall
 ```
 
@@ -134,10 +95,8 @@ This removes only ai-kit files that haven't been modified. Your customisations i
 
 ## Requirements
 
-- **npm** (for Node.js projects) or **curl**, **tar** (for bash installer)
+- **curl** and **tar** (for bash installer)
 - **WSL 2**, **Linux**, or **macOS** (x86_64/amd64/arm64 architecture)
-- No special privileges required
-- Bun is required to run postinstall/preuninstall scripts (installed with npm)
 
 ## How It Works
 
