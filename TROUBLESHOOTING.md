@@ -96,6 +96,41 @@ ls -la ~/
 
 The installer expects standard WSL paths. If your Windows user folder is mounted at `/mnt/c/Users/`, consider setting up a Linux home directory.
 
+## macOS-Specific Issues
+
+**Permission Denied when running installer:**
+
+```bash
+chmod +x ai-kit-install
+./ai-kit-install install
+```
+
+**Home directory not found:**
+
+If `echo $HOME` returns empty on macOS, set it explicitly:
+
+```bash
+export HOME=$USER
+./ai-kit-install install
+```
+
+**Apple Silicon (M1/M2/M3) Macs:**
+
+The installer should work natively on Apple Silicon. If you see architecture errors, ensure you're using the correct binary for your chip:
+
+```bash
+uname -m  # Should show arm64
+```
+
+**Bun not found:**
+
+Install Bun on macOS:
+
+```bash
+curl -fsSL https://bun.sh/install | bash
+source ~/.bashrc  # or ~/.zshrc
+```
+
 ## Further Help
 
 - GitHub Issues: https://github.com/krajh/ai-kit/issues
