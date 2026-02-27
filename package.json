@@ -5,18 +5,8 @@
   "type": "module",
   "scripts": {
     "test": "bun test",
-    "fmt": "bunx prettier --check --ignore-unknown .",
-    "build-kit": "bun src/build-kit.ts",
-    "prepublishOnly": "bun src/build-kit.ts",
-    "postinstall": "bun src/postinstall.ts",
-    "preuninstall": "bun src/preuninstall.ts"
+    "fmt": "bunx prettier --check --ignore-unknown ."
   },
-  "files": [
-    "src/",
-    "kit/",
-    "README.md",
-    "LICENSE"
-  ],
   "keywords": [
     "opencode",
     "ai-kit",

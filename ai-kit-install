@@ -33,6 +33,7 @@ INCOMING_DIR=".ai-kit-incoming"
 KIT_LINK_ITEMS=(
   "opencode.json"
   "AGENTS.md"
+  "bunfig.toml"
   "agents"
   "plugins"
   "protocols"
@@ -729,7 +730,7 @@ compute_manifest() {
     printf '{\n'
     printf '  "version": "%s",\n' "$version"
     printf '  "installedAt": "%s",\n' "$installed_at"
-    printf '  "installedVia": "npm",\n'
+    printf '  "installedVia": "tarball",\n'
     printf '  "files": {'
   } >"$temp_file"
 

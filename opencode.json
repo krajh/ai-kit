@@ -181,8 +181,8 @@
   "small_model": "github-copilot/claude-haiku-4.5",
   "instructions": [
     "AGENTS.md",
-    "src/protocols/TOOL_USAGE_GUIDE.md",
-    "src/protocols/DELEGATION_PROTOCOLS.md"
+    "protocols/TOOL_USAGE_GUIDE.md",
+    "protocols/DELEGATION_PROTOCOLS.md"
   ],
   "watcher": {
     "ignore": [

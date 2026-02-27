@@ -24,6 +24,29 @@ jobs:
           echo "tag=${TAG}" >> $GITHUB_OUTPUT
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
 
+      - name: Validate tarball contents exist
+        run: |
+          REQUIRED_PATHS=(
+            "opencode.json"
+            "AGENTS.md"
+            "bunfig.toml"
+            "agents"
+            "plugins"
+            "skills"
+            "protocols"
+          )
+          MISSING=()
+          for path in "${REQUIRED_PATHS[@]}"; do
+            if [ ! -e "$path" ]; then
+              MISSING+=("$path")
+            fi
+          done
+          if [ ${#MISSING[@]} -gt 0 ]; then
+            echo "::error::Missing required paths for tarball: ${MISSING[*]}"
+            exit 1
+          fi
+          echo "[OK] All required tarball paths verified"
+
       - name: Create tarball (runtime essentials only)
         id: tarball
         run: |
@@ -32,36 +55,20 @@ jobs:
 
           # Create tarball with only runtime essentials
           tar -czf "${TARBALL}" \
-            --exclude='.git' \
-            --exclude='.github' \
-            --exclude='node_modules' \
-            --exclude='tests' \
-            --exclude='*.tar.gz' \
-            --exclude='*.bundle.json' \
-            --exclude='TESTING_GUIDE.md' \
-            --exclude='*_PLAN.md' \
-            --exclude='*_CHECKLIST.md' \
-            --exclude='*_MATRIX.md' \
             --exclude='protocols/rulesets' \
             --exclude='protocols/SECURITY_*' \
             --exclude='protocols/THREAT_*' \
-            --exclude='bun.lock' \
-            --exclude='tsconfig.json' \
-            --exclude='package.json' \
-            --exclude='ai-kit-install' \
-            --exclude='install' \
-            --exclude='README.md' \
             -C . \
             opencode.json \
             AGENTS.md \
+            bunfig.toml \
             agents \
-            skills \
             plugins \
-            protocols/TOOL_USAGE_GUIDE.md \
-            protocols/DELEGATION_PROTOCOLS.md
+            skills \
+            protocols
 
           SHA256=$(sha256sum "${TARBALL}" | awk '{print $1}')
-          SIZE=$(stat -f%z "${TARBALL}" 2>/dev/null || stat -c%s "${TARBALL}")
+          SIZE=$(stat -c%s "${TARBALL}")
           echo "tarball=${TARBALL}" >> $GITHUB_OUTPUT
           echo "sha256=${SHA256}" >> $GITHUB_OUTPUT
           echo "size=${SIZE}" >> $GITHUB_OUTPUT

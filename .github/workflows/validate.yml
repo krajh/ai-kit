@@ -1,0 +1,21 @@
+name: Validate Tarball Paths
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  validate-tarball-paths:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify distributable paths exist
+        run: |
+          for path in opencode.json AGENTS.md bunfig.toml agents plugins skills protocols; do
+            if [ ! -e "$path" ]; then
+              echo "::error::Required distributable path missing: $path"
+              exit 1
+            fi
+          done
+          echo "[OK] All distributable paths verified"
