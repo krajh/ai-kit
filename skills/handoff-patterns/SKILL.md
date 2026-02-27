@@ -238,7 +238,7 @@ Fix issues → re-verify
 - ✓ Run **relevant tests/checks** (lint, typecheck, tests, manual validation)
 - ✓ Ensure **rollback plan exists** for risky changes
 - ✓ Use **verify-loop tool** for automated checks
-- ✓ For Fidelity 3 work: **formal review required** (Guillotine + domain expert)
+- ✓ For Fidelity 3 work: **formal review required** (designated reviewer + domain expert)
 
 **Verification Checklist:**
 

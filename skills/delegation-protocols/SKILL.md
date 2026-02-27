@@ -412,7 +412,7 @@ Escalating to user: Agent [X] repeatedly failing to [protocol]. Recommend review
 
 ## Related Skills
 
-- `agent-selection` - Agent selection patterns
+- `agent-routing` - Agent selection patterns
 - `effort-complexity-framework` - Task assessment (Effort + Complexity)
 - `mai-context-patterns` - When to use Mai DB vs memory vs checkpoint
 - `handoff-patterns` - 5 handoff types for multi-agent work
@@ -425,4 +425,4 @@ Escalating to user: Agent [X] repeatedly failing to [protocol]. Recommend review
 **Skill Version:** 2.0  
 **Last Updated:** February 10, 2026
 
-_Note: Consolidated with delegation-orchestration skill (deleted)._
+_Note: Consolidated into this skill._

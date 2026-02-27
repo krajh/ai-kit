@@ -120,7 +120,7 @@ Do you know exactly what you need?
 
 - Use to delegate complex work to specialist agents
 - MANDATORY: Enforce Delegation Protocols v1.4
-- Also use to invoke `lefay-forge` for ephemeral agent specs
+- Also use to invoke ephemeral specialist agents for disposable, single-purpose tasks
 
 **`session` tool:**
 
