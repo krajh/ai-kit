@@ -1030,7 +1030,7 @@ cmd_update() {
       done
 
       stash_dir="$(mktemp -d)"
-      stash_modifications "$current_version_dir" "$stash_dir" "$modifications"
+      echo "$modifications" | stash_modifications "$current_version_dir" "$stash_dir"
 
       # Keep a copy of the old manifest for 3-way conflict detection
       old_manifest_backup="$(mktemp)"
