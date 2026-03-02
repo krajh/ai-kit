@@ -182,8 +182,6 @@
       }
     }
   },
-  "model": "github-copilot/gpt-5.2-codex",
-  "small_model": "github-copilot/claude-haiku-4.5",
   "instructions": [
     "AGENTS.md",
     "protocols/TOOL_USAGE_GUIDE.md",
