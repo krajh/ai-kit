@@ -27,7 +27,7 @@ chmod +x ai-kit-install
 Or pin a specific version:
 
 ```bash
-TAG="v0.8.1"
+TAG="v0.8.3"
 curl -fsSL -o ai-kit-install "https://github.com/krajh/ai-kit/releases/download/${TAG}/ai-kit-install"
 chmod +x ai-kit-install
 ./ai-kit-install install
