@@ -45,11 +45,6 @@
           "name": "GPT 5.2",
           "temperature": true
         },
-        "ant-claude-sonnet-4-5": {
-          "id": "ant-claude-sonnet-4-5",
-          "name": "Claude Sonnet 4.5",
-          "temperature": true
-        },
         "claude-haiku-4-5-20251001": {
           "id": "claude-haiku-4-5-20251001",
           "name": "Claude Haiku 4.5",
@@ -58,6 +53,16 @@
         "claude-haiku-4-5-20250929": {
           "id": "claude-haiku-4-5-20250929",
           "name": "Claude Haiku 4.5",
+          "temperature": true
+        },
+        "claude-sonnet-4-5-20250929": {
+          "id": "claude-sonnet-4-5-20250929",
+          "name": "Claude Sonnet 4.5",
+          "temperature": true
+        },
+        "claude-sonnet-4-6": {
+          "id": "claude-sonnet-4-6",
+          "name": "Claude Sonnet 4.6",
           "temperature": true
         }
       }
