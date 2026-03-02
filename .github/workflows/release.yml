@@ -24,16 +24,6 @@ jobs:
           echo "tag=${TAG}" >> $GITHUB_OUTPUT
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
 
-      - name: Bump README version pin
-        run: |
-          TAG="${{ steps.version.outputs.tag }}"
-          sed -i "s/TAG=\"v[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\"/TAG=\"${TAG}\"/" README.md
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add README.md
-          git diff --cached --quiet || git commit -m "docs: bump README version pin to ${TAG} [skip ci]"
-          git push origin HEAD:main
-
       - name: Validate tarball contents exist
         run: |
           REQUIRED_PATHS=(
