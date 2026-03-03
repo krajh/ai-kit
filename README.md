@@ -33,6 +33,41 @@ chmod +x ai-kit-install
 ./ai-kit-install install
 ```
 
+### Choosing your model provider
+
+On first install, the installer will prompt you to choose a model provider:
+
+```
+Select your model provider:
+  1) aitooling
+  2) copilot
+```
+
+You can also pass it directly:
+
+```bash
+./ai-kit-install install --provider aitooling
+./ai-kit-install install --provider copilot
+```
+
+Or set it in your environment before running:
+
+```bash
+MODEL_PROVIDER=copilot ./ai-kit-install install
+```
+
+Your choice is saved to `~/.config/opencode/.env` and used for all future updates.
+
+#### Provider model tiers
+
+Agents are assigned models based on role:
+
+| Tier                          | aitooling                              | copilot                            |
+| ----------------------------- | -------------------------------------- | ---------------------------------- |
+| Critical (architect)          | `aitooling/claude-sonnet-4-6`          | `github-copilot/claude-sonnet-4.6` |
+| Heavy (strategist, implementer) | `aitooling/claude-sonnet-4-6`        | `github-copilot/claude-sonnet-4.6` |
+| Light (reviewer, research)    | `aitooling/claude-haiku-4-5-20251001`  | `github-copilot/claude-haiku-4.5`  |
+
 ### After installation
 
 Check that everything installed correctly:
@@ -136,10 +171,11 @@ ai-kit uses `.ai-kit-manifest.json` to protect your changes across updates:
 
 ### Environment variables
 
-| Variable       | Purpose                            | Default                      |
-| -------------- | ---------------------------------- | ---------------------------- |
-| `AITOOLINGKEY` | API key for the aitooling provider | Required; prompts if missing |
-| `BASE_URL`     | Override default API endpoint      | Optional                     |
+| Variable         | Purpose                                        | Default                                        |
+| ---------------- | ---------------------------------------------- | ---------------------------------------------- |
+| `MODEL_PROVIDER` | Model provider (`aitooling` or `copilot`)      | Prompted on first install; persisted to `.env` |
+| `AITOOLINGKEY`   | API key (aitooling provider only)              | Prompted if provider is `aitooling`            |
+| `BASE_URL`       | Override default API endpoint                  | Optional                                       |
 
 These are written to `~/.config/opencode/.env` during install and preserved across updates.
 
