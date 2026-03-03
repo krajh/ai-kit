@@ -14,7 +14,7 @@ This guide covers common issues with ai-kit installation and usage.
 
 ## opencode.json Customizations Lost After Update
 
-This shouldn't happen in v0.6+. The installer uses file-copy with deep-merge for `opencode.json` — your keys always win.
+This shouldn't happen in v0.8.4+. The installer uses file-copy with deep-merge for `opencode.json` — your keys always win.
 
 If customizations were lost:
 1. Restore from `~/.config/opencode/opencode.json.user-backup` if a backup exists
@@ -75,15 +75,21 @@ Ensure the installer is in your PATH, or use the full path:
 ~/.config/opencode/current/ai-kit-install install
 ```
 
-## AITOOLINGKEY / OPENCODE_API_KEY Not Found
+## AITOOLINGKEY Not Found
 
 Set the environment variable before running OpenCode:
 
 ```bash
 export AITOOLINGKEY="your-key-here"
-# or
-export OPENCODE_API_KEY="your-key-here"
 ```
+
+Or add it to `~/.config/opencode/.env`:
+
+```
+AITOOLINGKEY=your-key-here
+```
+
+Note: if using the `copilot` provider, no API key is required.
 
 ## WSL Path Issues
 

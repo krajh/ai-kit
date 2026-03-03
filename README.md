@@ -27,7 +27,7 @@ chmod +x ai-kit-install
 Or pin a specific version:
 
 ```bash
-TAG="v0.8.3"
+TAG="v0.8.4"
 curl -fsSL -o ai-kit-install "https://github.com/krajh/ai-kit/releases/download/${TAG}/ai-kit-install"
 chmod +x ai-kit-install
 ./ai-kit-install install
@@ -88,11 +88,15 @@ Restores the previous version. Your `.env` and `local/` are never touched.
 
 ## Uninstall
 
+To remove ai-kit, delete the managed files:
+
 ```bash
-./ai-kit-install uninstall
+rm -rf ~/.config/opencode/versions ~/.config/opencode/current \
+       ~/.config/opencode/.ai-kit-manifest.json \
+       ~/.config/opencode/.ai-kit-incoming
 ```
 
-Removes only ai-kit managed files. Your customisations in `~/.config/opencode/local/` and `~/.config/opencode/.env` are always preserved.
+Your customisations in `~/.config/opencode/local/` and `~/.config/opencode/.env` are always preserved.
 
 ## Requirements
 

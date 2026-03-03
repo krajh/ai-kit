@@ -25,6 +25,6 @@
 
 ## 4. Custom agents & protocols
 
-- When adding agents, use `agents/templates/specialist.md.template` as a starting point (see AGENTS guide).
+- When adding agents, copy an existing agent from `agents/` as a starting point (see AGENTS guide).
 - Protocol updates must land under `protocols/` and mention which rule set they belong to (delegation, documentation, etc.).
 - Avoid referencing specific personalities; keep tone institutional and capability-driven.
