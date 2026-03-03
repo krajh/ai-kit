@@ -14,7 +14,7 @@ This guide covers common issues with ai-kit installation and usage.
 
 ## opencode.json Customizations Lost After Update
 
-This shouldn't happen in v0.8.4+. The installer uses file-copy with deep-merge for `opencode.json` — your keys always win.
+This shouldn't happen in v0.8.5+. The installer uses file-copy with deep-merge for `opencode.json` — your keys always win.
 
 If customizations were lost:
 1. Restore from `~/.config/opencode/opencode.json.user-backup` if a backup exists
