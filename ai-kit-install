@@ -53,6 +53,15 @@ VERBOSE=false
 SKIP_VERIFY="${SKIP_VERIFY:-false}"
 NO_PROMPT=false
 
+# Auto-run detection: if no command given and no existing installation,
+# automatically run 'install' command
+if [ $# -eq 0 ]; then
+  TARGET_DIR_CHECK="$HOME/.config/opencode"
+  if [ ! -d "$TARGET_DIR_CHECK" ]; then
+    COMMAND="install"
+  fi
+fi
+
 # Parse flags anywhere; accept: <command> [tag]
 POSITIONAL=()
 while [ $# -gt 0 ]; do
@@ -159,6 +168,41 @@ write_env_key() {
   chmod 600 "$env_file" 2>/dev/null || true
 }
 
+# Append export statement to user's shell rc file
+add_to_rc_file() {
+  local key_name="$1"
+  local key_value="$2"
+
+  # Determine which rc file to use
+  local rc_file=""
+  if [ -n "${ZSH_VERSION:-}" ]; then
+    rc_file="$HOME/.zshrc"
+  elif [ -n "${BASH_VERSION:-}" ]; then
+    rc_file="$HOME/.bashrc"
+  elif [ -f "$HOME/.zshrc" ]; then
+    rc_file="$HOME/.zshrc"
+  elif [ -f "$HOME/.bashrc" ]; then
+    rc_file="$HOME/.bashrc"
+  else
+    rc_file="$HOME/.profile"
+  fi
+
+  # Check if export already exists
+  if grep -qE "^export ${key_name}=" "$rc_file" 2>/dev/null; then
+    log "Export already exists in $rc_file"
+    return 0
+  fi
+
+  if [ "$DRY_RUN" = true ]; then
+    log "Dry run: would add export ${key_name}=... to $rc_file"
+    return 0
+  fi
+
+  # Append export statement
+  printf "\nexport %s=\"%s\"\n" "$key_name" "$key_value" >>"$rc_file"
+  log_ok "Added export to $rc_file"
+}
+
 ensure_aitoolingkey() {
   local env_key file_key env_base_url file_base_url
   env_key="${AITOOLINGKEY:-}"
@@ -180,6 +224,7 @@ ensure_aitoolingkey() {
     elif [ "$file_key" != "$env_key" ]; then
       log "Persisting AITOOLINGKEY to $TARGET_DIR/.env"
       write_env_key "AITOOLINGKEY" "$env_key"
+      add_to_rc_file "AITOOLINGKEY" "$env_key"
     fi
   elif [ -n "$file_key" ]; then
     # Already configured in .env - confirm or keep
@@ -228,6 +273,7 @@ ensure_aitoolingkey() {
 
       write_env_key "AITOOLINGKEY" "$entered"
       log_ok "✓ Saved AITOOLINGKEY to $TARGET_DIR/.env"
+      add_to_rc_file "AITOOLINGKEY" "$entered"
       env_key="$entered"
     fi
   fi
@@ -240,6 +286,7 @@ ensure_aitoolingkey() {
     elif [ "$file_base_url" != "$env_base_url" ]; then
       log "Persisting BASE_URL to $TARGET_DIR/.env"
       write_env_key "BASE_URL" "$env_base_url"
+      add_to_rc_file "BASE_URL" "$env_base_url"
     fi
   elif [ -n "$file_base_url" ]; then
     # Already configured in .env - confirm or keep
@@ -262,6 +309,7 @@ ensure_aitoolingkey() {
 
     if [ -n "$entered_url" ]; then
       write_env_key "BASE_URL" "$entered_url"
+      add_to_rc_file "BASE_URL" "$entered_url"
       log_ok "✓ Saved BASE_URL to $TARGET_DIR/.env"
     else
       log "Using default BASE_URL from configuration"
