@@ -52,6 +52,7 @@ DRY_RUN=false
 VERBOSE=false
 SKIP_VERIFY="${SKIP_VERIFY:-false}"
 NO_PROMPT=false
+PROVIDER_CHOICE=""
 
 # Auto-run detection: if no command given and no existing installation,
 # automatically run 'install' command
@@ -77,6 +78,13 @@ while [ $# -gt 0 ]; do
   --no-prompt)
     NO_PROMPT=true
     shift
+    ;;
+  --provider)
+    if [ -z "${2:-}" ]; then
+      die "--provider requires a value: aitooling or copilot"
+    fi
+    PROVIDER_CHOICE="$2"
+    shift 2
     ;;
   --)
     shift
@@ -201,6 +209,160 @@ add_to_rc_file() {
   # Append export statement
   printf "\nexport %s=\"%s\"\n" "$key_name" "$key_value" >>"$rc_file"
   log_ok "Added export to $rc_file"
+}
+
+# ---------------------------------------------------------------------------
+# Provider selection and agent model configuration
+# ---------------------------------------------------------------------------
+
+validate_provider() {
+  case "$1" in
+  aitooling | copilot) return 0 ;;
+  *) die "Invalid provider '$1'. Must be 'aitooling' or 'copilot'." ;;
+  esac
+}
+
+# Returns 'critical', 'heavy', or 'light' tier for a given agent role
+agent_model_tier() {
+  case "$1" in
+  architect) echo "critical" ;;
+  strategist | implementer) echo "heavy" ;;
+  *) echo "light" ;;
+  esac
+}
+
+# Returns the model ID for a given provider + tier
+get_provider_model() {
+  local provider="$1" tier="$2"
+  case "$provider/$tier" in
+  aitooling/critical) echo "aitooling/claude-sonnet-4-6" ;;
+  aitooling/heavy)    echo "aitooling/claude-sonnet-4-6" ;;
+  aitooling/light)    echo "aitooling/claude-haiku-4-5-20251001" ;;
+  copilot/critical)   echo "github-copilot/claude-sonnet-4.6" ;;
+  copilot/heavy)      echo "github-copilot/claude-sonnet-4.6" ;;
+  copilot/light)      echo "github-copilot/claude-haiku-4.5" ;;
+  *)                  echo "" ;;
+  esac
+}
+
+# Prompt (or read saved value) to choose model provider
+select_provider() {
+  local env_provider
+  env_provider="$(get_env_file_key "MODEL_PROVIDER" || true)"
+
+  # Env var override takes priority
+  if [ -n "${MODEL_PROVIDER:-}" ]; then
+    PROVIDER_CHOICE="${MODEL_PROVIDER}"
+    validate_provider "$PROVIDER_CHOICE"
+    [ "$DRY_RUN" != true ] && write_env_key "MODEL_PROVIDER" "$PROVIDER_CHOICE"
+    log_ok "Provider (from env): $PROVIDER_CHOICE"
+    return 0
+  fi
+
+  # --provider flag already set
+  if [ -n "$PROVIDER_CHOICE" ]; then
+    validate_provider "$PROVIDER_CHOICE"
+    [ "$DRY_RUN" != true ] && write_env_key "MODEL_PROVIDER" "$PROVIDER_CHOICE"
+    log_ok "Provider (from flag): $PROVIDER_CHOICE"
+    return 0
+  fi
+
+  # Already persisted in .env
+  if [ -n "$env_provider" ]; then
+    PROVIDER_CHOICE="$env_provider"
+    log_ok "Provider (saved): $PROVIDER_CHOICE"
+    return 0
+  fi
+
+  # Dry run default
+  if [ "$DRY_RUN" = true ]; then
+    PROVIDER_CHOICE="aitooling"
+    log "Dry run: defaulting provider to aitooling"
+    return 0
+  fi
+
+  if [ "$NO_PROMPT" = true ] || [ ! -t 0 ]; then
+    die "MODEL_PROVIDER not set. Use --provider aitooling|copilot or set the MODEL_PROVIDER env var."
+  fi
+
+  printf "\n" >&2
+  printf "╔══════════════════════════════════════════════════════════════╗\n" >&2
+  printf "║  Model Provider Selection                                    ║\n" >&2
+  printf "╠══════════════════════════════════════════════════════════════╣\n" >&2
+  printf "║  1) aitooling  — uses your AITOOLINGKEY (LiteLLM gateway)   ║\n" >&2
+  printf "║  2) copilot    — uses GitHub Copilot subscription           ║\n" >&2
+  printf "╚══════════════════════════════════════════════════════════════╝\n" >&2
+  printf "\n" >&2
+
+  local choice
+  while true; do
+    printf "Select provider [1/2]: " >&2
+    IFS= read -r choice
+    case "$choice" in
+    1 | aitooling)
+      PROVIDER_CHOICE="aitooling"
+      break
+      ;;
+    2 | copilot)
+      PROVIDER_CHOICE="copilot"
+      break
+      ;;
+    *)
+      log_warn "Enter 1 (aitooling) or 2 (copilot)"
+      ;;
+    esac
+  done
+
+  write_env_key "MODEL_PROVIDER" "$PROVIDER_CHOICE"
+  log_ok "Provider selected: $PROVIDER_CHOICE"
+}
+
+# Patch opencode.json in version_dir with provider-specific model IDs.
+# Must be called BEFORE compute_manifest so the patched state is the baseline.
+configure_agent_models() {
+  local version_dir="$1"
+  local json_file="$version_dir/opencode.json"
+
+  if [ "$DRY_RUN" = true ]; then
+    log "Dry run: would configure agent models for provider=$PROVIDER_CHOICE"
+    return 0
+  fi
+
+  if [ ! -f "$json_file" ]; then
+    log_warn "opencode.json not found at $json_file — skipping model configuration"
+    return 0
+  fi
+
+  if ! command -v jq >/dev/null 2>&1; then
+    log_warn "jq not found — skipping automatic agent model configuration"
+    log_warn "Manually set agent models in $json_file for provider: $PROVIDER_CHOICE"
+    return 0
+  fi
+
+  local critical heavy light tmp
+  critical="$(get_provider_model "$PROVIDER_CHOICE" critical)"
+  heavy="$(get_provider_model "$PROVIDER_CHOICE" heavy)"
+  light="$(get_provider_model "$PROVIDER_CHOICE" light)"
+  tmp="$(mktemp)"
+
+  jq \
+    --arg strategist "$heavy" \
+    --arg implementer "$heavy" \
+    --arg architect "$critical" \
+    --arg reviewer "$light" \
+    --arg research "$light" \
+    '.agent.strategist.model  = $strategist  |
+     .agent.implementer.model = $implementer |
+     .agent.architect.model   = $architect   |
+     .agent.reviewer.model    = $reviewer    |
+     .agent.research.model    = $research' \
+    "$json_file" >"$tmp"
+
+  mv "$tmp" "$json_file"
+  log_ok "Agent models configured for provider: $PROVIDER_CHOICE"
+  log "  critical (architect):                       $critical"
+  log "  heavy    (strategist, implementer):         $heavy"
+  log "  light    (reviewer, research):              $light"
 }
 
 ensure_aitoolingkey() {
@@ -1023,13 +1185,21 @@ cmd_install() {
   # Extract
   extract_tarball "$tag"
 
+  # Select provider and patch agent models BEFORE computing manifest
+  # (manifest captures patched state as baseline for future update detection)
+  select_provider
+  configure_agent_models "$version_dir"
+
   # Store baseline manifest so future updates can detect personalizations
   compute_manifest "$version_dir"
 
   mkdir -p "$TARGET_DIR"
   activate_version "$tag"
 
-  ensure_aitoolingkey
+  # AITOOLINGKEY is only required for the aitooling provider
+  if [ "$PROVIDER_CHOICE" = "aitooling" ]; then
+    ensure_aitoolingkey
+  fi
 
   log_ok "Installation complete at $TARGET_DIR"
   log "Run 'opencode' to begin using the configuration."
@@ -1102,6 +1272,10 @@ cmd_update() {
   # Extract
   extract_tarball "$tag"
 
+  # Select/confirm provider and patch agent models BEFORE computing manifest
+  select_provider
+  configure_agent_models "$version_dir"
+
   # Store baseline manifest for the new version BEFORE applying personalisations
   compute_manifest "$version_dir"
 
@@ -1121,7 +1295,10 @@ cmd_update() {
     restore_local_state "$backup_info"
   fi
 
-  ensure_aitoolingkey
+  # AITOOLINGKEY is only required for the aitooling provider
+  if [ "$PROVIDER_CHOICE" = "aitooling" ]; then
+    ensure_aitoolingkey
+  fi
 
   log_ok "Update complete"
   log "Run 'opencode' to use the updated configuration."
@@ -1306,12 +1483,15 @@ COMMANDS:
   dry-run [TAG]     Simulate installation without making changes
 
 OPTIONS:
-  -v, --verbose     Enable verbose output
-  -h, --help        Show this help message
-  --no-prompt        Do not prompt for AITOOLINGKEY (fail if missing)
+  -v, --verbose          Enable verbose output
+  -h, --help             Show this help message
+  --no-prompt            Do not prompt for interactive input (fail if required)
+  --provider PROVIDER    Model provider to use: aitooling or copilot (skips prompt)
 
 EXAMPLES:
   ai-kit-install install
+  ai-kit-install install --provider copilot
+  ai-kit-install install --provider aitooling
   ai-kit-install update
   ai-kit-install status
   ai-kit-install rollback
@@ -1321,14 +1501,34 @@ EXAMPLES:
 
 ENVIRONMENT:
   WSL/Linux/macOS (x86_64/amd64/arm64 architecture required)
-  Requires: curl, tar, mkdir
-  AITOOLINGKEY: API key (will prompt if missing, or set via env / ~/.config/opencode/.env)
-  BASE_URL: Optional base URL override (set via env / ~/.config/opencode/.env)
+  Requires: curl, tar, mkdir (jq recommended for automatic model configuration)
+
+  MODEL_PROVIDER  Which model backend to use: 'aitooling' or 'copilot'
+                  Prompted interactively on first install; saved to .env thereafter.
+                  Override via --provider flag or MODEL_PROVIDER env var.
+
+  AITOOLINGKEY    API key for the aitooling LiteLLM gateway (aitooling provider only).
+                  Will prompt if missing, or set via env / ~/.config/opencode/.env.
+                  Not required when using the copilot provider.
+
+  BASE_URL        Optional base URL override for aitooling (env / .env).
+
+PROVIDER MODELS:
+  aitooling  critical (architect):              aitooling/claude-sonnet-4-6
+             heavy    (strategist, implementer): aitooling/claude-sonnet-4-6
+             light    (reviewer, research):      aitooling/claude-haiku-4-5-20251001
+
+  copilot    critical (architect):              github-copilot/claude-sonnet-4.6
+             heavy    (strategist, implementer): github-copilot/claude-sonnet-4.6
+             light    (reviewer, research):      github-copilot/claude-haiku-4.5
 
 NOTES:
-  When using 'curl | bash', export variables before the pipe:
+  When using 'curl | bash' with the aitooling provider, export variables before the pipe:
     export AITOOLINGKEY="your-key" [BASE_URL="https://api.example.com"]
     curl -fsSL ... | bash
+
+  When using the copilot provider, no API key is required:
+    curl -fsSL ... | bash -s -- install --provider copilot
 
 PERSONALISATION SAFETY:
   The 'update' command automatically detects files you've modified or added
