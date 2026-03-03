@@ -1293,6 +1293,9 @@ cmd_update() {
   # Restore local state
   if [ "$DRY_RUN" = false ]; then
     restore_local_state "$backup_info"
+    # Re-persist MODEL_PROVIDER — restore_local_state replaces .env with the
+    # pre-update backup, which won't contain MODEL_PROVIDER on first upgrade
+    write_env_key "MODEL_PROVIDER" "$PROVIDER_CHOICE"
   fi
 
   # AITOOLINGKEY is only required for the aitooling provider
