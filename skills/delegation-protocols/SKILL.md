@@ -21,7 +21,7 @@ Enforce Delegation Protocols v1.4 across all delegations with copy/paste templat
 - Report after each sub-task/checkpoint (ALWAYS)
 - If no checkpoint: use CONTINUING format after each investigation/tool batch
 - Status format: "STATUS UPDATE - COMPLETED: [X], STARTING/CONTINUING: [Y], PROGRESS: [Z if continuing], BLOCKERS: [None or specific]"
-- SKILL CHECK on first STATUS UPDATE: "SKILL CHECK: loaded [skill-a] OR none applicable"
+- SKILL CHECK on first STATUS UPDATE (F2+ only): "SKILL CHECK: loaded [skill-a] OR none applicable"
 - One task at a time; finish before switching
 - If blocked after 2 attempts, escalate IMMEDIATELY to coordinator
 - Blocker format: "ESCALATION TO COORDINATOR - BLOCKER: [what], CONTEXT: [why], ATTEMPTED: [what tried], NEED: [what needed], EFFORT BLOCKED: [Trivial/Small/Medium/Large/Epic], SCOPE IMPACT: [impact]"
@@ -330,7 +330,7 @@ You're unblocked - proceed with [specific action].
 - [ ] Agent working Medium+ effort without sanity check at 25%
 - [ ] Agent guesses instead of escalating uncertainty
 - [ ] Agent missing STATUS UPDATE after checkpoint completion
-- [ ] Agent missing SKILL CHECK on first STATUS UPDATE
+- [ ] Agent missing SKILL CHECK on first STATUS UPDATE of F2+ tasks
 
 **Coordinator self-check:**
 

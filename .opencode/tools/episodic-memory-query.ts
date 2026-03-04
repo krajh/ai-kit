@@ -6,6 +6,17 @@ import { existsSync } from "node:fs";
 
 import { deriveProjectIdSync } from "./project-id";
 
+// F-05 fix: sanitize episodic memory output before injecting into agent context
+function sanitizeForPrompt(input: string | null | undefined): string {
+  if (!input) return "";
+  return input
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1") // strip markdown links
+    .replace(/[*_`#]/g, "") // strip markdown formatting
+    .replace(/[\x00-\x1F\x7F]/g, "") // strip control characters
+    .replace(/^(system|assistant|user|instruction):/i, ":$1") // neutralize prompt injection prefixes
+    .slice(0, 4000); // cap length for tool output
+}
+
 // ============================================================================
 // Types
 // ============================================================================
@@ -238,7 +249,10 @@ type ToolPartQueryArgs = {
   limit: number;
 };
 
-function buildToolPartsQuery(args: ToolPartQueryArgs): {
+function buildToolPartsQuery(
+  args: ToolPartQueryArgs,
+  order: "ASC" | "DESC" = "DESC",
+): {
   sql: string;
   params: Array<string | number>;
 } {
@@ -282,7 +296,7 @@ function buildToolPartsQuery(args: ToolPartQueryArgs): {
     LEFT JOIN message ON message.id = part.message_id
     LEFT JOIN session ON session.id = part.session_id
     WHERE ${where.join(" AND ")}
-    ORDER BY part.time_created DESC
+    ORDER BY part.time_created ${order}
     LIMIT ?
   `;
 
@@ -347,7 +361,7 @@ async function executeRecent(args: {
         const toolName =
           typeof partData.tool === "string" ? partData.tool : undefined;
         const toolArgs = isRecord(state.input) ? state.input : undefined;
-        const toolOutput = safeStringify(state.output);
+        const toolOutput = sanitizeForPrompt(safeStringify(state.output));
         const status = parseStatus(state.status);
 
         const start =
@@ -375,7 +389,9 @@ async function executeRecent(args: {
           agent_id: agentId,
           tool_name: toolName,
           tool_args: toolArgs,
-          tool_output: toolOutput,
+          tool_output: toolOutput
+            ? `[episodic — unverified] ${toolOutput}`
+            : undefined,
           success: status,
           duration_ms: duration,
           timestamp,
@@ -617,14 +633,140 @@ async function executeArtifacts(args: {
 // Tool Definition
 // ============================================================================
 
+// ============================================================================
+// Mode: causal-chain (chronological tool-event timeline for a session/task)
+// ============================================================================
+
+type CausalChainEvent = {
+  seq: number;
+  timestamp: string | undefined;
+  tool: string | undefined;
+  status: "success" | "failure" | "unknown";
+  summary: string;
+};
+
+type CausalChainResponse = {
+  success: boolean;
+  timeline: CausalChainEvent[];
+  count: number;
+  error?: string;
+};
+
+async function executeCausalChain(args: {
+  session_id?: string;
+  task_id?: string;
+  agent_id?: string;
+  tool_names?: string[];
+  limit: number;
+}): Promise<string> {
+  const dbPath = getDbPath();
+  const limit = clampLimit(args.limit, 500);
+
+  try {
+    if (!existsSync(dbPath)) {
+      throw new Error(`SQLite database not found at ${dbPath}`);
+    }
+
+    let db: Database | null = null;
+    try {
+      db = new Database(dbPath, { readonly: true });
+
+      const { sql, params } = buildToolPartsQuery(
+        {
+          session_id: args.session_id,
+          task_id: args.task_id,
+          agent_id: args.agent_id,
+          tool_names: args.tool_names,
+          limit,
+        },
+        "ASC",
+      );
+
+      const rows = db.query(sql).all(...params) as ToolPartRow[];
+      const timeline: CausalChainEvent[] = [];
+
+      for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        const partData = parseJson<ToolPartData>(row.part_data);
+        if (!partData || partData.type !== "tool") continue;
+
+        const state = partData.state ?? {};
+        const toolName =
+          typeof partData.tool === "string" ? partData.tool : undefined;
+        const toolArgs = isRecord(state.input) ? state.input : {};
+        const rawStatus = parseStatus(state.status);
+        const status: CausalChainEvent["status"] =
+          rawStatus === true
+            ? "success"
+            : rawStatus === false
+              ? "failure"
+              : "unknown";
+
+        const start =
+          typeof state.time?.start === "number" ? state.time.start : undefined;
+        const end =
+          typeof state.time?.end === "number" ? state.time.end : undefined;
+        const timestamp = toIso(end ?? start ?? row.time_created ?? undefined);
+
+        // Build a compact human-readable summary of the call.
+        const argSnippets: string[] = [];
+        for (const [k, v] of Object.entries(toolArgs)) {
+          if (k === "task_id" || k === "agent_id") continue;
+          const str = safeStringify(v) ?? "";
+          argSnippets.push(`${k}=${str.slice(0, 60)}`);
+          if (argSnippets.length >= 3) break;
+        }
+        const argsStr = argSnippets.length ? `(${argSnippets.join(", ")})` : "";
+        const outputSnippet = sanitizeForPrompt(
+          safeStringify(state.output),
+        ).slice(0, 120);
+        const summary = [
+          toolName ? `${toolName}${argsStr}` : "(unknown tool)",
+          status !== "unknown" ? `→ ${status}` : "",
+          outputSnippet ? `| ${outputSnippet}` : "",
+        ]
+          .filter(Boolean)
+          .join(" ");
+
+        timeline.push({
+          seq: i + 1,
+          timestamp,
+          tool: toolName,
+          status,
+          summary,
+        });
+      }
+
+      return JSON.stringify({
+        success: true,
+        timeline,
+        count: timeline.length,
+      } satisfies CausalChainResponse);
+    } finally {
+      db?.close();
+    }
+  } catch (error) {
+    return JSON.stringify({
+      success: false,
+      timeline: [],
+      count: 0,
+      error: formatDbError(error),
+    } satisfies CausalChainResponse);
+  }
+}
+
+// ============================================================================
+// Tool Definition
+// ============================================================================
+
 export default tool({
   description:
-    "Query episodic memory for recent tool events or artifacts. Use --mode recent for tool execution history, --mode artifacts for files/commits/URLs/PRs/issues.",
+    "Query episodic memory for recent tool events or artifacts. Use --mode recent for tool execution history, --mode artifacts for files/commits/URLs/PRs/issues, --mode causal-chain for chronological cause-effect timelines.",
   args: {
     mode: tool.schema
-      .enum(["recent", "artifacts"])
+      .enum(["recent", "artifacts", "causal-chain"])
       .describe(
-        "Query mode: 'recent' for tool events, 'artifacts' for files/commits/URLs",
+        "Query mode: 'recent' for tool events, 'artifacts' for files/commits/URLs, 'causal-chain' for chronological timeline",
       ),
 
     // Shared filters
@@ -681,9 +823,19 @@ export default tool({
       });
     }
 
+    if (mode === "causal-chain") {
+      return executeCausalChain({
+        session_id: args.session_id,
+        task_id: args.task_id,
+        agent_id: args.agent_id,
+        tool_names: args.tool_names,
+        limit: args.limit ?? 50,
+      });
+    }
+
     return JSON.stringify({
       success: false,
-      error: `Unknown mode: ${mode}. Use 'recent' or 'artifacts'.`,
+      error: `Unknown mode: ${mode}. Use 'recent', 'artifacts', or 'causal-chain'.`,
     });
   },
 });

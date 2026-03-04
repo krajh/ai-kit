@@ -97,3 +97,12 @@ try {
    - `bun test`
 4. Run the tool manually (restart OpenCode if needed).
 5. Confirm output uses `[OK]/[X]`.
+
+## Background subprocess patterns
+
+When spawning subprocesses (e.g. `Bun.spawn`):
+
+- **Use `cwd` parameter** to set working directory — do NOT pass `--dir` flags to CLI tools (many tools don't support `--dir` in non-TTY/piped mode and will print help and exit)
+- Always redirect `stdout`/`stderr` to files when no TTY: `stdout: Bun.file(logPath), stderr: Bun.file(logPath)`
+- Use `proc.exitCode` (await `proc.exited` first) to detect failures
+- Avoid reading `stdin` from the terminal; pass `< /dev/null` semantics via `stdin: "ignore"` or `null`
