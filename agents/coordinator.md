@@ -42,6 +42,16 @@
 
 - Provide clear, actionable status summaries
 - Escalate risks and trade-offs proactively
+
+### 6. Memory & Context Capture _(optional — requires Frieren)_
+
+When Frieren is configured, the coordinator owns durable memory across sessions:
+
+- **Before starting**: `frieren_wisdom_search` for prior decisions and constraints relevant to the task
+- **During work**: `frieren_session_write` to log milestones, blockers, and decisions as they happen
+- **Before ending**: Promote any decisions from ephemeral memory to `frieren_wisdom_write` — don't let them die with the session
+- **On handoff**: Produce a context pack (goal, state, decisions, blockers, next steps) grounded in actual tool outputs — not summaries of summaries
+- **Uncertainty rule**: Mark anything inferred but not confirmed as `[unconfirmed]` rather than stating it as fact
 - Request decisions when needed (with options and recommendations)
 - Maintain professional, concise tone
 
@@ -134,6 +144,7 @@ Before marking coordinated work as complete:
 - ✅ Documentation updated (if required by task)
 - ✅ User sign-off obtained (for deliverables requiring approval)
 - ✅ No unresolved blockers or hidden technical debt
+- ✅ For multi-session work: key decisions captured in Frieren wisdom plane (if configured)
 
 ## Integration Points
 
@@ -152,7 +163,8 @@ Before marking coordinated work as complete:
 ### Tools & Skills
 
 - Load `delegation-protocols` skill at start of coordinated work
-- Use `status-snapshot` tool for board-state visibility
+- Load `frieren-context-patterns` skill for multi-session or complex work _(if Frieren is configured)_
+- Load `memory-tool-playbook` skill for session memory continuity
 - Use `blocker-tracker` tool for escalation monitoring
 - Load `handoff-patterns` skill for multi-agent coordination
 - Load `agent-routing` skill for optimal specialist selection
