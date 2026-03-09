@@ -390,16 +390,8 @@ ensure_aitoolingkey() {
       add_to_rc_file "AITOOLINGKEY" "$env_key"
     fi
   elif [ -n "$file_key" ]; then
-    # Already configured in .env - confirm or keep
-    if [ "$can_prompt" = true ]; then
-      printf "AITOOLINGKEY is already configured. Keep existing value? [Y/n]: " >&2
-      local response
-      IFS= read -r response
-      if [[ "$response" =~ ^[Nn]$ ]]; then
-        env_key=""
-        file_key=""
-      fi
-    fi
+    # Already configured in .env — keep it silently
+    log_ok "AITOOLINGKEY already configured (use 'write_env_key AITOOLINGKEY <value>' to change)"
   fi
 
   # Prompt for AITOOLINGKEY if still needed
@@ -452,15 +444,8 @@ ensure_aitoolingkey() {
       add_to_rc_file "BASE_URL" "$env_base_url"
     fi
   elif [ -n "$file_base_url" ]; then
-    # Already configured in .env - confirm or keep
-    if [ "$can_prompt" = true ]; then
-      printf "BASE_URL is already configured (%s). Keep? [Y/n]: " "$file_base_url" >&2
-      local response
-      IFS= read -r response
-      if [[ "$response" =~ ^[Nn]$ ]]; then
-        file_base_url=""
-      fi
-    fi
+    # Already configured in .env — keep it silently
+    log_ok "BASE_URL already configured: $file_base_url"
   fi
 
   # Prompt for BASE_URL if not set and we're interactive
@@ -1071,9 +1056,15 @@ handle_conflict() {
   printf "  [k]eep yours / [o]verwrite with new / [d]iff / [s]kip? " >&2
 
   while true; do
-    local choice
-    IFS= read -r -n 1 choice
-    printf "\n" >&2
+    local choice raw
+    IFS= read -r raw || {
+      # EOF — default to non-destructive: save user copy alongside new file
+      printf "\n" >&2
+      cp "$user_file" "${new_file}.user"
+      log_warn "  Conflict: $rel_path (EOF; kept new version; your version saved as ${rel_path}.user)"
+      return
+    }
+    choice="${raw:0:1}"
 
     case "$choice" in
     k | K)
@@ -1093,15 +1084,19 @@ handle_conflict() {
       else
         log_warn "  diff not available"
       fi
-      printf "  [k]eep yours / [o]verwrite with new / [s]kip? " >&2
+      printf "  [k]eep yours / [o]verwrite with new / [d]iff / [s]kip? " >&2
       ;;
     s | S)
       cp "$user_file" "${new_file}.user"
       log "  Skipped: $rel_path (your version saved as ${rel_path}.user)"
       break
       ;;
+    "")
+      # bare Enter — re-print prompt without noise
+      printf "  [k]eep yours / [o]verwrite with new / [d]iff / [s]kip? " >&2
+      ;;
     *)
-      printf "  [k]eep / [o]verwrite / [d]iff / [s]kip? " >&2
+      printf "  Unknown choice '%s'. [k]eep / [o]verwrite / [d]iff / [s]kip? " "$choice" >&2
       ;;
     esac
   done
