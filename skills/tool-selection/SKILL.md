@@ -1,6 +1,6 @@
 ---
 name: tool-selection
-description: Fast tool selection for file modification (patch→edit→write priority), search (grep/glob first, then Serena/ast-grep), coordination (task+session), context (Mai DB vs memory), execution (bash), custom tools (verify-loop/checkpoint/status-snapshot).
+description: Fast tool selection for file modification (patch→edit→write priority), search (grep/glob first, then Serena/ast-grep), coordination (task+session), context (Frieren vs memory), execution (bash), custom tools (verify-loop/checkpoint/status-snapshot).
 ---
 
 # Tool Selection
@@ -133,48 +133,46 @@ Do you know exactly what you need?
 
 ### Context Management
 
-**Mai Context Database (MCP):**
+**Frieren Memory (durable layer):**
 
 **Use for:**
 
-- Durable knowledge (survives >30 days)
+- Durable knowledge (permanent — survives restarts and sessions)
 - Architectural decisions
 - Cross-agent contracts
 - Multi-session work
 
 **Common tools:**
 
-- `mai-context-db_query_context({ table, filters?, limit?, order_by? })`
-- `mai-context-db_create_context_entry({ table, data })`
-- `mai-context-db_semantic_search({ query, table_filter?, limit? })`
-- `mai-context-db_find_similar({ entry_id, table, limit? })`
+- `frieren_wisdom_write({ type, content, tags?, evidence?, confidence? })`
+- `frieren_wisdom_search({ query, type_filter?, limit? })`
+- `frieren_session_write({ event_type, content, artifacts? })`
+- `frieren_session_recall({ query, since?, limit? })`
+- `frieren_memory_search({ query, planes?, limit? })`
 
-**Key tables:**
+**Knowledge types (wisdom plane):**
 
-- `decisions` - Architectural decisions with rationale
-- `constraints` - Active constraints and requirements
-- `patterns` - Established patterns and best practices
-- `issues` - Critical issues and resolutions
-- `integration_points` - Integration contracts
+- `decision` - Architectural decisions with rationale
+- `constraint` - Active constraints and requirements
+- `pattern` - Established patterns and best practices
+- `issue` - Critical issues and resolutions
 
 **Example:**
 
 ```typescript
 // Query before delegation
-await mai_context_db_query_context({
-  table: "decisions",
-  filters: { status: "active" },
+await frieren_wisdom_search({
+  query: "authentication decisions",
+  type_filter: "decision",
   limit: 5,
 });
 
 // Create after decision
-await mai_context_db_create_context_entry({
-  table: "decisions",
-  data: {
-    title: "Use JWT for auth",
-    decision_type: "architecture",
-    rationale: "Stateless scaling",
-  },
+await frieren_wisdom_write({
+  type: "decision",
+  content: "Use JWT for auth — stateless scaling",
+  tags: ["auth", "architecture"],
+  confidence: 0.9,
 });
 ```
 
@@ -203,9 +201,9 @@ memory({ mode: "list", limit: 10 });
 
 **When NOT to use:**
 
-- Durable decisions → Use Mai Context DB
+- Durable decisions → Use Frieren wisdom plane (`frieren_wisdom_write`)
 - Tool history → Use episodic memory
-- Permanent constraints → Use Mai Context DB
+- Permanent constraints → Use Frieren wisdom plane (`frieren_wisdom_write`)
 
 **Cost:**
 
@@ -320,7 +318,7 @@ bun .opencode/tools/episodic-memory-query.ts --mode artifacts --artifact-types '
 
 **Coordinate:** `task` (with Protocols v1.4) + (coordinator-only) todo tools
 
-**Context:** Mai Context DB (durable) + opencode-mem (ephemeral)
+**Context:** Frieren (durable: wisdom/session/codebase) + opencode-mem (ephemeral 30-day)
 
 ---
 
@@ -337,7 +335,7 @@ bun .opencode/tools/episodic-memory-query.ts --mode artifacts --artifact-types '
 | Find `*.test.ts` files | `glob`               | File patterns        |
 | Delegate complex work  | `task`               | Protocols v1.4       |
 | Turn-based collab      | `session`            | Same conversation    |
-| Durable decision       | Mai Context DB       | Permanent            |
+| Durable decision       | Frieren wisdom plane | Permanent            |
 | Recent context         | `memory`             | 30-day retention     |
 | Run tests              | `bash`               | Shell execution      |
 | Verify work            | `verify-loop`        | Definition of Done   |
@@ -349,7 +347,7 @@ bun .opencode/tools/episodic-memory-query.ts --mode artifacts --artifact-types '
 - `effort-complexity-framework` - Informs when to use verification gates
 - `agent-routing` - Use `task` to delegate to correct specialist
 - `handoff-patterns` - Tools for each handoff type
-- `mai-context-patterns` - When to use Mai Context DB vs memory
+- `frieren-context-patterns` - Frieren vs opencode-mem routing
 
 ---
 
@@ -370,7 +368,7 @@ bun .opencode/tools/episodic-memory-query.ts --mode artifacts --artifact-types '
 ### ❌ **Using Memory for Permanent Decisions**
 
 - **Bad:** Store "use JWT for auth" in memory (expires in 30 days)
-- **Good:** Store in Mai Context DB decisions table
+- **Good:** Store in Frieren wisdom plane (`frieren_wisdom_write`)
 - **Why:** Architectural decisions must survive sessions
 
 ### ❌ **Not Using `verify-loop` Before "Done"**
@@ -385,7 +383,7 @@ bun .opencode/tools/episodic-memory-query.ts --mode artifacts --artifact-types '
 
 - `TOOL_USAGE_GUIDE.md` - Original source (being replaced by this skill)
 - `DELEGATION_PROTOCOLS.md` - When to use `task` tool
-- `MAI_CONTEXT_INTEGRATION.md` - When to use Mai Context DB
+- `protocols/MEMORY_ARCHITECTURE.md` - Memory architecture and tool routing
 
 ---
 

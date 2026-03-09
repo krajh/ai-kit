@@ -331,23 +331,20 @@ but branch series <your-branch> -s <enhancement-name>
 - Managing long-lived feature branches that span sessions
 - Time-travel to previous project states for context recovery
 
-**Integration with Mai Context DB:**
+**Integration with Frieren:**
 
-```bash
-# When creating important virtual branch
+```typescript
+// When creating an important virtual branch
 but branch create <feature> -d
 
-# Record in Mai Context DB
-mai-context-db_create_context_entry({
-  table: "decisions",
-  data: {
-    title: "Created virtual branch: <feature>",
-    decision_type: "workflow",
-    rationale: "Parallel work on <feature> using GitButler",
-    affected_components: ["<component>"],
-    tags: ["gitbutler", "branch", "<feature>"]
-  }
-})
+// Record the branch decision in Frieren wisdom plane
+await frieren_wisdom_write({
+  type: "decision",
+  content: "Created virtual branch: <feature> — parallel work using GitButler",
+  tags: ["gitbutler", "branch", "<feature>"],
+  evidence: ["GitButler branch: <feature>"],
+  confidence: 0.9,
+});
 ```
 
 ---

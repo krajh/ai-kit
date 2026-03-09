@@ -112,7 +112,7 @@ Submit PLAN FOR APPROVAL before implementation:
 [...include full block...]
 
 INSTRUCTIONS:
-- Query Mai Context DB for relevant decisions/constraints
+- Query Frieren wisdom plane for relevant decisions/constraints (`frieren_wisdom_search`)
 - [Specific task instructions]
 - Report at each checkpoint
 `
@@ -144,15 +144,15 @@ Submit PLAN FOR APPROVAL before implementation:
 - VERIFICATION: [Test plan + rollback strategy]
 - ROLLBACK: [How to roll back if needed]
 - RISKS: [Potential issues + detailed mitigation]
-- MAI CAPTURE PLAN: [What decisions/constraints to record]
+- FRIEREN CAPTURE PLAN: [What decisions/constraints to record]
 - REQUESTING: Approval to proceed OR feedback
 
 **MANDATORY PROTOCOLS v1.4:**
 [...include full block...]
 
 **CRITICAL REQUIREMENTS:**
-- Query Mai Context DB for all relevant decisions/constraints/patterns
-- Capture architecture-level decisions in Mai BEFORE implementing
+- Query Frieren wisdom plane for all relevant decisions/constraints/patterns (`frieren_wisdom_search`)
+- Capture architecture-level decisions in Frieren BEFORE implementing (`frieren_wisdom_write`)
 - Report at each checkpoint
 - Sanity check at 25% completion
 `
@@ -414,7 +414,7 @@ Escalating to user: Agent [X] repeatedly failing to [protocol]. Recommend review
 
 - `agent-routing` - Agent selection patterns
 - `effort-complexity-framework` - Task assessment (Effort + Complexity)
-- `mai-context-patterns` - When to use Mai DB vs memory vs checkpoint
+- `frieren-context-patterns` - When to use Frieren vs memory vs checkpoint
 - `handoff-patterns` - 5 handoff types for multi-agent work
 - `protocols/DELEGATION_PROTOCOLS.md` - Canonical protocol document
 

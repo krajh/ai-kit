@@ -295,7 +295,7 @@ This framework is referenced in **Delegation Protocols v1.4** under:
 
 - `agent-routing` - Choosing the right specialist for effort/complexity
 - `handoff-patterns` - Handoff types by effort/complexity
-- `mai-context-patterns` - When to capture decisions (Fidelity 3)
+- `frieren-context-patterns` - When to capture decisions in Frieren (Fidelity 3)
 
 **Related Protocols:**
 

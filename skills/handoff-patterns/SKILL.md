@@ -124,7 +124,7 @@ Agents converge on unified hypothesis tree
 - ✓ Agents share **intermediate findings early** (don't wait for "final answer")
 - ✓ Converge on **one hypothesis tree** (don't produce competing "final answers")
 - ✓ Coordinator synthesizes findings into unified diagnosis
-- ✓ Use **shared investigation log** (Mai Context DB or checkpoint)
+- ✓ Use **shared investigation log** (Frieren wisdom plane or checkpoint)
 
 **Example:**
 
@@ -349,7 +349,7 @@ HANDOFF
 
 - Verification gate runs before marking "done"
 - Handoff Manifest created if work continues next session
-- Mai Context DB updated with decisions/contracts
+- Frieren wisdom plane updated with decisions/contracts (`frieren_wisdom_write`)
 
 **Mandatory:** All handoffs follow **Delegation Protocols v1.4**
 
@@ -387,13 +387,13 @@ HANDOFF
 
 - `agent-routing` - Choosing which agents participate in handoff
 - `effort-complexity-framework` - Assessing handoff complexity
-- `mai-context-patterns` - When to capture handoff state in Mai
+- `frieren-context-patterns` - When to capture handoff state in Frieren
 
 **Related Protocols:**
 
 - `DELEGATION_PROTOCOLS.md` - STATUS UPDATE and escalation formats
 - `HANDOFF_PROTOCOLS.md` - Original source (being replaced by this skill)
-- `MAI_CONTEXT_INTEGRATION.md` - Handoff Pack pattern
+- `FRIEREN_CONTEXT_PATTERNS.md` - Handoff Pack pattern
 
 ---
 
