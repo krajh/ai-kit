@@ -62,11 +62,11 @@ Your choice is saved to `~/.config/opencode/.env` and used for all future update
 
 Agents are assigned models based on role:
 
-| Tier                          | aitooling                              | copilot                            |
-| ----------------------------- | -------------------------------------- | ---------------------------------- |
-| Critical (architect)          | `aitooling/claude-sonnet-4-6`          | `github-copilot/claude-sonnet-4.6` |
-| Heavy (strategist, implementer) | `aitooling/claude-sonnet-4-6`        | `github-copilot/claude-sonnet-4.6` |
-| Light (reviewer, research)    | `aitooling/claude-haiku-4-5-20251001`  | `github-copilot/claude-haiku-4.5`  |
+| Tier                            | aitooling                             | copilot                            |
+| ------------------------------- | ------------------------------------- | ---------------------------------- |
+| Critical (architect)            | `aitooling/claude-sonnet-4-6`         | `github-copilot/claude-sonnet-4.6` |
+| Heavy (strategist, implementer) | `aitooling/claude-sonnet-4-6`         | `github-copilot/claude-sonnet-4.6` |
+| Light (reviewer, research)      | `aitooling/claude-haiku-4-5-20251001` | `github-copilot/claude-haiku-4.5`  |
 
 ### After installation
 
@@ -171,25 +171,25 @@ ai-kit uses `.ai-kit-manifest.json` to protect your changes across updates:
 
 ### Environment variables
 
-| Variable         | Purpose                                        | Default                                        |
-| ---------------- | ---------------------------------------------- | ---------------------------------------------- |
-| `MODEL_PROVIDER` | Model provider (`aitooling` or `copilot`)      | Prompted on first install; persisted to `.env` |
-| `AITOOLINGKEY`   | API key (aitooling provider only)              | Prompted if provider is `aitooling`            |
-| `BASE_URL`       | Override default API endpoint                  | Optional                                       |
+| Variable         | Purpose                                   | Default                                        |
+| ---------------- | ----------------------------------------- | ---------------------------------------------- |
+| `MODEL_PROVIDER` | Model provider (`aitooling` or `copilot`) | Prompted on first install; persisted to `.env` |
+| `AITOOLINGKEY`   | API key (aitooling provider only)         | Prompted if provider is `aitooling`            |
+| `BASE_URL`       | Override default API endpoint             | Optional                                       |
 
 These are written to `~/.config/opencode/.env` during install and preserved across updates.
 
 ## What's Included
 
-| Item             | Description                                                    |
-| ---------------- | -------------------------------------------------------------- |
-| `AGENTS.md`      | Agent definitions, routing guide, and protocol requirements    |
-| `agents/`        | Prompt templates for coordinator, implementer, reviewer, etc.  |
-| `skills/`        | Playbooks — see Skills Library below                           |
-| `protocols/`     | Operating standards, delegation protocols, rulesets            |
-| `plugins/`       | Runtime plugins auto-loaded by OpenCode at startup             |
-| `opencode.json`  | Production-ready config with sensible model and tool defaults  |
-| `bunfig.toml`    | Bun configuration including `trustedDependencies`              |
+| Item            | Description                                                   |
+| --------------- | ------------------------------------------------------------- |
+| `AGENTS.md`     | Agent definitions, routing guide, and protocol requirements   |
+| `agents/`       | Prompt templates for coordinator, implementer, reviewer, etc. |
+| `skills/`       | Playbooks — see Skills Library below                          |
+| `protocols/`    | Operating standards, delegation protocols, rulesets           |
+| `plugins/`      | Runtime plugins auto-loaded by OpenCode at startup            |
+| `opencode.json` | Production-ready config with sensible model and tool defaults |
+| `bunfig.toml`   | Bun configuration including `trustedDependencies`             |
 
 ## Skills Library
 
@@ -204,44 +204,44 @@ Skills are discovered automatically via `<available_skills>` in any session.
 
 ### Delegation & Coordination
 
-| Skill                    | Purpose                                              |
-| ------------------------ | ---------------------------------------------------- |
-| `delegation-protocols`   | Agent coordination, continuous reporting, v1.4       |
-| `handoff-patterns`       | 5 handoff types to prevent context loss              |
-| `agent-routing`          | Fast specialist selection                            |
-| `context-checkpoint`     | Capture project state and decisions                  |
+| Skill                  | Purpose                                        |
+| ---------------------- | ---------------------------------------------- |
+| `delegation-protocols` | Agent coordination, continuous reporting, v1.4 |
+| `handoff-patterns`     | 5 handoff types to prevent context loss        |
+| `agent-routing`        | Fast specialist selection                      |
+| `context-checkpoint`   | Capture project state and decisions            |
 
 ### Planning & Assessment
 
-| Skill                        | Purpose                                          |
-| ---------------------------- | ------------------------------------------------ |
-| `effort-complexity-framework`| Replace time estimates with Effort+Complexity    |
+| Skill                         | Purpose                                       |
+| ----------------------------- | --------------------------------------------- |
+| `effort-complexity-framework` | Replace time estimates with Effort+Complexity |
 
 ### Development & Code Quality
 
-| Skill                   | Purpose                                               |
-| ----------------------- | ----------------------------------------------------- |
-| `coding-guidelines`     | Reduce common LLM coding mistakes                     |
-| `clean-code-standards`  | Minimal comments, maximum readability                 |
-| `tool-selection`        | Fast tool selection (patch→edit→write priority)       |
+| Skill                  | Purpose                                         |
+| ---------------------- | ----------------------------------------------- |
+| `coding-guidelines`    | Reduce common LLM coding mistakes               |
+| `clean-code-standards` | Minimal comments, maximum readability           |
+| `tool-selection`       | Fast tool selection (patch→edit→write priority) |
 
 ### Quality & Testing
 
-| Skill                      | Purpose                                           |
-| -------------------------- | ------------------------------------------------- |
-| `verification-and-tests`   | Definition of Done workflow                       |
-| `debugging-error-handling` | Error triage and prevention patterns              |
-| `debug-instrumentation`    | Structured logging for systematic debugging       |
+| Skill                      | Purpose                                     |
+| -------------------------- | ------------------------------------------- |
+| `verification-and-tests`   | Definition of Done workflow                 |
+| `debugging-error-handling` | Error triage and prevention patterns        |
+| `debug-instrumentation`    | Structured logging for systematic debugging |
 
 ### Workflow & Tooling
 
-| Skill                       | Purpose                                          |
-| --------------------------- | ------------------------------------------------ |
-| `gitbutler`                 | Virtual branch workflow for parallel agent work  |
-| `opencode-tool-authoring`   | Standards for `.opencode/tool/*.ts` tools        |
-| `opencode-plugin-authoring` | Patterns for `plugin/*.ts` runtime plugins       |
-| `ralph-loop`                | Iterate-to-done loop for mechanical tasks        |
-| `memory-tool-playbook`      | Episodic memory patterns                         |
+| Skill                       | Purpose                                         |
+| --------------------------- | ----------------------------------------------- |
+| `gitbutler`                 | Virtual branch workflow for parallel agent work |
+| `opencode-tool-authoring`   | Standards for `.opencode/tool/*.ts` tools       |
+| `opencode-plugin-authoring` | Patterns for `plugin/*.ts` runtime plugins      |
+| `ralph-loop`                | Iterate-to-done loop for mechanical tasks       |
+| `memory-tool-playbook`      | Episodic memory patterns                        |
 
 ### Skill Auto-Loading
 
@@ -252,6 +252,22 @@ SKILL CHECK: loaded [delegation-protocols, verification-and-tests]
 # OR
 SKILL CHECK: none applicable
 ```
+
+## Optional Integrations
+
+### Frieren: Durable Memory
+
+Agents work fully out of the box with `opencode-mem` for 30-day ephemeral memory. If you want **permanent cross-session memory** — decisions, constraints, and patterns that survive indefinitely — add [Frieren](docs/FRIEREN_INTEGRATION.md).
+
+| Without Frieren                        | With Frieren                                          |
+| -------------------------------------- | ----------------------------------------------------- |
+| `opencode-mem` — 30-day rolling memory | + Wisdom plane — permanent decisions & patterns       |
+| No cross-session knowledge persistence | + Session plane — episodic event capture              |
+| No semantic code search                | + Codebase plane — semantic search + dependency graph |
+
+**Quick setup:** See [`docs/FRIEREN_INTEGRATION.md`](docs/FRIEREN_INTEGRATION.md) for prerequisites, the `opencode.json` config snippet, and which skills activate.
+
+---
 
 ## Adding Your Own Agents
 
