@@ -27,7 +27,7 @@ chmod +x ai-kit-install
 Or pin a specific version:
 
 ```bash
-TAG="v0.8.5"
+TAG="v0.8.9"
 curl -fsSL -o ai-kit-install "https://github.com/krajh/ai-kit/releases/download/${TAG}/ai-kit-install"
 chmod +x ai-kit-install
 ./ai-kit-install install
@@ -231,7 +231,6 @@ Skills are discovered automatically via `<available_skills>` in any session.
 | -------------------------- | ------------------------------------------- |
 | `verification-and-tests`   | Definition of Done workflow                 |
 | `debugging-error-handling` | Error triage and prevention patterns        |
-| `debug-instrumentation`    | Structured logging for systematic debugging |
 
 ### Workflow & Tooling
 
