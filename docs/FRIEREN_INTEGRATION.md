@@ -2,29 +2,41 @@
 
 Frieren is an optional MCP (Model Context Protocol) server that adds **permanent, cross-session memory** to your OpenCode agents. It is not installed by default — ai-kit works fully without it.
 
+**Fully local. No API keys. No external services.** Embeddings run on-device via a quantized MiniLM-L6-v2 model (~23 MB, auto-downloaded on first run).
+
 ## What It Adds
 
 Frieren provides three memory planes:
 
-| Plane        | Tool prefix          | Retention            | Use for                                          |
-| ------------ | -------------------- | -------------------- | ------------------------------------------------ |
-| **Wisdom**   | `frieren_wisdom_*`   | Permanent            | Decisions, constraints, patterns, architecture   |
-| **Session**  | `frieren_session_*`  | Rolling (episodic)   | Tool events, episode capture, blocker history    |
-| **Codebase** | `frieren_codebase_*` | Re-indexed on demand | Semantic code search, dependency graph traversal |
+| Plane        | Tool prefix          | Retention              | Use for                                          |
+| ------------ | -------------------- | ---------------------- | ------------------------------------------------ |
+| **Wisdom**   | `frieren_wisdom_*`   | Permanent              | Decisions, constraints, patterns, architecture   |
+| **Session**  | `frieren_session_*`  | 60-day rolling         | Tool events, episode capture, blocker history    |
+| **Codebase** | `frieren_codebase_*` | Re-indexed on demand   | Semantic code search, dependency graph traversal |
 
 Without Frieren, agents use `opencode-mem` for ephemeral 30-day memory. With Frieren, they gain a **permanent wisdom layer** that survives indefinitely — decisions made in session 1 are still retrievable in session 1000.
 
 ## Prerequisites
 
+- [Bun](https://bun.sh) >= 1.0
+
+## Installation
+
 1. Clone and install the Frieren server:
 
 ```bash
-git clone https://github.com/krajh/frieren ~/dev/frieren
+git clone https://github.com/krajh/frieren.git ~/dev/frieren
 cd ~/dev/frieren
 bun install
 ```
 
-2. Ensure `AITOOLINGKEY` is set in your environment (same key used for your provider — Frieren uses it for embeddings).
+2. Verify it starts:
+
+```bash
+bun src/index.ts
+```
+
+On first run, Frieren downloads the embedding model (~23 MB) to `~/.cache/`. You'll see download progress in the terminal. Subsequent starts are instant.
 
 ## Configuration
 
@@ -35,17 +47,15 @@ Add the following to `~/.config/opencode/opencode.json` under the `"mcp"` key. I
   "mcp": {
     "frieren": {
       "type": "local",
-      "command": ["bun", "/home/YOUR_USER/dev/frieren/src/index.ts"],
-      "environment": {
-        "AITOOLINGKEY": "{env:AITOOLINGKEY}"
-      },
+      "command": "bun",
+      "args": ["/absolute/path/to/frieren/src/index.ts"],
       "enabled": true
     }
   }
 }
 ```
 
-Replace `/home/YOUR_USER/dev/frieren` with the actual path where you cloned Frieren.
+Replace `/absolute/path/to/frieren` with the actual path to your clone. Run `pwd` inside the repo directory to get it.
 
 > **Note:** If you already have an `"mcp"` section with other servers, add the `"frieren"` key alongside them — do not replace the whole block.
 
@@ -122,8 +132,7 @@ frieren_codebase_graph({
 **Frieren tools not appearing after config:**
 
 - Restart OpenCode fully (MCP servers connect at startup)
-- Verify the path in `opencode.json` resolves correctly: `bun /home/YOUR_USER/dev/frieren/src/index.ts`
-- Check `AITOOLINGKEY` is exported in your shell environment
+- Verify the path in `opencode.json` resolves correctly: `bun /absolute/path/to/frieren/src/index.ts`
 
 **Codebase search returns no results:**
 
@@ -133,4 +142,4 @@ frieren_codebase_graph({
 **Wisdom writes succeed but searches return nothing:**
 
 - Embeddings are built asynchronously on first write; wait a few seconds and retry
-- Confirm `AITOOLINGKEY` has embedding access (not just completions)
+- On very first run, the embedding model (~23 MB) may still be downloading to `~/.cache/` — check the terminal where Frieren is running

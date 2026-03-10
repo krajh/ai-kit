@@ -81,6 +81,8 @@ VERBOSE=false
 SKIP_VERIFY="${SKIP_VERIFY:-false}"
 NO_PROMPT=false
 PROVIDER_CHOICE=""
+INSTALL_FRIEREN="${INSTALL_FRIEREN:-}"  # "": ask interactively; "true": yes; "false": skip
+FRIEREN_DIR="${FRIEREN_DIR:-$HOME/dev/frieren}"
 
 # Auto-run detection: if no command given and no existing installation,
 # automatically run 'install' command
@@ -112,6 +114,21 @@ while [ $# -gt 0 ]; do
       die "--provider requires a value: aitooling or copilot"
     fi
     PROVIDER_CHOICE="$2"
+    shift 2
+    ;;
+  --frieren)
+    INSTALL_FRIEREN="true"
+    shift
+    ;;
+  --no-frieren)
+    INSTALL_FRIEREN="false"
+    shift
+    ;;
+  --frieren-path)
+    if [ -z "${2:-}" ]; then
+      die "--frieren-path requires a value"
+    fi
+    FRIEREN_DIR="$2"
     shift 2
     ;;
   --)
@@ -463,6 +480,143 @@ ensure_aitoolingkey() {
       log "Using default BASE_URL from configuration"
     fi
   fi
+}
+
+# ---------------------------------------------------------------------------
+# Frieren MCP server — optional local AI memory layer
+# ---------------------------------------------------------------------------
+
+check_frieren_in_config() {
+  local config="$TARGET_DIR/opencode.json"
+  [ -f "$config" ] || { echo "absent"; return; }
+  if command -v jq &>/dev/null; then
+    if jq -e '.mcp.frieren' "$config" &>/dev/null; then
+      echo "configured"
+    else
+      echo "absent"
+    fi
+  else
+    # grep fallback
+    if grep -q '"mcp"' "$config" 2>/dev/null && grep -q '"frieren"' "$config" 2>/dev/null; then
+      echo "configured"
+    else
+      echo "absent"
+    fi
+  fi
+}
+
+install_frieren_server() {
+  if ! command -v git &>/dev/null; then
+    log_warn "git not found — skipping Frieren server install"
+    return 1
+  fi
+  if ! command -v bun &>/dev/null; then
+    log_warn "bun not found — skipping Frieren server install"
+    return 1
+  fi
+  if [ -d "$FRIEREN_DIR/.git" ]; then
+    log "Updating Frieren server at $FRIEREN_DIR..."
+    if [ "$DRY_RUN" != true ]; then
+      git -C "$FRIEREN_DIR" pull --ff-only
+    else
+      log "[dry-run] git -C $FRIEREN_DIR pull --ff-only"
+    fi
+  else
+    log "Cloning Frieren server to $FRIEREN_DIR..."
+    if [ "$DRY_RUN" != true ]; then
+      git clone https://github.com/krajh/frieren.git "$FRIEREN_DIR"
+    else
+      log "[dry-run] git clone https://github.com/krajh/frieren.git $FRIEREN_DIR"
+    fi
+  fi
+  log "Installing Frieren dependencies..."
+  if [ "$DRY_RUN" != true ]; then
+    bun install --cwd "$FRIEREN_DIR"
+  else
+    log "[dry-run] bun install --cwd $FRIEREN_DIR"
+  fi
+}
+
+configure_frieren_in_opencode() {
+  if ! command -v jq &>/dev/null; then
+    log_warn "jq not found — add Frieren manually to opencode.json:"
+    log_warn '    "mcp": { "frieren": { "type": "local", "command": "bun", "args": ["'"$FRIEREN_DIR"'/src/index.ts"], "enabled": true } }'
+    return
+  fi
+  # Resolve symlink so we write the real file, not the symlink itself.
+  # readlink -f is GNU-only; fall back to perl (available on macOS) then no-op.
+  local real_config
+  real_config="$(readlink -f "$TARGET_DIR/opencode.json" 2>/dev/null \
+    || perl -MCwd -e 'print Cwd::abs_path(shift)' "$TARGET_DIR/opencode.json" 2>/dev/null \
+    || echo "$TARGET_DIR/opencode.json")"
+  if [ ! -f "$real_config" ]; then
+    log_warn "opencode.json not found at $real_config — skipping Frieren config"
+    return
+  fi
+  log "Configuring Frieren in opencode.json..."
+  if [ "$DRY_RUN" != true ]; then
+    local tmp
+    tmp="$(mktemp)"
+    jq --arg path "$FRIEREN_DIR/src/index.ts" \
+      '.mcp.frieren = {"type":"local","command":"bun","args":[$path],"enabled":true}' \
+      "$real_config" > "$tmp" && mv "$tmp" "$real_config"
+    log_ok "✓ Frieren configured in $real_config"
+  else
+    log "[dry-run] jq-patch .mcp.frieren into $real_config"
+  fi
+}
+
+ensure_frieren() {
+  [ "$INSTALL_FRIEREN" = "false" ] && return
+
+  local frieren_status
+  frieren_status="$(check_frieren_in_config)"
+  local repo_exists=false
+  [ -d "$FRIEREN_DIR/.git" ] && repo_exists=true
+
+  # Already fully installed — offer update or skip
+  if [ "$frieren_status" = "configured" ] && [ "$repo_exists" = true ]; then
+    if [ "$INSTALL_FRIEREN" = "true" ] || [ "$DRY_RUN" = true ]; then
+      install_frieren_server || log_warn "Frieren update failed (retry manually)"
+      return
+    fi
+    if [ "$NO_PROMPT" = true ] || [ ! -t 0 ]; then
+      return
+    fi
+    echo ""
+    echo "┌─────────────────────────────────────────────────────────────────┐"
+    echo "│  Frieren (local AI memory) is already installed.                │"
+    echo "│  Update to latest? [y/N]                                        │"
+    echo "└─────────────────────────────────────────────────────────────────┘"
+    printf "  Choice: "
+    local answer
+    IFS= read -r answer
+    if [[ "$answer" =~ ^[Yy]$ ]]; then
+      install_frieren_server || log_warn "Frieren update failed (retry manually)"
+    fi
+    return
+  fi
+
+  # Not installed — ask or proceed based on flag
+  if [ "$INSTALL_FRIEREN" != "true" ] && [ "$DRY_RUN" != true ]; then
+    if [ "$NO_PROMPT" = true ] || [ ! -t 0 ]; then
+      return
+    fi
+    echo ""
+    echo "┌─────────────────────────────────────────────────────────────────┐"
+    echo "│  Install Frieren — local AI memory layer for OpenCode?          │"
+    echo "│  Fully local. No API keys required.                             │"
+    echo "│  First run downloads ~23 MB to ~/.cache/                        │"
+    echo "│  [y/N]                                                          │"
+    echo "└─────────────────────────────────────────────────────────────────┘"
+    printf "  Choice: "
+    local answer
+    IFS= read -r answer
+    [[ "$answer" =~ ^[Yy]$ ]] || return
+  fi
+
+  install_frieren_server || return
+  configure_frieren_in_opencode
 }
 
 # Detect OS and architecture
@@ -1194,6 +1348,8 @@ cmd_install() {
     ensure_aitoolingkey
   fi
 
+  ensure_frieren
+
   log_ok "Installation complete at $TARGET_DIR"
   log "Run 'opencode' to begin using the configuration."
 }
@@ -1295,6 +1451,8 @@ cmd_update() {
   if [ "$PROVIDER_CHOICE" = "aitooling" ]; then
     ensure_aitoolingkey
   fi
+
+  ensure_frieren
 
   log_ok "Update complete"
   log "Run 'opencode' to use the updated configuration."
@@ -1479,10 +1637,13 @@ COMMANDS:
   dry-run [TAG]     Simulate installation without making changes
 
 OPTIONS:
-  -v, --verbose          Enable verbose output
-  -h, --help             Show this help message
-  --no-prompt            Do not prompt for interactive input (fail if required)
-  --provider PROVIDER    Model provider to use: aitooling or copilot (skips prompt)
+  -v, --verbose              Enable verbose output
+  -h, --help                 Show this help message
+  --no-prompt                Do not prompt for interactive input (fail if required)
+  --provider PROVIDER        Model provider to use: aitooling or copilot (skips prompt)
+  --frieren                  Install/update Frieren local AI memory server (skips prompt)
+  --no-frieren               Skip Frieren installation entirely
+  --frieren-path PATH        Override Frieren install directory (default: ~/dev/frieren)
 
 EXAMPLES:
   ai-kit-install install
@@ -1508,6 +1669,11 @@ ENVIRONMENT:
                   Not required when using the copilot provider.
 
   BASE_URL        Optional base URL override for aitooling (env / .env).
+
+  INSTALL_FRIEREN Set to 'true' to always install/update Frieren; 'false' to skip.
+                  If unset, the installer prompts interactively (unless --no-prompt).
+
+  FRIEREN_DIR     Directory where Frieren is cloned/stored. Default: ~/dev/frieren.
 
 PROVIDER MODELS:
   aitooling  critical (architect):              aitooling/claude-sonnet-4-6
