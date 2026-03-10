@@ -64,7 +64,7 @@ Agents are assigned models based on role:
 
 | Tier                            | aitooling                             | copilot                            |
 | ------------------------------- | ------------------------------------- | ---------------------------------- |
-| Critical (architect)            | `aitooling/claude-sonnet-4-6`         | `github-copilot/claude-sonnet-4.6` |
+| Critical (architect)            | `aitooling/claude-sonnet-4-6`         | `github-copilot/claude-opus-4.6`   |
 | Heavy (strategist, implementer) | `aitooling/claude-sonnet-4-6`         | `github-copilot/claude-sonnet-4.6` |
 | Light (reviewer, research)      | `aitooling/claude-haiku-4-5-20251001` | `github-copilot/claude-haiku-4.5`  |
 
