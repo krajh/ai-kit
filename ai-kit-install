@@ -532,15 +532,23 @@ install_frieren_server() {
   log "Installing Frieren dependencies..."
   if [ "$DRY_RUN" != true ]; then
     bun install --cwd "$FRIEREN_DIR"
+    # On Linux, sharp (transitive dep of @xenova/transformers) requires a prebuilt native binary.
+    # bun install does not build native modules by default, so install the prebuilt binary explicitly.
+    if [ "$(uname -s)" = "Linux" ] && command -v npm &>/dev/null; then
+      log "Installing sharp prebuilt binary for Linux..."
+      npm install --prefix "$FRIEREN_DIR" --platform=linux --arch=x64 sharp@0.32.6 --silent \
+        || log_warn "sharp install failed — if Frieren fails to start, run: npm install --platform=linux --arch=x64 sharp@0.32.6"
+    fi
   else
     log "[dry-run] bun install --cwd $FRIEREN_DIR"
+    log "[dry-run] npm install --platform=linux --arch=x64 sharp@0.32.6 (Linux only)"
   fi
 }
 
 configure_frieren_in_opencode() {
   if ! command -v jq &>/dev/null; then
     log_warn "jq not found — add Frieren manually to opencode.json:"
-    log_warn '    "mcp": { "frieren": { "type": "local", "command": "bun", "args": ["'"$FRIEREN_DIR"'/src/index.ts"], "enabled": true } }'
+    log_warn '    "mcp": { "frieren": { "type": "local", "command": ["bun", "'"$FRIEREN_DIR"'/src/index.ts"], "enabled": true } }'
     return
   fi
   # Resolve symlink so we write the real file, not the symlink itself.
@@ -558,7 +566,7 @@ configure_frieren_in_opencode() {
     local tmp
     tmp="$(mktemp)"
     jq --arg path "$FRIEREN_DIR/src/index.ts" \
-      '.mcp.frieren = {"type":"local","command":"bun","args":[$path],"enabled":true}' \
+      '.mcp.frieren = {"type":"local","command":["bun",$path],"enabled":true}' \
       "$real_config" > "$tmp" && mv "$tmp" "$real_config"
     log_ok "✓ Frieren configured in $real_config"
   else

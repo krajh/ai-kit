@@ -30,6 +30,11 @@ cd ~/dev/frieren
 bun install
 ```
 
+> **Linux only:** `@xenova/transformers` pulls in `sharp` as a transitive dependency. `bun install` does not build native bindings on Linux — run this once after install:
+> ```bash
+> npm install --platform=linux --arch=x64 sharp@0.32.6
+> ```
+
 2. Verify it starts:
 
 ```bash
@@ -47,8 +52,7 @@ Add the following to `~/.config/opencode/opencode.json` under the `"mcp"` key. I
   "mcp": {
     "frieren": {
       "type": "local",
-      "command": "bun",
-      "args": ["/absolute/path/to/frieren/src/index.ts"],
+      "command": ["bun", "/absolute/path/to/frieren/src/index.ts"],
       "enabled": true
     }
   }
@@ -56,6 +60,8 @@ Add the following to `~/.config/opencode/opencode.json` under the `"mcp"` key. I
 ```
 
 Replace `/absolute/path/to/frieren` with the actual path to your clone. Run `pwd` inside the repo directory to get it.
+
+> **Note:** The `command` field must be an array — `["bun", "/path"]`. The `command`/`args` split format is not valid for OpenCode's MCP schema.
 
 > **Note:** If you already have an `"mcp"` section with other servers, add the `"frieren"` key alongside them — do not replace the whole block.
 
@@ -129,10 +135,19 @@ frieren_codebase_graph({
 
 ## Troubleshooting
 
+**`Cannot find module '../build/Release/sharp-linux-x64.node'` (Linux):**
+
+`@xenova/transformers` pulls in `sharp` as a transitive dependency. On Linux, `bun install` does not build native bindings. Fix it by installing the prebuilt binary once:
+
+```bash
+npm install --platform=linux --arch=x64 sharp@0.32.6
+```
+
 **Frieren tools not appearing after config:**
 
 - Restart OpenCode fully (MCP servers connect at startup)
 - Verify the path in `opencode.json` resolves correctly: `bun /absolute/path/to/frieren/src/index.ts`
+- Confirm `command` is an array: `["bun", "/absolute/path/to/frieren/src/index.ts"]`
 
 **Codebase search returns no results:**
 
