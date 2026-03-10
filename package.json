@@ -1,6 +1,6 @@
 {
   "name": "@brisingr-kr/core",
-  "version": "0.8.8",
+  "version": "0.8.9",
   "description": "OpenCode configuration kit — agents, skills, protocols, and plugins for AI-assisted development",
   "type": "module",
   "scripts": {

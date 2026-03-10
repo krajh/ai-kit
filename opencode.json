@@ -79,14 +79,14 @@
           "name": "Claude Opus 4.5",
           "temperature": true
         },
-        "claude-opus-41": {
-          "id": "claude-opus-41",
-          "name": "Claude Opus 4.1",
-          "temperature": true
-        },
         "claude-opus-4.6": {
           "id": "claude-opus-4.6",
           "name": "Claude Opus 4.6",
+          "temperature": true
+        },
+        "claude-opus-4.6-fast": {
+          "id": "claude-opus-4.6-fast",
+          "name": "Claude Opus 4.6 (fast mode)",
           "temperature": true
         },
         "claude-sonnet-4": {
@@ -119,19 +119,14 @@
           "name": "Gemini 3 Pro Preview",
           "temperature": true
         },
+        "gemini-3.1-pro-preview": {
+          "id": "gemini-3.1-pro-preview",
+          "name": "Gemini 3.1 Pro Preview",
+          "temperature": true
+        },
         "gpt-4.1": {
           "id": "gpt-4.1",
           "name": "GPT-4.1",
-          "temperature": true
-        },
-        "gpt-4o": {
-          "id": "gpt-4o",
-          "name": "GPT-4o",
-          "temperature": true
-        },
-        "gpt-5": {
-          "id": "gpt-5",
-          "name": "GPT-5",
           "temperature": true
         },
         "gpt-5-mini": {
@@ -174,9 +169,19 @@
           "name": "GPT-5.3-Codex",
           "temperature": true
         },
+        "gpt-5.4": {
+          "id": "gpt-5.4",
+          "name": "GPT-5.4",
+          "temperature": true
+        },
         "grok-code-fast-1": {
           "id": "grok-code-fast-1",
           "name": "Grok Code Fast 1",
+          "temperature": true
+        },
+        "raptor-mini": {
+          "id": "raptor-mini",
+          "name": "Raptor mini",
           "temperature": true
         }
       }

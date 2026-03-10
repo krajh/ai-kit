@@ -255,7 +255,7 @@ get_provider_model() {
   aitooling/critical) echo "aitooling/claude-sonnet-4-6" ;;
   aitooling/heavy)    echo "aitooling/claude-sonnet-4-6" ;;
   aitooling/light)    echo "aitooling/claude-haiku-4-5-20251001" ;;
-  copilot/critical)   echo "github-copilot/claude-sonnet-4.6" ;;
+  copilot/critical)   echo "github-copilot/claude-opus-4.6" ;;
   copilot/heavy)      echo "github-copilot/claude-sonnet-4.6" ;;
   copilot/light)      echo "github-copilot/claude-haiku-4.5" ;;
   *)                  echo "" ;;
@@ -1680,7 +1680,7 @@ PROVIDER MODELS:
              heavy    (strategist, implementer): aitooling/claude-sonnet-4-6
              light    (reviewer, research):      aitooling/claude-haiku-4-5-20251001
 
-  copilot    critical (architect):              github-copilot/claude-sonnet-4.6
+  copilot    critical (architect):              github-copilot/claude-opus-4.6
              heavy    (strategist, implementer): github-copilot/claude-sonnet-4.6
              light    (reviewer, research):      github-copilot/claude-haiku-4.5
 
