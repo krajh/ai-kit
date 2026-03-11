@@ -43,6 +43,17 @@ bun src/index.ts
 
 On first run, Frieren downloads the embedding model (~23 MB) to `~/.cache/`. You'll see download progress in the terminal. Subsequent starts are instant.
 
+## Updating
+
+```bash
+cd ~/dev/frieren
+bun run update
+```
+
+Pulls the latest changes from git and reinstalls dependencies. Restart the MCP server after updating for changes to take effect.
+
+You can also trigger an update from inside an OpenCode session via the `frieren_update` tool — useful if you want to update without leaving your workspace.
+
 ## Configuration
 
 Add the following to `~/.config/opencode/opencode.json` under the `"mcp"` key. If no `"mcp"` key exists yet, add the whole block.
@@ -131,6 +142,9 @@ frieren_codebase_graph({
   direction: "dependents",
   depth: 3,
 });
+
+// Check for and apply updates
+frieren_update({});
 ```
 
 ## Troubleshooting
