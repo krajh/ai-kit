@@ -1,0 +1,235 @@
+{
+  "$schema": "https://opencode.dev/schemas/agent-cards/v1.json",
+  "version": "1.0.0",
+  "generated": "2026-03-10T00:00:00Z",
+  "agents": {
+    "architect": {
+      "name": "Architect",
+      "id": "architect",
+      "description": "Guides system-wide strategy, defines roadmaps, and ensures alignment with business goals.",
+      "version": "1.0.0",
+      "mode": "subagent",
+      "capabilities": {
+        "domains": ["architecture"],
+        "tasks": [
+          "High-level system architecture",
+          "Migration pathway design",
+          "Trade-off analysis and approvals"
+        ],
+        "canWrite": false,
+        "canReview": false,
+        "canDelegate": false,
+        "canOrchestrate": false
+      },
+      "routing": {
+        "useCases": [
+          "System-wide strategy and architecture decisions",
+          "Roadmap alignment with business goals",
+          "Migration planning and trade-offs"
+        ],
+        "antiPatterns": [
+          "Implementation work (→ implementer)",
+          "Code review-only tasks (→ reviewer)"
+        ],
+        "effortFit": { "min": "medium", "max": "epic" },
+        "complexityFit": { "min": "moderate", "max": "critical" }
+      },
+      "io": {
+        "inputTypes": ["spec", "question"],
+        "outputTypes": ["architecture-brief", "migration-plan"]
+      },
+      "promptFile": "agents/architect.md",
+      "extensions": {}
+    },
+    "coordinator": {
+      "name": "Coordinator",
+      "id": "coordinator",
+      "description": "Orchestrates multi-agent work, manages task sequencing, clears blockers, and enforces protocol compliance.",
+      "version": "1.0.0",
+      "mode": "primary",
+      "capabilities": {
+        "domains": ["orchestration"],
+        "tasks": [
+          "Task decomposition and routing",
+          "Progress monitoring and blocker resolution",
+          "Quality gate enforcement and sign-off"
+        ],
+        "canWrite": true,
+        "canReview": false,
+        "canDelegate": true,
+        "canOrchestrate": true
+      },
+      "routing": {
+        "useCases": [
+          "Multi-agent coordination",
+          "Ambiguous requirements needing decomposition",
+          "Cross-cutting work requiring sequencing"
+        ],
+        "antiPatterns": [
+          "Single-scope implementation (→ implementer)",
+          "Research-only tasks (→ research)"
+        ],
+        "effortFit": { "min": "medium", "max": "epic" },
+        "complexityFit": { "min": "moderate", "max": "critical" }
+      },
+      "io": {
+        "inputTypes": ["task-description", "spec", "question"],
+        "outputTypes": ["implementation-plan", "context-pack"]
+      },
+      "promptFile": "agents/coordinator.md",
+      "extensions": {}
+    },
+    "implementer": {
+      "name": "Implementer",
+      "id": "implementer",
+      "description": "Executes feature development, fixes, and tool integrations.",
+      "version": "1.0.0",
+      "mode": "subagent",
+      "capabilities": {
+        "domains": ["implementation"],
+        "tasks": [
+          "Feature development",
+          "Bug fixes and integrations",
+          "Applying verification gates"
+        ],
+        "canWrite": true,
+        "canReview": false,
+        "canDelegate": false,
+        "canOrchestrate": false
+      },
+      "routing": {
+        "useCases": [
+          "Single-scope implementation",
+          "Feature and fix delivery",
+          "Tool integrations with minimal diffs"
+        ],
+        "antiPatterns": [
+          "Architecture decisions (→ strategist or architect)",
+          "Code review-only tasks (→ reviewer)"
+        ],
+        "effortFit": { "min": "trivial", "max": "large" },
+        "complexityFit": { "min": "low", "max": "high" }
+      },
+      "io": {
+        "inputTypes": ["task-description", "spec", "bug-report"],
+        "outputTypes": ["code-changes", "test-suite", "implementation-plan"]
+      },
+      "promptFile": "agents/implementer.md",
+      "extensions": {}
+    },
+    "research": {
+      "name": "Research",
+      "id": "research",
+      "description": "Leads investigative work, gathers data, and documents findings for architects and implementers.",
+      "version": "1.0.0",
+      "mode": "subagent",
+      "capabilities": {
+        "domains": ["research"],
+        "tasks": [
+          "Codebase exploration",
+          "Synthesis of findings",
+          "Gap identification"
+        ],
+        "canWrite": false,
+        "canReview": false,
+        "canDelegate": false,
+        "canOrchestrate": false
+      },
+      "routing": {
+        "useCases": [
+          "Investigative research and evidence gathering",
+          "Sourcing documentation and references",
+          "Identifying knowledge gaps"
+        ],
+        "antiPatterns": [
+          "Implementation work (→ implementer)",
+          "Architecture decisions (→ strategist or architect)"
+        ],
+        "effortFit": { "min": "small", "max": "large" },
+        "complexityFit": { "min": "low", "max": "moderate" }
+      },
+      "io": {
+        "inputTypes": ["research-query", "question"],
+        "outputTypes": ["research-summary", "context-pack"]
+      },
+      "promptFile": "agents/research.md",
+      "extensions": {}
+    },
+    "reviewer": {
+      "name": "Reviewer",
+      "id": "reviewer",
+      "description": "Ensures quality through code review, testing validation, and documentation checks.",
+      "version": "1.0.0",
+      "mode": "subagent",
+      "capabilities": {
+        "domains": ["review"],
+        "tasks": [
+          "Diff review for correctness",
+          "Testing and documentation validation",
+          "Quality gate enforcement"
+        ],
+        "canWrite": false,
+        "canReview": true,
+        "canDelegate": false,
+        "canOrchestrate": false
+      },
+      "routing": {
+        "useCases": [
+          "Code review and quality validation",
+          "Confirming verification results",
+          "Documentation coverage checks"
+        ],
+        "antiPatterns": [
+          "Implementation work (→ implementer)",
+          "Architecture decisions (→ strategist or architect)"
+        ],
+        "effortFit": { "min": "small", "max": "large" },
+        "complexityFit": { "min": "low", "max": "high" }
+      },
+      "io": {
+        "inputTypes": ["diff", "pr-diff"],
+        "outputTypes": ["review-notes", "verification-report"]
+      },
+      "promptFile": "agents/reviewer.md",
+      "extensions": {}
+    },
+    "strategist": {
+      "name": "Strategist",
+      "id": "strategist",
+      "description": "Designs system architecture, advises on dependencies, and defines migration strategies.",
+      "version": "1.0.0",
+      "mode": "subagent",
+      "capabilities": {
+        "domains": ["architecture", "requirements"],
+        "tasks": [
+          "System architecture design",
+          "Dependency analysis",
+          "Migration strategy definition"
+        ],
+        "canWrite": false,
+        "canReview": false,
+        "canDelegate": false,
+        "canOrchestrate": false
+      },
+      "routing": {
+        "useCases": [
+          "Architecture design with migration strategy",
+          "Defining acceptance criteria and dependencies",
+          "Routing work to implementers"
+        ],
+        "antiPatterns": [
+          "Implementation work (→ implementer)",
+          "Code review-only tasks (→ reviewer)"
+        ],
+        "effortFit": { "min": "medium", "max": "epic" },
+        "complexityFit": { "min": "moderate", "max": "critical" }
+      },
+      "io": {
+        "inputTypes": ["spec", "question"],
+        "outputTypes": ["architecture-brief", "migration-plan", "context-pack"]
+      },
+      "promptFile": "agents/strategist.md",
+      "extensions": {}
+    }
+  }
+}

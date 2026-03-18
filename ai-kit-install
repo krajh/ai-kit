@@ -1139,31 +1139,37 @@ detect_user_modifications() {
 
   local found=false
 
-  # Check each tracked file for modification
-  local keys
-  keys="$(jq -r '.files | keys[]' "$manifest_file" 2>/dev/null || true)"
-  if [ -n "$keys" ]; then
-    while IFS= read -r rel; do
+  # Check each tracked file for modification.
+  # Read all installedHash values in one jq pass to avoid N subprocess forks.
+  local manifest_pairs
+  manifest_pairs="$(jq -r '.files | to_entries[] | "\(.key)\t\(.value.installedHash)"' "$manifest_file" 2>/dev/null || true)"
+  if [ -n "$manifest_pairs" ]; then
+    while IFS=$'\t' read -r rel expected_hash; do
       [ -z "$rel" ] && continue
       local file_abs="$version_dir/$rel"
       if [ ! -f "$file_abs" ]; then
         continue
       fi
-      local expected_hash actual_hash
-      expected_hash="$(jq -r --arg p "$rel" '.files[$p].installedHash' "$manifest_file")"
+      local actual_hash
       actual_hash="$(file_sha256 "$file_abs")"
       if [ "$expected_hash" != "$actual_hash" ]; then
         printf "M %s\n" "$rel"
         found=true
       fi
-    done <<<"$keys"
+    done <<<"$manifest_pairs"
   fi
 
-  # Detect user-added files (not in the original manifest)
+  # Detect user-added files (not in the original manifest).
+  # Build key set in one jq pass to avoid N subprocess forks.
+  declare -A manifest_keys
+  while IFS= read -r k; do
+    manifest_keys["$k"]=1
+  done < <(jq -r '.files | keys[]' "$manifest_file" 2>/dev/null || true)
+
   while IFS= read -r -d '' f; do
     local rel
     rel="${f#./}"
-    if ! jq -e --arg p "$rel" '.files[$p]' "$manifest_file" >/dev/null 2>&1; then
+    if [ -z "${manifest_keys["$rel"]+_}" ]; then
       printf "A %s\n" "$rel"
       found=true
     fi
@@ -1207,7 +1213,7 @@ handle_conflict() {
   local user_file="$2"
   local new_file="$3"
 
-  if [ "$NO_PROMPT" = true ] || [ ! -t 0 ]; then
+  if [ "$NO_PROMPT" = true ] || [ ! -t /dev/tty ]; then
     cp "$user_file" "${new_file}.user"
     log_warn "  Conflict: $rel_path (kept new version; your version saved as ${rel_path}.user)"
     return
@@ -1219,7 +1225,7 @@ handle_conflict() {
 
   while true; do
     local choice raw
-    IFS= read -r raw || {
+    IFS= read -r raw </dev/tty || {
       # EOF — default to non-destructive: save user copy alongside new file
       printf "\n" >&2
       cp "$user_file" "${new_file}.user"
@@ -1276,7 +1282,20 @@ reapply_modifications() {
 
   local applied=0 conflicts=0 added=0
 
-  while IFS= read -r stashed_file; do
+  # Load all installedHash values from the old manifest in one jq pass.
+  declare -A old_hashes
+  while IFS=$'\t' read -r rel hash; do
+    [ -z "$rel" ] && continue
+    old_hashes["$rel"]="$hash"
+  done < <(jq -r '.files | to_entries[] | "\(.key)\t\(.value.installedHash)"' "$old_manifest_file" 2>/dev/null || true)
+
+  # Collect stashed files into array first so stdin stays free for handle_conflict.
+  local stashed_files=()
+  while IFS= read -r f; do
+    stashed_files+=("$f")
+  done < <(find "$stash_dir" -type f)
+
+  for stashed_file in "${stashed_files[@]}"; do
     local rel_path="${stashed_file#"$stash_dir"/}"
     local new_file="$new_version_dir/$rel_path"
 
@@ -1291,7 +1310,7 @@ reapply_modifications() {
 
     # File exists in both. Was it also changed in the new release?
     local old_hash new_hash
-    old_hash="$(jq -r --arg p "$rel_path" '.files[$p].installedHash' "$old_manifest_file" 2>/dev/null)"
+    old_hash="${old_hashes["$rel_path"]:-}"
     new_hash="$(file_sha256 "$new_file")"
 
     if [ -z "$old_hash" ] || [ "$old_hash" = "null" ]; then
@@ -1311,7 +1330,7 @@ reapply_modifications() {
       handle_conflict "$rel_path" "$stashed_file" "$new_file"
       conflicts=$((conflicts + 1))
     fi
-  done < <(find "$stash_dir" -type f)
+  done
 
   log "Personalisation summary: $applied applied, $added user-added restored, $conflicts conflicts"
 }
