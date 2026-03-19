@@ -939,7 +939,7 @@ download_release() {
   # Verify tarball sha256 from manifest (best-effort parse; fail if present and mismatch)
   local expected_sha actual_sha
   expected_sha="$(grep -o '"sha256"\s*:\s*"[a-f0-9]\+"' "$version_dir/manifest.json" | head -1 | cut -d'"' -f4)"
-  actual_sha="$(sha256sum "$version_dir/ai-kit-${tag}.tar.gz" | awk '{print $1}')"
+  actual_sha="$(file_sha256 "$version_dir/ai-kit-${tag}.tar.gz")"
   if [ -n "$expected_sha" ] && [ "$expected_sha" != "$actual_sha" ]; then
     die "Tarball sha256 mismatch"
   fi
@@ -1161,19 +1161,21 @@ detect_user_modifications() {
 
   # Detect user-added files (not in the original manifest).
   # Build key set in one jq pass to avoid N subprocess forks.
-  declare -A manifest_keys
-  while IFS= read -r k; do
-    manifest_keys["$k"]=1
-  done < <(jq -r '.files | keys[]' "$manifest_file" 2>/dev/null || true)
+  # Use a temp file instead of declare -A for bash 3.2 compatibility (macOS default).
+  local manifest_keys_file
+  manifest_keys_file="$(mktemp)"
+  jq -r '.files | keys[]' "$manifest_file" 2>/dev/null >"$manifest_keys_file" || true
 
   while IFS= read -r -d '' f; do
     local rel
     rel="${f#./}"
-    if [ -z "${manifest_keys["$rel"]+_}" ]; then
+    if ! grep -qxF "$rel" "$manifest_keys_file" 2>/dev/null; then
       printf "A %s\n" "$rel"
       found=true
     fi
   done < <(cd "$version_dir" && find . -type f ! -name "$MANIFEST_FILE" -print0 | sort -z)
+
+  rm -f "$manifest_keys_file"
 
   if [ "$found" = true ]; then
     return 0
@@ -1283,11 +1285,13 @@ reapply_modifications() {
   local applied=0 conflicts=0 added=0
 
   # Load all installedHash values from the old manifest in one jq pass.
-  declare -A old_hashes
-  while IFS=$'\t' read -r rel hash; do
-    [ -z "$rel" ] && continue
-    old_hashes["$rel"]="$hash"
-  done < <(jq -r '.files | to_entries[] | "\(.key)\t\(.value.installedHash)"' "$old_manifest_file" 2>/dev/null || true)
+  # Use a temp file instead of declare -A for bash 3.2 compatibility (macOS default).
+  local old_hashes_file
+  old_hashes_file="$(mktemp)"
+  jq -r '.files | to_entries[] | "\(.key)\t\(.value.installedHash)"' "$old_manifest_file" 2>/dev/null >"$old_hashes_file" || true
+
+  # Helper to look up a hash by relative path from the temp file.
+  _lookup_old_hash() { awk -F'\t' -v key="$1" '$1 == key { print $2; found=1; exit } END { if (!found) print "" }' "$old_hashes_file"; }
 
   # Collect stashed files into array first so stdin stays free for handle_conflict.
   local stashed_files=()
@@ -1310,7 +1314,7 @@ reapply_modifications() {
 
     # File exists in both. Was it also changed in the new release?
     local old_hash new_hash
-    old_hash="${old_hashes["$rel_path"]:-}"
+    old_hash="$(_lookup_old_hash "$rel_path")"
     new_hash="$(file_sha256 "$new_file")"
 
     if [ -z "$old_hash" ] || [ "$old_hash" = "null" ]; then
@@ -1331,6 +1335,9 @@ reapply_modifications() {
       conflicts=$((conflicts + 1))
     fi
   done
+
+  rm -f "$old_hashes_file"
+  unset -f _lookup_old_hash
 
   log "Personalisation summary: $applied applied, $added user-added restored, $conflicts conflicts"
 }
@@ -1410,7 +1417,10 @@ cmd_update() {
 
   # ── Personalisation detection ──────────────────────────────────────
   if [ -L "$CURRENT_LINK" ]; then
-    current_version_dir="$(readlink -f "$CURRENT_LINK")"
+    # readlink -f is GNU-only; fall back to perl (available on macOS) then no-op.
+    current_version_dir="$(readlink -f "$CURRENT_LINK" 2>/dev/null \
+      || perl -MCwd -e 'print Cwd::abs_path(shift)' "$CURRENT_LINK" 2>/dev/null \
+      || echo "")"
   fi
 
   if [ -n "$current_version_dir" ] && [ -f "$current_version_dir/$MANIFEST_FILE" ]; then
