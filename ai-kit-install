@@ -1038,7 +1038,8 @@ preserve_local_state() {
 restore_local_state() {
   local backup_info="$1" backup_env backup_local
 
-  IFS=':' read -r backup_env backup_local <<<"$backup_info"
+  backup_env="${backup_info%%:*}"
+  backup_local="${backup_info#*:}"
 
   if [ -f "$backup_env" ] && [ -s "$backup_env" ]; then
     log "Restoring .env file..."
@@ -1144,6 +1145,9 @@ detect_user_modifications() {
   local manifest_pairs
   manifest_pairs="$(jq -r '.files | to_entries[] | "\(.key)\t\(.value.installedHash)"' "$manifest_file" 2>/dev/null || true)"
   if [ -n "$manifest_pairs" ]; then
+    local manifest_pairs_file
+    manifest_pairs_file="$(mktemp)"
+    printf '%s\n' "$manifest_pairs" >"$manifest_pairs_file"
     while IFS=$'\t' read -r rel expected_hash; do
       [ -z "$rel" ] && continue
       local file_abs="$version_dir/$rel"
@@ -1156,7 +1160,8 @@ detect_user_modifications() {
         printf "M %s\n" "$rel"
         found=true
       fi
-    done <<<"$manifest_pairs"
+    done <"$manifest_pairs_file"
+    rm -f "$manifest_pairs_file"
   fi
 
   # Detect user-added files (not in the original manifest).
@@ -1166,6 +1171,10 @@ detect_user_modifications() {
   manifest_keys_file="$(mktemp)"
   jq -r '.files | keys[]' "$manifest_file" 2>/dev/null >"$manifest_keys_file" || true
 
+  local version_files_list
+  version_files_list="$(mktemp)"
+  (cd "$version_dir" && find . -type f ! -name "$MANIFEST_FILE" | sort) >"$version_files_list"
+
   while IFS= read -r f; do
     local rel
     rel="${f#./}"
@@ -1173,9 +1182,10 @@ detect_user_modifications() {
       printf "A %s\n" "$rel"
       found=true
     fi
-  done < <(cd "$version_dir" && find . -type f ! -name "$MANIFEST_FILE" | sort)
+  done <"$version_files_list"
 
   rm -f "$manifest_keys_file"
+  rm -f "$version_files_list"
 
   if [ "$found" = true ]; then
     return 0
@@ -1295,9 +1305,13 @@ reapply_modifications() {
 
   # Collect stashed files into array first so stdin stays free for handle_conflict.
   local stashed_files=()
+  local stashed_files_list
+  stashed_files_list="$(mktemp)"
+  find "$stash_dir" -type f >"$stashed_files_list"
   while IFS= read -r f; do
     stashed_files+=("$f")
-  done < <(find "$stash_dir" -type f)
+  done <"$stashed_files_list"
+  rm -f "$stashed_files_list"
 
   for stashed_file in "${stashed_files[@]}"; do
     local rel_path="${stashed_file#"$stash_dir"/}"
@@ -1609,6 +1623,10 @@ cmd_resolve() {
     manifest_file="$current_version_dir/$MANIFEST_FILE"
   fi
 
+  local pending_files_list
+  pending_files_list="$(mktemp)"
+  printf '%s\n' "$pending_files" >"$pending_files_list"
+
   while IFS= read -r incoming_file; do
     [ -z "$incoming_file" ] && continue
     local rel_path
@@ -1633,7 +1651,8 @@ cmd_resolve() {
     fi
 
     rm -f "$incoming_file"
-  done <<<"$pending_files"
+  done <"$pending_files_list"
+  rm -f "$pending_files_list"
 
   find "$incoming_path" -type d -empty -delete 2>/dev/null || true
 }
