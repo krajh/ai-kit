@@ -1100,7 +1100,7 @@ compute_manifest() {
   } >"$temp_file"
 
   local first=true
-  while IFS= read -r -d '' f; do
+  while IFS= read -r f; do
     local rel
     rel="${f#./}"
     local hash
@@ -1112,7 +1112,7 @@ compute_manifest() {
     fi
     printf '\n    "%s": {"category":"managed","installedHash":"%s","sourceHash":"%s"}' \
       "$rel" "$hash" "$hash" >>"$temp_file"
-  done < <(cd "$version_dir" && find . -type f ! -name "$MANIFEST_FILE" -print0 | sort -z)
+  done < <(cd "$version_dir" && find . -type f ! -name "$MANIFEST_FILE" | sort)
 
   {
     printf '\n  }\n}\n'
@@ -1166,14 +1166,14 @@ detect_user_modifications() {
   manifest_keys_file="$(mktemp)"
   jq -r '.files | keys[]' "$manifest_file" 2>/dev/null >"$manifest_keys_file" || true
 
-  while IFS= read -r -d '' f; do
+  while IFS= read -r f; do
     local rel
     rel="${f#./}"
     if ! grep -qxF "$rel" "$manifest_keys_file" 2>/dev/null; then
       printf "A %s\n" "$rel"
       found=true
     fi
-  done < <(cd "$version_dir" && find . -type f ! -name "$MANIFEST_FILE" -print0 | sort -z)
+  done < <(cd "$version_dir" && find . -type f ! -name "$MANIFEST_FILE" | sort)
 
   rm -f "$manifest_keys_file"
 
