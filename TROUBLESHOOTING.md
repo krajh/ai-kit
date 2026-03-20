@@ -17,6 +17,7 @@ This guide covers common issues with ai-kit installation and usage.
 This shouldn't happen in v0.8.5+. The installer uses file-copy with deep-merge for `opencode.json` — your keys always win.
 
 If customizations were lost:
+
 1. Restore from `~/.config/opencode/opencode.json.user-backup` if a backup exists
 2. Re-run installation: `./ai-kit-install install`
 
@@ -40,11 +41,13 @@ When you update, if you've modified files that ai-kit also ships, the new versio
 ## Plugin Fails to Load After Install
 
 **Check:** List installed plugins:
+
 ```bash
 ls ~/.config/opencode/plugins/
 ```
 
 **Fix:** Re-run installation:
+
 ```bash
 ./ai-kit-install install
 ```
@@ -54,6 +57,7 @@ ls ~/.config/opencode/plugins/
 The updater checks at most once every 24 hours.
 
 **Force a check:**
+
 ```bash
 rm ~/.config/opencode/state/ai-kit-update.json
 # Restart OpenCode
@@ -64,6 +68,7 @@ rm ~/.config/opencode/state/ai-kit-update.json
 This is expected — npm installation is not the recommended path.
 
 **Use curl | bash instead:**
+
 ```bash
 curl -fsSL "https://github.com/krajh/ai-kit/releases/latest/download/install" | bash
 ```
@@ -71,6 +76,7 @@ curl -fsSL "https://github.com/krajh/ai-kit/releases/latest/download/install" | 
 ## Bash Installer Command Not Found
 
 Ensure the installer is in your PATH, or use the full path:
+
 ```bash
 ~/.config/opencode/current/ai-kit-install install
 ```

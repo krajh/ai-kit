@@ -8,11 +8,11 @@ Frieren is an optional MCP (Model Context Protocol) server that adds **permanent
 
 Frieren provides three memory planes:
 
-| Plane        | Tool prefix          | Retention              | Use for                                          |
-| ------------ | -------------------- | ---------------------- | ------------------------------------------------ |
-| **Wisdom**   | `frieren_wisdom_*`   | Permanent              | Decisions, constraints, patterns, architecture   |
-| **Session**  | `frieren_session_*`  | 60-day rolling         | Tool events, episode capture, blocker history    |
-| **Codebase** | `frieren_codebase_*` | Re-indexed on demand   | Semantic code search, dependency graph traversal |
+| Plane        | Tool prefix          | Retention            | Use for                                          |
+| ------------ | -------------------- | -------------------- | ------------------------------------------------ |
+| **Wisdom**   | `frieren_wisdom_*`   | Permanent            | Decisions, constraints, patterns, architecture   |
+| **Session**  | `frieren_session_*`  | 60-day rolling       | Tool events, episode capture, blocker history    |
+| **Codebase** | `frieren_codebase_*` | Re-indexed on demand | Semantic code search, dependency graph traversal |
 
 Without Frieren, agents use `opencode-mem` for ephemeral 30-day memory. With Frieren, they gain a **permanent wisdom layer** that survives indefinitely — decisions made in session 1 are still retrievable in session 1000.
 
@@ -31,6 +31,7 @@ bun install
 ```
 
 > **Linux only:** `@xenova/transformers` pulls in `sharp` as a transitive dependency. `bun install` does not build native bindings on Linux — run this once after install:
+>
 > ```bash
 > npm install --platform=linux --arch=x64 sharp@0.32.6
 > ```

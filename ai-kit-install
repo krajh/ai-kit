@@ -627,6 +627,79 @@ ensure_frieren() {
   configure_frieren_in_opencode
 }
 
+configure_opencode_mem() {
+  local config_file="$TARGET_DIR/opencode-mem.jsonc"
+
+  if [ -f "$config_file" ]; then
+    log "opencode-mem.jsonc already exists — preserving existing config."
+    return
+  fi
+
+  log "Writing opencode-mem.jsonc to $config_file..."
+  if [ "$DRY_RUN" = true ]; then
+    log "[dry-run] Would write $config_file"
+    return
+  fi
+
+  cat > "$config_file" << 'OPENCODE_MEM_CONFIG'
+{
+  "storagePath": "~/.opencode-mem/data",
+  "maxVectorsPerShard": 50000,
+  "embeddingModel": "Xenova/nomic-embed-text-v1",
+  "embeddingDimensions": 768,
+  "embeddingApiUrl": "",
+  "embeddingApiKey": "",
+  "webServerEnabled": true,
+  "webServerPort": 4748,
+  "webServerHost": "127.0.0.1",
+  "autoCaptureEnabled": true,
+  "autoCaptureLanguage": "auto",
+  "memoryProvider": "openai-chat",
+  "memoryModel": "gpt-5.2",
+  "memoryApiUrl": "https://litellm.aitooling.mgsops.net",
+  "memoryApiKey": "env://AITOOLINGKEY",
+  "memoryTemperature": 0.3,
+  "userProfileAnalysisInterval": 10,
+  "userProfileMaxPreferences": 20,
+  "userProfileMaxPatterns": 15,
+  "userProfileMaxWorkflows": 10,
+  "userProfileConfidenceDecayDays": 30,
+  "userProfileChangelogRetentionCount": 5,
+  "autoCaptureMaxIterations": 5,
+  "autoCaptureIterationTimeout": 30000,
+  "similarityThreshold": 0.65,
+  "maxMemories": 15,
+  "autoCleanupEnabled": true,
+  "autoCleanupRetentionDays": 90,
+  "deduplicationEnabled": true,
+  "deduplicationSimilarityThreshold": 0.85,
+  "compaction": {
+    "enabled": true,
+    "memoryLimit": 200
+  },
+  "showAutoCaptureToasts": false,
+  "showUserProfileToasts": false,
+  "showErrorToasts": true,
+  "injectProfile": true,
+  "keywordPatterns": [
+    "auth", "migration", "test", "vitest", "typescript", "react",
+    "wallet", "security", "modal", "permission", "worktree", "api",
+    "docker", "coinburn", "skill", "deploy"
+  ],
+  "containerTagPrefix": "opencode",
+  "maxProfileItems": 10,
+  "chatMessage": {
+    "enabled": true,
+    "maxMemories": 5,
+    "excludeCurrentSession": true,
+    "injectOn": "first"
+  }
+}
+OPENCODE_MEM_CONFIG
+
+  log_ok "✓ opencode-mem.jsonc written to $config_file"
+}
+
 # Detect OS and architecture
 detect_platform() {
   local os kernel arch
@@ -1397,6 +1470,7 @@ cmd_install() {
   fi
 
   ensure_frieren
+  configure_opencode_mem
 
   log_ok "Installation complete at $TARGET_DIR"
   log "Run 'opencode' to begin using the configuration."
@@ -1504,6 +1578,7 @@ cmd_update() {
   fi
 
   ensure_frieren
+  configure_opencode_mem
 
   log_ok "Update complete"
   log "Run 'opencode' to use the updated configuration."

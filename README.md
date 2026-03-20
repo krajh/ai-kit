@@ -227,10 +227,10 @@ Skills are discovered automatically via `<available_skills>` in any session.
 
 ### Quality & Testing
 
-| Skill                      | Purpose                                     |
-| -------------------------- | ------------------------------------------- |
-| `verification-and-tests`   | Definition of Done workflow                 |
-| `debugging-error-handling` | Error triage and prevention patterns        |
+| Skill                      | Purpose                              |
+| -------------------------- | ------------------------------------ |
+| `verification-and-tests`   | Definition of Done workflow          |
+| `debugging-error-handling` | Error triage and prevention patterns |
 
 ### Workflow & Tooling
 
