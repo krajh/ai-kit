@@ -277,7 +277,7 @@ Write local milestone snapshot
 
 ```bash
 bun .opencode/tools/checkpoint.ts --name "milestone" --focus "context"
-bun .opencode/tools/checkpoint.ts --name "milestone" --sync  # Sync to Mai
+bun .opencode/tools/checkpoint.ts --name "milestone" --sync  # Sync to Frieren
 ```
 
 ---

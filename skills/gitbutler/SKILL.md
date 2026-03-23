@@ -322,7 +322,7 @@ but branch series <your-branch> -s <enhancement-name>
 # Commit incremental progress frequently
 ```
 
-### For Mai (Context Manager)
+### For Frieren (Context Manager)
 
 **Use GitButler for:**
 

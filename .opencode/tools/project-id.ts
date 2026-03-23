@@ -2,7 +2,7 @@
  * Project ID Derivation Utility
  *
  * Provides deterministic project_id generation based on git remote URL.
- * Ensures Mai context writes are scoped to the correct repository.
+ * Ensures Frieren context writes are scoped to the correct repository.
  *
  * Strategy:
  * - Primary: Use normalized git remote URL (stable across machines)

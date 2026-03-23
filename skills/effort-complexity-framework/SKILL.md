@@ -63,7 +63,7 @@ description: Standardized task assessment using Effort (Trivial/Small/Medium/Lar
 
 - **F1** (Minimal): No plan approval required
 - **F2** (Standard): Plan approval + grounding + options + verification
-- **F3** (High): F2 + comprehensive grounding + Mai decision capture + rollback plan
+- **F3** (High): F2 + comprehensive grounding + Frieren decision capture + rollback plan
 
 ---
 
@@ -270,7 +270,7 @@ This framework is referenced in **Delegation Protocols v1.4** under:
 - EFFORT: **Epic** (architecture-level, 20+ files, multi-agent coordination)
 - COMPLEXITY: **High** (novel approach, multiple solutions, deep impact)
 - FIDELITY: **3** (High)
-- **ACTION:** Comprehensive plan, Mai decision capture, phased approach, formal reviews
+- **ACTION:** Comprehensive plan, Frieren decision capture, phased approach, formal reviews
 
 ---
 

@@ -2,9 +2,8 @@
 MCP Client for Skills Integration
 
 Provides a simple interface for Superpowers skills to interact with
-Mai's Context Database via the MCP server.
+Frieren's Context Database via the MCP server.
 
-Author: Rias Gremory (Coordination)
 Date: December 3, 2025
 """
 
@@ -23,7 +22,7 @@ from database.queries import QueryHelper
 
 class MCPClient:
     """
-    Client for interacting with Mai's Context Database.
+    Client for interacting with Frieren's Context Database.
 
     Provides high-level methods for skills to store and retrieve context.
     Handles connection pooling and error handling automatically.

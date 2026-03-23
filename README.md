@@ -266,6 +266,37 @@ Agents work fully out of the box with `opencode-mem` for 30-day ephemeral memory
 
 **Quick setup:** See [`docs/FRIEREN_INTEGRATION.md`](docs/FRIEREN_INTEGRATION.md) for prerequisites, the `opencode.json` config snippet, and which skills activate.
 
+### Shade: Background Task Executor
+
+If you have Frieren installed, you can add **Shade** — an autonomous background executor that picks up tasks from a queue and runs them using Pi with specialist delegation.
+
+| Without Shade                          | With Shade                                                     |
+| -------------------------------------- | -------------------------------------------------------------- |
+| All work happens in-session            | + Fire-and-forget background tasks                             |
+| No batch processing                    | + Batch operations (lint, test, migrate) run autonomously      |
+| Single-agent execution                 | + 5 agent tools for delegation (implement, review, research…)  |
+
+**Quick setup:**
+
+```bash
+ai-kit-install install --shade
+```
+
+**Prerequisites:** Frieren (queue tools) + Pi runtime (`npm install -g @mariozechner/pi-coding-agent`) + tmux.
+
+**Usage:**
+
+```bash
+# From coordinator (OpenCode session):
+reaper_enqueue({ task: "Fix all TypeScript errors in src/", priority: 3 })
+
+# Monitor:
+shade-status    # Is Shade running?
+shade-attach    # View live output
+```
+
+**Docs:** See [`docs/REAPER_REALM.md`](docs/REAPER_REALM.md) for full architecture, queue schema, and troubleshooting.
+
 ---
 
 ## Adding Your Own Agents

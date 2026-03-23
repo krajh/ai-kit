@@ -83,6 +83,8 @@ NO_PROMPT=false
 PROVIDER_CHOICE=""
 INSTALL_FRIEREN="${INSTALL_FRIEREN:-}"  # "": ask interactively; "true": yes; "false": skip
 FRIEREN_DIR="${FRIEREN_DIR:-$HOME/dev/frieren}"
+INSTALL_SHADE="${INSTALL_SHADE:-}"      # "": ask interactively; "true": yes; "false": skip
+SHADE_DIR="${SHADE_DIR:-$HOME/.config/opencode/shade-pico}"
 
 # Auto-run detection: if no command given and no existing installation,
 # automatically run 'install' command
@@ -122,6 +124,14 @@ while [ $# -gt 0 ]; do
     ;;
   --no-frieren)
     INSTALL_FRIEREN="false"
+    shift
+    ;;
+  --shade)
+    INSTALL_SHADE="true"
+    shift
+    ;;
+  --no-shade)
+    INSTALL_SHADE="false"
     shift
     ;;
   --frieren-path)
@@ -625,6 +635,144 @@ ensure_frieren() {
 
   install_frieren_server || return
   configure_frieren_in_opencode
+}
+
+# ---------------------------------------------------------------------------
+# Shade — Reaper Realm background executor (optional)
+# ---------------------------------------------------------------------------
+
+install_shade_files() {
+  local kit_shade_dir="$SCRIPT_DIR/shade"
+  if [ ! -d "$kit_shade_dir" ]; then
+    log_warn "Shade files not found in kit at $kit_shade_dir — skipping"
+    return 1
+  fi
+
+  log "Installing Shade harness to $SHADE_DIR..."
+  if [ "$DRY_RUN" != true ]; then
+    mkdir -p "$SHADE_DIR/extensions/peerage"
+    cp "$kit_shade_dir/AGENTS.md" "$SHADE_DIR/AGENTS.md"
+    cp "$kit_shade_dir/shade-launcher.sh" "$SHADE_DIR/shade-launcher.sh"
+    cp "$kit_shade_dir/shade-tmux.sh" "$SHADE_DIR/shade-tmux.sh"
+    cp "$kit_shade_dir/extensions/reaper.ts" "$SHADE_DIR/extensions/reaper.ts"
+    cp "$kit_shade_dir/extensions/peerage/peerage.ts" "$SHADE_DIR/extensions/peerage/peerage.ts"
+    chmod +x "$SHADE_DIR/shade-launcher.sh" "$SHADE_DIR/shade-tmux.sh"
+  else
+    log "[dry-run] cp shade/* → $SHADE_DIR"
+  fi
+}
+
+install_shade_aliases() {
+  local zshrc="$HOME/.zshrc"
+  if [ ! -f "$zshrc" ]; then
+    log_warn "~/.zshrc not found — add Shade aliases manually"
+    return
+  fi
+  if grep -q "shade-pico" "$zshrc" 2>/dev/null; then
+    log "Shade aliases already in ~/.zshrc"
+    return
+  fi
+  if [ "$DRY_RUN" != true ]; then
+    cat >> "$zshrc" << 'ALIASES'
+
+# Shade — Reaper Realm executor (autostart)
+if ! tmux has-session -t shade 2>/dev/null; then
+  ~/.config/opencode/shade-pico/shade-tmux.sh start &>/dev/null &
+fi
+alias shade='tmux attach -t shade'
+alias shade-start='~/.config/opencode/shade-pico/shade-tmux.sh start'
+alias shade-stop='~/.config/opencode/shade-pico/shade-tmux.sh stop'
+alias shade-status='~/.config/opencode/shade-pico/shade-tmux.sh status'
+ALIASES
+    log_ok "✓ Shade aliases added to ~/.zshrc"
+  else
+    log "[dry-run] Append Shade aliases to ~/.zshrc"
+  fi
+}
+
+check_shade_installed() {
+  if [ -f "$SHADE_DIR/shade-launcher.sh" ] && [ -f "$SHADE_DIR/extensions/reaper.ts" ]; then
+    echo "installed"
+  else
+    echo "absent"
+  fi
+}
+
+check_pi_installed() {
+  if command -v pi &>/dev/null; then
+    echo "installed"
+  else
+    echo "absent"
+  fi
+}
+
+ensure_shade() {
+  [ "$INSTALL_SHADE" = "false" ] && return
+
+  local shade_status
+  shade_status="$(check_shade_installed)"
+
+  # Already installed — offer update or skip
+  if [ "$shade_status" = "installed" ]; then
+    if [ "$INSTALL_SHADE" = "true" ] || [ "$DRY_RUN" = true ]; then
+      install_shade_files || log_warn "Shade update failed"
+      return
+    fi
+    if [ "$NO_PROMPT" = true ] || [ ! -t 0 ]; then
+      return
+    fi
+    echo ""
+    echo "┌─────────────────────────────────────────────────────────────────┐"
+    echo "│  Shade (Reaper Realm executor) is already installed.            │"
+    echo "│  Update to latest? [y/N]                                        │"
+    echo "└─────────────────────────────────────────────────────────────────┘"
+    printf "  Choice: "
+    local answer
+    IFS= read -r answer
+    if [[ "$answer" =~ ^[Yy]$ ]]; then
+      install_shade_files || log_warn "Shade update failed"
+    fi
+    return
+  fi
+
+  # Not installed — ask or proceed based on flag
+  if [ "$INSTALL_SHADE" != "true" ] && [ "$DRY_RUN" != true ]; then
+    if [ "$NO_PROMPT" = true ] || [ ! -t 0 ]; then
+      return
+    fi
+    echo ""
+    echo "┌─────────────────────────────────────────────────────────────────┐"
+    echo "│  Install Shade — background task executor for OpenCode?         │"
+    echo "│  Requires: Frieren (queue tools) + Pi runtime + tmux           │"
+    echo "│  [y/N]                                                          │"
+    echo "└─────────────────────────────────────────────────────────────────┘"
+    printf "  Choice: "
+    local answer
+    IFS= read -r answer
+    [[ "$answer" =~ ^[Yy]$ ]] || return
+  fi
+
+  # Check prerequisites
+  local pi_status
+  pi_status="$(check_pi_installed)"
+  if [ "$pi_status" = "absent" ]; then
+    log_warn "Pi runtime not found. Install it first:"
+    log_warn "  npm install -g @mariozechner/pi-coding-agent"
+    if [ "$DRY_RUN" != true ]; then
+      return
+    fi
+  fi
+
+  if ! command -v tmux &>/dev/null; then
+    log_warn "tmux not found. Install it first (apt/brew install tmux)"
+    if [ "$DRY_RUN" != true ]; then
+      return
+    fi
+  fi
+
+  install_shade_files || return
+  install_shade_aliases
+  log_ok "Shade installed. Start with: shade-start (or open a new shell)"
 }
 
 configure_opencode_mem() {
@@ -1470,6 +1618,7 @@ cmd_install() {
   fi
 
   ensure_frieren
+  ensure_shade
   configure_opencode_mem
 
   log_ok "Installation complete at $TARGET_DIR"
@@ -1578,6 +1727,7 @@ cmd_update() {
   fi
 
   ensure_frieren
+  ensure_shade
   configure_opencode_mem
 
   log_ok "Update complete"
@@ -1775,6 +1925,8 @@ OPTIONS:
   --frieren                  Install/update Frieren local AI memory server (skips prompt)
   --no-frieren               Skip Frieren installation entirely
   --frieren-path PATH        Override Frieren install directory (default: ~/dev/frieren)
+  --shade                    Install/update Shade background executor (skips prompt)
+  --no-shade                 Skip Shade installation entirely
 
 EXAMPLES:
   ai-kit-install install
@@ -1805,6 +1957,12 @@ ENVIRONMENT:
                   If unset, the installer prompts interactively (unless --no-prompt).
 
   FRIEREN_DIR     Directory where Frieren is cloned/stored. Default: ~/dev/frieren.
+
+  INSTALL_SHADE   Set to 'true' to always install/update Shade; 'false' to skip.
+                  If unset, the installer prompts interactively (unless --no-prompt).
+
+  SHADE_DIR       Directory where Shade harness is installed.
+                  Default: ~/.config/opencode/shade-pico.
 
 PROVIDER MODELS:
   aitooling  critical (architect):              aitooling/claude-sonnet-4-6
