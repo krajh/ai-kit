@@ -7,7 +7,7 @@ description: Enforce Delegation Protocols v1.4 with acknowledgment, checkpoint-b
 
 Enforce Delegation Protocols v1.4 across all delegations with copy/paste templates and verification checklists.
 
-**When to load:** Before delegating to any agent via `task` tool.
+**When to load:** Before delegating to any agent via `task` tool, or before enqueuing background tasks via `reaper_enqueue`.
 
 ---
 
@@ -377,6 +377,7 @@ Escalating to user: Agent [X] repeatedly failing to [protocol]. Recommend review
 | 25% into Medium+ task    | Request sanity check     | Confirm direction                            |
 | Cross-session blocker    | Return control           | Respond in agent's session                   |
 | Work complete            | Update todo, report      | Verify Definition of Done                    |
+| Background/batch task    | N/A (Shade executes)     | `reaper_enqueue` + monitor via `reaper_status` |
 
 ---
 
@@ -410,12 +411,40 @@ Escalating to user: Agent [X] repeatedly failing to [protocol]. Recommend review
 
 ---
 
+## Background Task Delegation (Shade)
+
+For fire-and-forget tasks that don't need live agent interaction, use `reaper_enqueue` instead of `task()`:
+
+```
+reaper_enqueue({
+  task: "Fix all TypeScript errors in src/",
+  priority: 3,
+  timeout_seconds: 600
+})
+```
+
+**When to use Shade vs live agents:**
+
+| Use Shade (reaper_enqueue)                          | Use live agents (task)                          |
+| --------------------------------------------------- | ----------------------------------------------- |
+| Batch operations (lint, test, migrate)              | Interactive work requiring checkpoints          |
+| Fire-and-forget tasks with clear acceptance criteria| Work needing plan approval or escalation paths  |
+| Long-running background jobs                        | Time-sensitive or user-facing work              |
+| Independent tasks that don't need coordinator input | Multi-agent coordination or handoffs            |
+
+**Monitoring:** Use `reaper_status` to check queue state. Shade reports completion via the queue — no STATUS UPDATE protocol needed.
+
+See `reaper-realm` skill for full setup and usage.
+
+---
+
 ## Related Skills
 
 - `agent-routing` - Agent selection patterns
 - `effort-complexity-framework` - Task assessment (Effort + Complexity)
 - `frieren-context-patterns` - When to use Frieren vs memory vs checkpoint
 - `handoff-patterns` - 5 handoff types for multi-agent work
+- `reaper-realm` - Background task delegation via Shade
 - `protocols/DELEGATION_PROTOCOLS.md` - Canonical protocol document
 
 ---

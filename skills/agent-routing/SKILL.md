@@ -39,7 +39,14 @@ description: Fast specialist selection for team-based AI agent coordination. Cor
 - Requirements are ambiguous
 - Need continuous monitoring + blocker resolution
 
-**If NO orchestration needed → Proceed to Step 2**
+**Consider Shade (reaper_enqueue) when:**
+
+- Task is fire-and-forget with clear acceptance criteria
+- Batch operations (lint, test, migrate, format)
+- Long-running background jobs
+- No need for plan approval or escalation paths
+
+**If NO orchestration or background delegation needed → Proceed to Step 2**
 
 ---
 
@@ -186,6 +193,12 @@ description: Fast specialist selection for team-based AI agent coordination. Cor
 - **Good:** Ask Research to research → present options → Architect/Implementer implement approved approach
 - **Why:** Avoid reinventing or choosing wrong approach
 
+### ❌ **Using Live Agents for Batch Work**
+
+- **Bad:** Coordinator delegates "run linter on all files" → Implementer (wastes agent session)
+- **Good:** `reaper_enqueue({ task: "Run linter on all files and fix issues", priority: 5 })`
+- **Why:** Batch/background tasks don't need live agent interaction — Shade handles them autonomously
+
 ### ❌ **Missing Review Gates**
 
 - **Bad:** Implementer implements critical security change, ships without review
@@ -207,6 +220,7 @@ description: Fast specialist selection for team-based AI agent coordination. Cor
 | Documentation needed  | Documentation Specialist         | None               |
 | Cloud infra           | Cloud Infrastructure             | None               |
 | LLM/AI system         | AI Systems Specialist            | None               |
+| Batch/background task | **Shade** (reaper_enqueue)       | None               |
 | Multi-specialist epic | **Coordinator orchestrates all** | Multiple agents    |
 
 ---

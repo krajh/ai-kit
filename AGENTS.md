@@ -46,6 +46,8 @@ bun .opencode/tools/verify-loop.ts --type auto
 - `protocols/*.md` — operational standards
 - `protocols/rulesets/*.md` — codified rules
 - `skills/` — skill library
+- `shade/` — Shade background executor (optional, requires Frieren)
+- `docs/REAPER_REALM.md` — Shade architecture and queue schema
 - `README.md` — orientation and install guidelines
 
 ## 3) Agent workflow
@@ -76,6 +78,7 @@ Load skills on-demand based on your task. Skills are loaded via: `skill({ name: 
 | Running tests or verification                                     | `verification-and-tests`                    |
 | Using GitButler virtual branches                                  | `gitbutler`                                 |
 | Selecting which agent to use                                      | `agent-routing`                             |
+| Enqueuing background/batch tasks to Shade                         | `reaper-realm`                              |
 
 **Benefits:** Token efficiency (load only what's needed), cleaner prompts, better discoverability via `<available_skills>`.
 

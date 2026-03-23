@@ -88,6 +88,8 @@ Coordinator integrates/merges results
 - ✓ Agents report progress independently to coordinator
 - ✓ Coordinator monitors for **unexpected dependencies** and routes
 
+**Alternative:** For independent tasks that don't need live agent interaction, consider `reaper_enqueue` (Shade) instead — see `reaper-realm` skill. Shade handles batch/background work autonomously without coordinator monitoring.
+
 **Example:**
 
 ```
@@ -324,6 +326,7 @@ HANDOFF
 | --------------------------------------- | ------------ | ---------------------------------------- |
 | Research → Design → Implement           | Sequential   | Phases depend on prior output            |
 | Build FE + Build BE simultaneously      | Parallel     | Independent until integration            |
+| Batch/background tasks (lint, test...)  | **Shade**    | Fire-and-forget via `reaper_enqueue`     |
 | Debug production incident across layers | Mesh         | Multi-domain collaboration needed        |
 | Agent blocked on credentials            | Escalation   | Cannot proceed without external resource |
 | Merge PR after review                   | Verification | Quality gate before "done"               |
@@ -388,6 +391,7 @@ HANDOFF
 - `agent-routing` - Choosing which agents participate in handoff
 - `effort-complexity-framework` - Assessing handoff complexity
 - `frieren-context-patterns` - When to capture handoff state in Frieren
+- `reaper-realm` - Background task delegation via Shade (alternative to parallel handoff for batch work)
 
 **Related Protocols:**
 

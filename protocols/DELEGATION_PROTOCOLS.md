@@ -77,3 +77,33 @@ Before declaring the task done, confirm:
 - Recommendations or follow-ups noted
 
 **Verification loop**: run `bun test` or `bun test --pass-with-no-tests` plus any project-specific checks before marking done.
+
+## Background Task Delegation
+
+For fire-and-forget tasks that don't require live agent interaction, use the Reaper Realm queue instead of `task()`:
+
+```typescript
+reaper_enqueue({
+  task: "Fix all TypeScript errors in src/",
+  priority: 3,
+  timeout_seconds: 600
+})
+```
+
+**When to use background delegation:**
+
+- Batch operations (lint, test, migrate, format)
+- Long-running jobs with clear acceptance criteria
+- Independent tasks that don't need coordinator checkpoints
+- Overnight or low-priority cleanup work
+
+**When NOT to use background delegation:**
+
+- Work requiring plan approval or escalation paths
+- Multi-agent coordination or handoffs
+- Time-sensitive or user-facing tasks
+- Tasks with ambiguous acceptance criteria
+
+**Monitoring:** Use `reaper_status` to check queue state. Shade reports completion via the queue — no STATUS UPDATE protocol needed.
+
+See `reaper-realm` skill for setup, routing, and troubleshooting.
