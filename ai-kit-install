@@ -38,6 +38,7 @@ KIT_LINK_ITEMS=(
   "plugins"
   "protocols"
   "skills"
+  "commands"
 )
 
 # Cosign configuration
