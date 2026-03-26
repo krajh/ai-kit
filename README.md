@@ -88,6 +88,26 @@ You should see:
 ai-kit-install update
 ```
 
+### Updating from OpenCode
+
+You can update ai-kit without leaving your OpenCode session using the `/ai-kit-update` command:
+
+```bash
+/ai-kit-update
+```
+
+This will:
+
+1. Fetch the latest version from GitHub
+2. Compare with your installed version
+3. Download and run the update if newer
+4. Warn you to restart OpenCode after the update completes
+
+**Caveats:**
+
+- The installer may prompt for conflict resolution (interactive mode)
+- You must **restart OpenCode** after updating to pick up new config, skills, and agent definitions
+
 ### How conflicts are handled
 
 If you've customised files that ai-kit also manages, the update process:
@@ -270,11 +290,11 @@ Agents work fully out of the box with `opencode-mem` for 30-day ephemeral memory
 
 If you have Frieren installed, you can add **Shade** — an autonomous background executor that picks up tasks from a queue and runs them using Pi with specialist delegation.
 
-| Without Shade                          | With Shade                                                     |
-| -------------------------------------- | -------------------------------------------------------------- |
-| All work happens in-session            | + Fire-and-forget background tasks                             |
-| No batch processing                    | + Batch operations (lint, test, migrate) run autonomously      |
-| Single-agent execution                 | + 5 agent tools for delegation (implement, review, research…)  |
+| Without Shade               | With Shade                                                    |
+| --------------------------- | ------------------------------------------------------------- |
+| All work happens in-session | + Fire-and-forget background tasks                            |
+| No batch processing         | + Batch operations (lint, test, migrate) run autonomously     |
+| Single-agent execution      | + 5 agent tools for delegation (implement, review, research…) |
 
 **Quick setup:**
 
