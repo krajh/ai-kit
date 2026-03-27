@@ -86,6 +86,7 @@ INSTALL_FRIEREN="${INSTALL_FRIEREN:-}"  # "": ask interactively; "true": yes; "f
 FRIEREN_DIR="${FRIEREN_DIR:-$HOME/dev/frieren}"
 INSTALL_SHADE="${INSTALL_SHADE:-}"      # "": ask interactively; "true": yes; "false": skip
 SHADE_DIR="${SHADE_DIR:-$HOME/.config/opencode/shade-pico}"
+CUSTOMIZE_MODELS="${CUSTOMIZE_MODELS:-}"  # "": ask interactively; "true": go straight to per-agent prompts; "false": use defaults
 
 # Auto-run detection: if no command given and no existing installation,
 # automatically run 'install' command
@@ -133,6 +134,10 @@ while [ $# -gt 0 ]; do
     ;;
   --no-shade)
     INSTALL_SHADE="false"
+    shift
+    ;;
+  --models)
+    CUSTOMIZE_MODELS="true"
     shift
     ;;
   --frieren-path)
@@ -250,27 +255,120 @@ validate_provider() {
   esac
 }
 
-# Returns 'critical', 'heavy', or 'light' tier for a given agent role
-agent_model_tier() {
-  case "$1" in
-  architect) echo "critical" ;;
-  strategist | implementer) echo "heavy" ;;
-  *) echo "light" ;;
+# Returns the default model ID for a given provider + agent role.
+# Per-agent smart defaults: GPT/Anthropic mix for copilot; Sonnet/Haiku for aitooling.
+get_default_agent_model() {
+  local provider="$1" agent="$2"
+  case "$provider/$agent" in
+  aitooling/architect)   echo "aitooling/claude-sonnet-4-6" ;;
+  aitooling/strategist)  echo "aitooling/claude-sonnet-4-6" ;;
+  aitooling/implementer) echo "aitooling/claude-sonnet-4-6" ;;
+  aitooling/reviewer)    echo "aitooling/claude-haiku-4-5-20251001" ;;
+  aitooling/research)    echo "aitooling/claude-haiku-4-5-20251001" ;;
+  copilot/architect)     echo "github-copilot/claude-opus-4.5" ;;
+  copilot/strategist)    echo "github-copilot/claude-opus-4.6" ;;
+  copilot/implementer)   echo "github-copilot/gpt-5.3-codex" ;;
+  copilot/reviewer)      echo "github-copilot/claude-sonnet-4.6" ;;
+  copilot/research)      echo "github-copilot/gpt-5.4" ;;
+  *)                     echo "" ;;
   esac
 }
 
-# Returns the model ID for a given provider + tier
-get_provider_model() {
-  local provider="$1" tier="$2"
-  case "$provider/$tier" in
-  aitooling/critical) echo "aitooling/claude-sonnet-4-6" ;;
-  aitooling/heavy)    echo "aitooling/claude-sonnet-4-6" ;;
-  aitooling/light)    echo "aitooling/claude-haiku-4-5-20251001" ;;
-  copilot/critical)   echo "github-copilot/claude-opus-4.6" ;;
-  copilot/heavy)      echo "github-copilot/claude-sonnet-4.6" ;;
-  copilot/light)      echo "github-copilot/claude-haiku-4.5" ;;
-  *)                  echo "" ;;
-  esac
+# Prompt (or read saved values) to optionally customise per-agent model assignments.
+# Saves choices to .env as AGENT_MODEL_<NAME> for reuse on future updates.
+select_agent_models() {
+  local agents=("architect" "strategist" "implementer" "reviewer" "research")
+
+  # Load any previously saved per-agent overrides from .env
+  local -A saved_models=()
+  for agent in "${agents[@]}"; do
+    local key="AGENT_MODEL_$(echo "$agent" | tr '[:lower:]' '[:upper:]')"
+    local saved
+    saved="$(get_env_file_key "$key" || true)"
+    if [ -n "$saved" ]; then
+      saved_models["$agent"]="$saved"
+    fi
+  done
+
+  # Determine whether to customise
+  local do_customize=false
+
+  if [ "$CUSTOMIZE_MODELS" = "true" ]; then
+    do_customize=true
+  elif [ "$CUSTOMIZE_MODELS" = "false" ] || [ "$DRY_RUN" = true ] || [ "$NO_PROMPT" = true ] || [ ! -t 0 ]; then
+    do_customize=false
+  elif [ "${#saved_models[@]}" -gt 0 ]; then
+    # Saved overrides exist — ask whether to keep or reconfigure
+    printf "\n" >&2
+    printf "┌─────────────────────────────────────────────────────────────────┐\n" >&2
+    printf "│  Custom agent models are saved from a previous install.         │\n" >&2
+    printf "│  Reconfigure agent models? [y/N]                                │\n" >&2
+    printf "└─────────────────────────────────────────────────────────────────┘\n" >&2
+    printf "  Choice: " >&2
+    local answer
+    IFS= read -r answer
+    [[ "$answer" =~ ^[Yy]$ ]] && do_customize=true
+  else
+    # No saved overrides — offer customisation
+    printf "\n" >&2
+    printf "┌─────────────────────────────────────────────────────────────────┐\n" >&2
+    printf "│  Customise agent model assignments? [y/N]                       │\n" >&2
+    printf "│  (Press Enter to use smart defaults for $PROVIDER_CHOICE)       │\n" >&2
+    printf "└─────────────────────────────────────────────────────────────────┘\n" >&2
+    printf "  Choice: " >&2
+    local answer
+    IFS= read -r answer
+    [[ "$answer" =~ ^[Yy]$ ]] && do_customize=true
+  fi
+
+  if [ "$do_customize" = false ]; then
+    # Apply defaults (or saved overrides if they exist and user didn't reconfigure)
+    for agent in "${agents[@]}"; do
+      local key="AGENT_MODEL_$(echo "$agent" | tr '[:lower:]' '[:upper:]')"
+      if [ -n "${saved_models[$agent]:-}" ]; then
+        printf -v "AGENT_MODEL_${agent^^}" "%s" "${saved_models[$agent]}"
+        log "  $agent: ${saved_models[$agent]} (saved)"
+      else
+        local default
+        default="$(get_default_agent_model "$PROVIDER_CHOICE" "$agent")"
+        printf -v "AGENT_MODEL_${agent^^}" "%s" "$default"
+        log "  $agent: $default (default)"
+      fi
+    done
+    return 0
+  fi
+
+  # Interactive per-agent customisation
+  printf "\n" >&2
+  printf "╔══════════════════════════════════════════════════════════════╗\n" >&2
+  printf "║  Agent Model Configuration                                   ║\n" >&2
+  printf "║  Provider: %-49s║\n" "$PROVIDER_CHOICE" >&2
+  printf "║  Press Enter to accept the default for each agent.           ║\n" >&2
+  printf "╚══════════════════════════════════════════════════════════════╝\n" >&2
+  printf "\n" >&2
+
+  for agent in "${agents[@]}"; do
+    local default
+    default="$(get_default_agent_model "$PROVIDER_CHOICE" "$agent")"
+    local current="${saved_models[$agent]:-$default}"
+    local key="AGENT_MODEL_$(echo "$agent" | tr '[:lower:]' '[:upper:]')"
+
+    printf "  %-12s [default: %s]\n" "$agent" "$current" >&2
+    printf "  Model: " >&2
+    local choice
+    IFS= read -r choice
+
+    local selected
+    if [ -z "$choice" ]; then
+      selected="$current"
+    else
+      selected="$choice"
+    fi
+
+    printf -v "AGENT_MODEL_${agent^^}" "%s" "$selected"
+    [ "$DRY_RUN" != true ] && write_env_key "$key" "$selected"
+    log_ok "  $agent → $selected"
+  done
 }
 
 # Prompt (or read saved value) to choose model provider
@@ -345,8 +443,9 @@ select_provider() {
   log_ok "Provider selected: $PROVIDER_CHOICE"
 }
 
-# Patch opencode.json in version_dir with provider-specific model IDs.
-# Must be called BEFORE compute_manifest so the patched state is the baseline.
+# Patch opencode.json in version_dir with per-agent model IDs.
+# Must be called AFTER select_agent_models and BEFORE compute_manifest
+# so the patched state is the baseline for future update detection.
 configure_agent_models() {
   local version_dir="$1"
   local json_file="$version_dir/opencode.json"
@@ -363,35 +462,33 @@ configure_agent_models() {
 
   if ! command -v jq >/dev/null 2>&1; then
     log_warn "jq not found — skipping automatic agent model configuration"
-    log_warn "All agents will use the default model (haiku) until jq is installed"
-    log_warn "Install jq and re-run, or manually set agent models in $json_file for provider: $PROVIDER_CHOICE"
+    log_warn "Install jq and re-run, or manually set agent models in $json_file"
     return 0
   fi
 
-  local critical heavy light tmp
-  critical="$(get_provider_model "$PROVIDER_CHOICE" critical)"
-  heavy="$(get_provider_model "$PROVIDER_CHOICE" heavy)"
-  light="$(get_provider_model "$PROVIDER_CHOICE" light)"
+  local tmp
   tmp="$(mktemp)"
 
   jq \
-    --arg strategist "$heavy" \
-    --arg implementer "$heavy" \
-    --arg architect "$critical" \
-    --arg reviewer "$light" \
-    --arg research "$light" \
-    '.agent.strategist.model  = $strategist  |
+    --arg architect   "${AGENT_MODEL_ARCHITECT:-}" \
+    --arg strategist  "${AGENT_MODEL_STRATEGIST:-}" \
+    --arg implementer "${AGENT_MODEL_IMPLEMENTER:-}" \
+    --arg reviewer    "${AGENT_MODEL_REVIEWER:-}" \
+    --arg research    "${AGENT_MODEL_RESEARCH:-}" \
+    '.agent.architect.model   = $architect   |
+     .agent.strategist.model  = $strategist  |
      .agent.implementer.model = $implementer |
-     .agent.architect.model   = $architect   |
      .agent.reviewer.model    = $reviewer    |
      .agent.research.model    = $research' \
     "$json_file" >"$tmp"
 
   mv "$tmp" "$json_file"
-  log_ok "Agent models configured for provider: $PROVIDER_CHOICE"
-  log "  critical (architect):                       $critical"
-  log "  heavy    (strategist, implementer):         $heavy"
-  log "  light    (reviewer, research):              $light"
+  log_ok "Agent models configured:"
+  log "  architect:   ${AGENT_MODEL_ARCHITECT:-}"
+  log "  strategist:  ${AGENT_MODEL_STRATEGIST:-}"
+  log "  implementer: ${AGENT_MODEL_IMPLEMENTER:-}"
+  log "  reviewer:    ${AGENT_MODEL_REVIEWER:-}"
+  log "  research:    ${AGENT_MODEL_RESEARCH:-}"
 }
 
 ensure_aitoolingkey() {
@@ -1602,9 +1699,10 @@ cmd_install() {
   # Extract
   extract_tarball "$tag"
 
-  # Select provider and patch agent models BEFORE computing manifest
-  # (manifest captures patched state as baseline for future update detection)
+  # Select provider, then optionally customise per-agent models BEFORE computing
+  # manifest (manifest captures patched state as baseline for future update detection)
   select_provider
+  select_agent_models
   configure_agent_models "$version_dir"
 
   # Store baseline manifest so future updates can detect personalizations
@@ -1696,8 +1794,10 @@ cmd_update() {
   # Extract
   extract_tarball "$tag"
 
-  # Select/confirm provider and patch agent models BEFORE computing manifest
+  # Select/confirm provider, then optionally customise per-agent models BEFORE
+  # computing manifest
   select_provider
+  select_agent_models
   configure_agent_models "$version_dir"
 
   # Store baseline manifest for the new version BEFORE applying personalisations
@@ -1928,12 +2028,15 @@ OPTIONS:
   --frieren-path PATH        Override Frieren install directory (default: ~/dev/frieren)
   --shade                    Install/update Shade background executor (skips prompt)
   --no-shade                 Skip Shade installation entirely
+  --models                   Customise per-agent model assignments (skips "Customise?" prompt)
 
 EXAMPLES:
   ai-kit-install install
   ai-kit-install install --provider copilot
   ai-kit-install install --provider aitooling
+  ai-kit-install install --provider copilot --models
   ai-kit-install update
+  ai-kit-install update --models
   ai-kit-install status
   ai-kit-install rollback
   ai-kit-install resolve --accept-incoming
@@ -1965,14 +2068,24 @@ ENVIRONMENT:
   SHADE_DIR       Directory where Shade harness is installed.
                   Default: ~/.config/opencode/shade-pico.
 
-PROVIDER MODELS:
-  aitooling  critical (architect):              aitooling/claude-sonnet-4-6
-             heavy    (strategist, implementer): aitooling/claude-sonnet-4-6
-             light    (reviewer, research):      aitooling/claude-haiku-4-5-20251001
+  CUSTOMIZE_MODELS  Set to 'true' to always prompt for per-agent model customisation;
+                    'false' to always use defaults. If unset, prompts interactively.
 
-  copilot    critical (architect):              github-copilot/claude-opus-4.6
-             heavy    (strategist, implementer): github-copilot/claude-sonnet-4.6
-             light    (reviewer, research):      github-copilot/claude-haiku-4.5
+  AGENT_MODEL_<NAME>  Override the model for a specific agent (NAME = ARCHITECT,
+                      STRATEGIST, IMPLEMENTER, REVIEWER, RESEARCH). Saved to .env
+                      after interactive customisation and reused on future updates.
+
+DEFAULT AGENT MODELS:
+  Agent         aitooling                          copilot
+  ─────────────────────────────────────────────────────────────────────────────
+  architect     aitooling/claude-sonnet-4-6        github-copilot/claude-opus-4.5
+  strategist    aitooling/claude-sonnet-4-6        github-copilot/claude-opus-4.6
+  implementer   aitooling/claude-sonnet-4-6        github-copilot/gpt-5.3-codex
+  reviewer      aitooling/claude-haiku-4-5-20251001 github-copilot/claude-sonnet-4.6
+  research      aitooling/claude-haiku-4-5-20251001 github-copilot/gpt-5.4
+
+  Use --models to customise any agent's model during install/update.
+  Choices are saved to .env (AGENT_MODEL_<NAME>) and reused on future updates.
 
 NOTES:
   When using 'curl | bash' with the aitooling provider, export variables before the pipe:

@@ -37,11 +37,13 @@ Your choice is saved to `~/.config/opencode/.env`.
 
 #### Provider model tiers
 
-| Tier                            | aitooling                             | copilot                            |
-| ------------------------------- | ------------------------------------- | ---------------------------------- |
-| Critical (architect)            | `aitooling/claude-sonnet-4-6`         | `github-copilot/claude-opus-4.6`   |
-| Heavy (strategist, implementer) | `aitooling/claude-sonnet-4-6`         | `github-copilot/claude-sonnet-4.6` |
-| Light (reviewer, research)      | `aitooling/claude-haiku-4-5-20251001` | `github-copilot/claude-haiku-4.5`  |
+| Agent         | aitooling                             | copilot                            | Role                                  |
+| ------------- | ------------------------------------- | ---------------------------------- | ------------------------------------- |
+| `strategist`  | `aitooling/claude-sonnet-4-6`         | `github-copilot/claude-opus-4.6`   | Architecture planning (Anthropic)     |
+| `implementer` | `aitooling/claude-sonnet-4-6`         | `github-copilot/gpt-5.3-codex`     | Code generation (OpenAI Codex)        |
+| `reviewer`    | `aitooling/claude-haiku-4-5-20251001` | `github-copilot/claude-sonnet-4.6` | Code/doc review (Anthropic)           |
+| `research`    | `aitooling/claude-haiku-4-5-20251001` | `github-copilot/gpt-5.4`           | Investigation, large context (OpenAI) |
+| `architect`   | `aitooling/claude-sonnet-4-6`         | `github-copilot/claude-opus-4.5`   | Big-picture design (Anthropic)        |
 
 ### Verify installation
 

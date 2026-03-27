@@ -110,14 +110,14 @@
           "name": "Claude Opus 4.5",
           "temperature": true
         },
+        "claude-opus-41": {
+          "id": "claude-opus-41",
+          "name": "Claude Opus 4.1",
+          "temperature": true
+        },
         "claude-opus-4.6": {
           "id": "claude-opus-4.6",
           "name": "Claude Opus 4.6",
-          "temperature": true
-        },
-        "claude-opus-4.6-fast": {
-          "id": "claude-opus-4.6-fast",
-          "name": "Claude Opus 4.6 (fast mode)",
           "temperature": true
         },
         "claude-sonnet-4": {
@@ -150,39 +150,24 @@
           "name": "Gemini 3 Pro Preview",
           "temperature": true
         },
-        "gemini-3.1-pro-preview": {
-          "id": "gemini-3.1-pro-preview",
-          "name": "Gemini 3.1 Pro Preview",
-          "temperature": true
-        },
         "gpt-4.1": {
           "id": "gpt-4.1",
           "name": "GPT-4.1",
           "temperature": true
         },
+        "gpt-4o": {
+          "id": "gpt-4o",
+          "name": "GPT-4o",
+          "temperature": true
+        },
+        "gpt-5": {
+          "id": "gpt-5",
+          "name": "GPT-5",
+          "temperature": true
+        },
         "gpt-5-mini": {
           "id": "gpt-5-mini",
           "name": "GPT-5 mini",
-          "temperature": true
-        },
-        "gpt-5.1": {
-          "id": "gpt-5.1",
-          "name": "GPT-5.1",
-          "temperature": true
-        },
-        "gpt-5.1-codex": {
-          "id": "gpt-5.1-codex",
-          "name": "GPT-5.1-Codex",
-          "temperature": true
-        },
-        "gpt-5.1-codex-max": {
-          "id": "gpt-5.1-codex-max",
-          "name": "GPT-5.1-Codex-max",
-          "temperature": true
-        },
-        "gpt-5.1-codex-mini": {
-          "id": "gpt-5.1-codex-mini",
-          "name": "GPT-5.1-Codex-mini",
           "temperature": true
         },
         "gpt-5.2": {
@@ -205,24 +190,45 @@
           "name": "GPT-5.4",
           "temperature": true
         },
+        "gpt-5.1": {
+          "id": "gpt-5.1",
+          "name": "GPT-5.1",
+          "temperature": true
+        },
+        "gpt-5.1-codex": {
+          "id": "gpt-5.1-codex",
+          "name": "GPT-5.1-Codex",
+          "temperature": true
+        },
+        "gpt-5.1-codex-max": {
+          "id": "gpt-5.1-codex-max",
+          "name": "GPT-5.1-Codex Max",
+          "temperature": true
+        },
+        "gpt-5.1-codex-mini": {
+          "id": "gpt-5.1-codex-mini",
+          "name": "GPT-5.1-Codex Mini",
+          "temperature": true
+        },
+        "gpt-5.4-mini": {
+          "id": "gpt-5.4-mini",
+          "name": "GPT-5.4 Mini",
+          "temperature": true
+        },
+        "gemini-3.1-pro-preview": {
+          "id": "gemini-3.1-pro-preview",
+          "name": "Gemini 3.1 Pro Preview",
+          "temperature": true
+        },
         "grok-code-fast-1": {
           "id": "grok-code-fast-1",
           "name": "Grok Code Fast 1",
-          "temperature": true
-        },
-        "raptor-mini": {
-          "id": "raptor-mini",
-          "name": "Raptor mini",
           "temperature": true
         }
       }
     }
   },
-  "instructions": [
-    "AGENTS.md",
-    "protocols/TOOL_USAGE_GUIDE.md",
-    "protocols/DELEGATION_PROTOCOLS.md"
-  ],
+  "instructions": ["AGENTS.md"],
   "watcher": {
     "ignore": [
       "node_modules/**",
@@ -253,7 +259,7 @@
     "strategist": {
       "description": "Systems architect for planning and decisions",
       "mode": "subagent",
-      "model": "aitooling/claude-haiku-4-5-20251001",
+      "model": "github-copilot/claude-opus-4.6",
       "temperature": 0.3,
       "permission": {
         "bash": "deny",
@@ -264,7 +270,7 @@
     "implementer": {
       "description": "Implementation specialist for disciplined execution",
       "mode": "subagent",
-      "model": "aitooling/claude-haiku-4-5-20251001",
+      "model": "github-copilot/gpt-5.3-codex",
       "temperature": 0.4,
       "permission": {
         "webfetch": "allow"
@@ -273,7 +279,7 @@
     "reviewer": {
       "description": "Code and documentation reviewer for quality assurance",
       "mode": "subagent",
-      "model": "aitooling/claude-haiku-4-5-20251001",
+      "model": "github-copilot/claude-sonnet-4.6",
       "temperature": 0.2,
       "permission": {
         "bash": "deny",
@@ -284,7 +290,7 @@
     "research": {
       "description": "Research lead for discovery and requirements",
       "mode": "subagent",
-      "model": "aitooling/claude-haiku-4-5-20251001",
+      "model": "github-copilot/gpt-5.4",
       "temperature": 0.2,
       "permission": {
         "webfetch": "allow",
@@ -296,7 +302,7 @@
     "architect": {
       "description": "Big-picture architect who shapes roadmaps and trade-offs",
       "mode": "subagent",
-      "model": "aitooling/claude-haiku-4-5-20251001",
+      "model": "github-copilot/claude-opus-4.5",
       "temperature": 0.3,
       "permission": {
         "bash": "deny",
