@@ -302,7 +302,7 @@
     "architect": {
       "description": "Big-picture architect who shapes roadmaps and trade-offs",
       "mode": "subagent",
-      "model": "github-copilot/claude-opus-4.5",
+      "model": "github-copilot/claude-opus-4.6",
       "temperature": 0.3,
       "permission": {
         "bash": "deny",

@@ -265,7 +265,7 @@ get_default_agent_model() {
   aitooling/implementer) echo "aitooling/claude-sonnet-4-6" ;;
   aitooling/reviewer)    echo "aitooling/claude-haiku-4-5-20251001" ;;
   aitooling/research)    echo "aitooling/claude-haiku-4-5-20251001" ;;
-  copilot/architect)     echo "github-copilot/claude-opus-4.5" ;;
+  copilot/architect)     echo "github-copilot/claude-opus-4.6" ;;
   copilot/strategist)    echo "github-copilot/claude-opus-4.6" ;;
   copilot/implementer)   echo "github-copilot/gpt-5.3-codex" ;;
   copilot/reviewer)      echo "github-copilot/claude-sonnet-4.6" ;;
