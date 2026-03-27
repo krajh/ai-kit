@@ -8,7 +8,7 @@
 ## Test placement (critical)
 
 - Put tests in `/tests/`.
-- Do not put `*.test.ts` / `*.spec.ts` in `/plugins/` (plugins auto-load at startup).
+- Do not put `*.test.ts` / `*.spec.ts` in `/plugin/` (plugins auto-load at startup).
 
 ## Validation hygiene
 

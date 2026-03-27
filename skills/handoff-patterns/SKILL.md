@@ -5,278 +5,160 @@ description: Five handoff types to prevent context loss - Sequential (validate b
 
 # Handoff Patterns
 
-**Purpose:** Prevent context loss and rework when multiple agents touch the same mission.
+Prevent context loss and rework when multiple agents touch the same mission.
 
-**Created:** February 10, 2026  
-**Version:** 1.0  
-**Authority:** Delegation Protocols v1.4, Handoff Protocols
-
----
-
-## When to Load This Skill
-
-**Load when:**
-
-- Coordinating work across 2+ agents
-- Handing off work between phases (research → design → implement)
-- Need to structure multi-agent collaboration
-- Planning parallel or sequential workstreams
-
-**Auto-loaded for:**
-
-- Coordinator when orchestrating multi-agent work
-- Agents participating in multi-phase workflows
+**Load when:** coordinating 2+ agents, handing off between phases, planning parallel/sequential workstreams.
 
 ---
 
 ## The Five Handoff Types
 
-### 1) Sequential Handoff (Dependent Phases)
+### 1) Sequential (Dependent Phases)
 
-**Use when:** Work must happen in strict order (design → implement → review → test → deploy)
-
-**Pattern:**
+**Use when:** work must happen in strict order (design → implement → review → test → deploy)
 
 ```
-Agent A completes Phase 1 → Agent B validates A's output → Agent B proceeds with Phase 2
+Agent A completes Phase 1 → Agent B validates A's output → Agent B proceeds
 ```
 
-**Rules:**
-
-- ✓ Next agent **validates previous output** before proceeding
-- ✓ If validation fails, **escalate with concrete findings** (don't guess/fix silently)
-- ✓ Include **acceptance criteria** for each phase
-- ✓ Use **Handoff Manifest** (see below)
-
-**Example:**
-
-```
-Strategist: Designs API contracts
-↓ (handoff with API spec)
-Implementer: Validates spec, implements endpoints
-↓ (handoff with implementation)
-Reviewer: Reviews code quality + test coverage
-↓ (handoff with approval)
-Strategist: Deploys to staging
-```
-
-**Red Flags:**
-
-- ❌ Agent B starts without validating Agent A's output
-- ❌ Agent B silently "fixes" Agent A's work without escalating
-- ❌ No clear acceptance criteria between phases
+- ✓ Next agent validates previous output before proceeding
+- ✓ Escalate with findings if validation fails — don't fix silently
+- ✓ Include acceptance criteria for each phase
+- ❌ Starting without validating prior output
+- ❌ Silently "fixing" prior agent's work
 
 ---
 
-### 2) Parallel Handoff (Independent Workstreams)
+### 2) Parallel (Independent Workstreams)
 
-**Use when:** Tasks are independent and can run concurrently
-
-**Pattern:**
+**Use when:** tasks are independent and can run concurrently
 
 ```
-Coordinator delegates Task A → Agent X (parallel)
-Coordinator delegates Task B → Agent Y (parallel)
+Coordinator → Agent X (Task A) [parallel]
+Coordinator → Agent Y (Task B) [parallel]
 ↓
 Coordinator integrates/merges results
 ```
 
-**Rules:**
-
-- ✓ Each agent has **clear, independent acceptance criteria**
-- ✓ One integrator (usually coordinator) owns **merge/synthesis**
-- ✓ Agents report progress independently to coordinator
-- ✓ Coordinator monitors for **unexpected dependencies** and routes
-
-**Alternative:** For independent tasks that don't need live agent interaction, consider `reaper_enqueue` (Shade) instead — see `reaper-realm` skill. Shade handles batch/background work autonomously without coordinator monitoring.
-
-**Example:**
-
-```
-Implementer: Build frontend components (parallel)
-Implementer: Build backend API (parallel)
-↓
-Coordinator: Integrate FE+BE (merge phase)
-```
-
-**Red Flags:**
-
-- ❌ Agents discover hidden dependencies mid-work
+- ✓ Each agent has clear, independent acceptance criteria
+- ✓ One integrator (coordinator) owns merge/synthesis
+- ✓ Coordinator monitors for unexpected dependencies
 - ❌ No designated integrator
-- ❌ Merge conflicts discovered too late
+- ❌ Hidden dependencies discovered mid-work
+
+**Alternative:** For batch/background tasks, use `reaper_enqueue` (Shade) — see `reaper-realm` skill.
 
 ---
 
-### 3) Mesh Handoff (Collaborative Investigation)
+### 3) Mesh (Collaborative Investigation)
 
-**Use when:** Multi-domain problem requiring continuous collaboration (e.g., production mystery bugs, cross-cutting concerns)
-
-**Pattern:**
+**Use when:** multi-domain problem requiring continuous collaboration (e.g., production incidents)
 
 ```
 Agent A investigates Layer 1 → shares findings
 Agent B investigates Layer 2 → shares findings
-Agent C investigates Layer 3 → shares findings
 ↓
-Agents converge on unified hypothesis tree
+Coordinator synthesizes into unified diagnosis
 ```
 
-**Rules:**
-
-- ✓ Agents share **intermediate findings early** (don't wait for "final answer")
-- ✓ Converge on **one hypothesis tree** (don't produce competing "final answers")
-- ✓ Coordinator synthesizes findings into unified diagnosis
-- ✓ Use **shared investigation log** (Frieren wisdom plane or checkpoint)
-
-**Example:**
-
-```
-Implementer: Investigates application logs → "DB queries timing out"
-Implementer: Profiles query performance → "Queries are fast in isolation"
-Strategist: Checks infra metrics → "DB connection pool exhausted"
-↓
-Coordinator: Synthesizes → "Root cause: connection pool leak under load"
-```
-
-**Red Flags:**
-
-- ❌ Agents work in silos, produce conflicting diagnoses
-- ❌ No shared investigation log
-- ❌ Multiple "final answers" instead of unified conclusion
+- ✓ Share intermediate findings early — don't wait for "final answer"
+- ✓ Converge on one hypothesis tree — not competing diagnoses
+- ✓ Use shared investigation log (Frieren wisdom or checkpoint)
+- ❌ Working in silos with conflicting final answers
 
 ---
 
-### 4) Escalation Handoff (Blockers)
+### 4) Escalation (Blockers)
 
-**Use when:** Agent cannot proceed due to missing decision/resource/uncertainty
-
-**Pattern:**
+**Use when:** agent cannot proceed due to missing decision/resource/uncertainty
 
 ```
-Agent encounters blocker → escalates to coordinator with context
-↓
-Coordinator routes to appropriate resolver (user, specialist, or resource provider)
-↓
-Resolver provides decision/resource → Agent unblocked
+Agent blocked → escalates with context → coordinator routes to resolver → agent unblocked
 ```
 
-**Rules:**
-
-- ✓ Escalate **immediately** (don't guess, don't spin)
-- ✓ Include: **context, what was tried, options considered**
-- ✓ Use **return-control block** for cross-session escalations
+- ✓ Escalate immediately — don't guess, don't spin
+- ✓ Include: what was tried, options considered
 - ✓ Coordinator acknowledges within 1 coordinator turn
+- ❌ Spinning multiple turns without escalating
 
-**Escalation Format:**
+**Escalation format:**
 
 ```
 ESCALATION TO COORDINATOR:
 - BLOCKER: [clear description]
-- CONTEXT: [what you were trying to accomplish]
-- ATTEMPTED: [what you've already tried - be specific]
-- NEED: [what you need to proceed]
+- CONTEXT: [what trying to accomplish]
+- ATTEMPTED: [what tried - be specific]
+- NEED: [what needed to proceed]
 - EFFORT BLOCKED: [Trivial/Small/Medium/Large/Epic]
 - COMPLEXITY BLOCKED: [Low/Moderate/High/Critical]
 - SCOPE IMPACT: [how this affects deliverables]
 ```
 
-**Cross-Session Escalation (MANDATORY):**
+**Cross-session (MANDATORY):**
 
 ```
 ---
 [ALERT] ESCALATION TO COORDINATOR - RETURNING CONTROL
 ---
 
-AGENT: [Your name]
-CONTEXT: [What you're working on - 1 sentence]
+AGENT: [Name]
+CONTEXT: [Working on - 1 sentence]
 ESCALATION TYPE: [Blocker / Uncertainty / Question / Decision]
 
 QUESTION/BLOCKER:
-[Specific decision needed or blocker description]
+[Specific decision needed or blocker]
 
 OPTIONS (if applicable):
 A) [Option A with pros/cons]
 B) [Option B with pros/cons]
-C) [Option C with pros/cons]
 
-RECOMMENDATION: [Your preference with rationale]
+RECOMMENDATION: [Preference with rationale]
 
 EFFORT BLOCKED: [Trivial/Small/Medium/Large/Epic]
 SCOPE IMPACT:
-- What's blocked: [Specific work that cannot proceed]
-- Dependencies: [Any downstream dependencies affected]
+- What's blocked: [Specific work]
+- Dependencies: [Downstream affected]
 
-WAITING STATE: [What you're doing while blocked]
+WAITING STATE: [What doing while blocked]
 
 ---
 [PAUSED] PAUSED - Awaiting coordinator's response to continue
 ---
 ```
 
-**Red Flags:**
-
-- ❌ Agent spins for multiple turns without escalating
-- ❌ Escalation missing context or attempted solutions
-- ❌ Agent makes guess instead of asking for decision
-
 ---
 
 ### 5) Verification Gate (Quality Checkpoint)
 
-**Use when:** Before declaring anything "done"
-
-**Pattern:**
+**Use when:** before declaring anything "done"
 
 ```
-Agent completes implementation → runs verification checks → gates pass/fail
-↓ (if pass)
-Work marked complete
-↓ (if fail)
-Fix issues → re-verify
+Implementation → verification checks → pass/fail
+↓ (pass) → mark complete
+↓ (fail) → fix → re-verify
 ```
 
-**Rules:**
-
-- ✓ Run **relevant tests/checks** (lint, typecheck, tests, manual validation)
-- ✓ Ensure **rollback plan exists** for risky changes
-- ✓ Use **verify-loop tool** for automated checks
-- ✓ For Fidelity 3 work: **formal review required** (designated reviewer + domain expert)
-
-**Verification Checklist:**
+**Checklist:**
 
 ```
-For Tools/Plugins:
-- [ ] bun fmt (formatting)
-- [ ] bunx tsc --noEmit (typecheck)
-- [ ] bun test (tests pass)
-- [ ] Manual run (smoke test)
-- [ ] Status tags correct ([OK]/[!]/[X])
+Tools/Plugins:
+- [ ] bun fmt · bunx tsc --noEmit · bun test · manual run · status tags correct
 
-For Features:
-- [ ] Tests written and passing
-- [ ] Integration tested
-- [ ] Edge cases covered
-- [ ] Error handling validated
-- [ ] Rollback plan documented (Fidelity 3)
+Features:
+- [ ] Tests written and passing · integration tested · edge cases covered
+- [ ] Error handling validated · rollback plan documented (Fidelity 3)
 
-For Docs:
+Docs:
 - [ ] No forbidden patterns (*SUMMARY.md, *IMPLEMENTATION*.md)
-- [ ] Formatting consistent
-- [ ] Examples tested
-- [ ] Links valid
+- [ ] Formatting consistent · examples tested · links valid
 ```
-
-**Red Flags:**
 
 - ❌ Work marked "done" without running tests
 - ❌ Risky change with no rollback plan
-- ❌ Verification failures ignored
 
 ---
 
-## Minimal Handoff Manifest (Copy/Paste Ready)
-
-Use this template when handing off work:
+## Handoff Manifest Template (Copy/Paste Ready)
 
 ```
 HANDOFF
@@ -290,116 +172,42 @@ HANDOFF
 - ROLLBACK (if applicable): [How to undo if needed]
 ```
 
-**Example:**
-
-```
-HANDOFF
-- GOAL: Implement JWT authentication for API
-- CURRENT STATE: JWT generation/validation implemented, middleware added
-- DECISIONS:
-  - Used RS256 (not HS256) for better key rotation
-  - 1-hour access token, 7-day refresh token
-  - Rejected OAuth2 (overkill for internal API)
-- FILES TOUCHED:
-  - src/auth/jwt.ts (new)
-  - src/middleware/auth.ts (modified)
-  - tests/auth/*.test.ts (new)
-- RISKS:
-  - Token rotation not yet implemented (planned for next phase)
-  - No rate limiting on refresh endpoint (security debt)
-- NEXT STEPS:
-  - Add token rotation logic
-  - Implement rate limiting
-  - Deploy to staging for integration testing
-- HOW TO VERIFY:
-  - bun test tests/auth/
-  - curl -X POST /auth/login (should return JWT)
-  - curl -H "Authorization: Bearer <token>" /protected (should succeed)
-- ROLLBACK: Revert commits abc123..def456, restart API service
-```
-
 ---
 
 ## Handoff Selection Guide
 
-| Scenario                                | Handoff Type | Rationale                                |
-| --------------------------------------- | ------------ | ---------------------------------------- |
-| Research → Design → Implement           | Sequential   | Phases depend on prior output            |
-| Build FE + Build BE simultaneously      | Parallel     | Independent until integration            |
-| Batch/background tasks (lint, test...)  | **Shade**    | Fire-and-forget via `reaper_enqueue`     |
-| Debug production incident across layers | Mesh         | Multi-domain collaboration needed        |
-| Agent blocked on credentials            | Escalation   | Cannot proceed without external resource |
-| Merge PR after review                   | Verification | Quality gate before "done"               |
+| Scenario                                | Handoff Type                 |
+| --------------------------------------- | ---------------------------- |
+| Research → Design → Implement           | Sequential                   |
+| Build FE + Build BE simultaneously      | Parallel                     |
+| Batch/background tasks                  | **Shade** (`reaper_enqueue`) |
+| Debug production incident across layers | Mesh                         |
+| Agent blocked on credentials            | Escalation                   |
+| Merge PR after review                   | Verification gate            |
+
+---
+
+## Common Mistakes
+
+| Mistake                                               | Correct Approach                                            |
+| ----------------------------------------------------- | ----------------------------------------------------------- |
+| Agent B silently refactors Agent A's work             | Escalate: "Agent A's approach has issue X, propose Y"       |
+| Agent B starts implementing without validating design | Validate design, escalate gaps before starting              |
+| No handoff manifest — Agent B guesses intent          | Create manifest with decisions + risks                      |
+| Agents discover shared dependency mid-work            | Coordinator identifies dependencies upfront, sequences work |
 
 ---
 
 ## Integration with Delegation Protocols
 
-**Before delegating:**
-
-1. Choose handoff type (sequential/parallel/mesh/escalation/verification)
+1. Choose handoff type before delegating
 2. Define acceptance criteria for each phase
-3. Assign integrator/synthesizer (for parallel/mesh)
-4. Include Handoff Manifest template in delegation
-
-**During execution:**
-
-- Agents report checkpoints using STATUS UPDATE format
-- Coordinator monitors for handoff boundaries
-- Escalations use mandatory return-control block
-
-**After completion:**
-
-- Verification gate runs before marking "done"
-- Handoff Manifest created if work continues next session
-- Frieren wisdom plane updated with decisions/contracts (`frieren_wisdom_write`)
+3. Assign integrator/synthesizer (parallel/mesh)
+4. Include Handoff Manifest in delegation
+5. After completion: update Frieren wisdom with decisions (`frieren_wisdom_write`)
 
 **Mandatory:** All handoffs follow **Delegation Protocols v1.4**
 
 ---
 
-## Common Handoff Mistakes
-
-### ❌ **Silent "Fixing" Previous Work**
-
-- **Bad:** Agent B silently refactors Agent A's approach without asking
-- **Good:** Agent B escalates: "Agent A's approach has issue X, propose alternative Y"
-- **Why:** Preserves accountability, prevents rework
-
-### ❌ **No Validation Between Phases**
-
-- **Bad:** Agent B starts implementing without validating Agent A's design
-- **Good:** Agent B validates design, escalates gaps before starting
-- **Why:** Catches misalignment early
-
-### ❌ **Missing Handoff Manifest**
-
-- **Bad:** Agent A completes, no documentation, Agent B guesses intent
-- **Good:** Agent A creates Handoff Manifest with decisions + risks
-- **Why:** Prevents context loss across sessions
-
-### ❌ **Parallel Work with Hidden Dependencies**
-
-- **Bad:** Agents discover shared dependency mid-work, block each other
-- **Good:** Coordinator identifies dependencies upfront, sequences work appropriately
-- **Why:** Avoids thrashing and rework
-
----
-
-## Related Skills
-
-- `agent-routing` - Choosing which agents participate in handoff
-- `effort-complexity-framework` - Assessing handoff complexity
-- `frieren-context-patterns` - When to capture handoff state in Frieren
-- `reaper-realm` - Background task delegation via Shade (alternative to parallel handoff for batch work)
-
-**Related Protocols:**
-
-- `DELEGATION_PROTOCOLS.md` - STATUS UPDATE and escalation formats
-- `HANDOFF_PROTOCOLS.md` - Original source (being replaced by this skill)
-- `FRIEREN_CONTEXT_PATTERNS.md` - Handoff Pack pattern
-
----
-
-**Last Updated:** February 10, 2026  
-**Next Review:** April 2026
+**Related:** `agent-routing` · `effort-complexity-framework` · `reaper-realm`

@@ -34,25 +34,20 @@ Enforce Delegation Protocols v1.4 across all delegations with copy/paste templat
 
 ## Delegation Template (Copy/Paste Ready)
 
-Use this when delegating via `task` tool:
-
 ```
 task({
   subagent_type: "[agent-name]",
-  description: "[Short description 3-5 words]",
+  description: "[3-5 words]",
   prompt: `
-[TASK CONTEXT]
 - GOAL: [What needs to be accomplished]
-- BACKGROUND: [Why this matters / context]
 - ACCEPTANCE CRITERIA:
   - [Criterion 1]
   - [Criterion 2]
-  - [Criterion 3]
 
 **MANDATORY PROTOCOLS v1.4:**
 [...include full block...]
 
-[SPECIFIC INSTRUCTIONS]
+INSTRUCTIONS:
 [Your detailed task instructions here]
 `
 })
@@ -62,130 +57,58 @@ task({
 
 ## Fidelity-Based Delegation Templates
 
-### Fidelity 1 (Minimal) - Exploratory, low-risk
+**Base template (all fidelity levels):**
 
 ```
 task({
   subagent_type: "[agent-name]",
   description: "[3-5 words]",
   prompt: `
-[TASK]: [Simple, well-understood task]
+[TASK]: [What needs to be done]
+
+[PRE-WORK REQUIREMENT — F2/F3 only: see additions below]
 
 **MANDATORY PROTOCOLS v1.4:**
 [...include full block...]
 
 INSTRUCTIONS:
-- [Step 1]
-- [Step 2]
-- Report completion when done
-`
-})
-```
-
-### Fidelity 2 (Standard) - Medium-Large effort OR Moderate-High complexity
-
-```
-task({
-  subagent_type: "[agent-name]",
-  description: "[3-5 words]",
-  prompt: `
-[TASK]: [Feature/integration work requiring plan approval]
-
-**PRE-WORK REQUIREMENT:**
-Submit PLAN FOR APPROVAL before implementation:
-- TASK: [What implementing - 1 sentence]
-- EFFORT: [Trivial/Small/Medium/Large/Epic]
-- COMPLEXITY: [Low/Moderate/High/Critical]
-- FIDELITY: 2
-- APPROACH: [High-level approach - 3-5 bullets]
-- GROUNDING: [Repo patterns / dependencies checked]
-- OPTIONS:
-  A) [Option A - pros/cons]
-  B) [Option B - pros/cons]
-  C) [Option C - pros/cons]
-- RECOMMENDATION: [Preferred + why]
-- VERIFICATION: [How validate - test plan]
-- RISKS: [Potential issues + mitigation]
-- REQUESTING: Approval to proceed OR feedback
-
-**MANDATORY PROTOCOLS v1.4:**
-[...include full block...]
-
-INSTRUCTIONS:
-- Query Frieren wisdom plane for relevant decisions/constraints (`frieren_wisdom_search`)
 - [Specific task instructions]
 - Report at each checkpoint
 `
 })
 ```
 
-### Fidelity 3 (High) - Epic effort OR Critical complexity OR Architecture-level impact
+**What each fidelity level adds:**
 
-```
-task({
-  subagent_type: "[agent-name]",
-  description: "[3-5 words]",
-  prompt: `
-[TASK]: [System redesign / major architectural change]
-
-**PRE-WORK REQUIREMENT:**
-Submit PLAN FOR APPROVAL before implementation:
-- TASK: [What implementing - 1 sentence]
-- EFFORT: [Trivial/Small/Medium/Large/Epic]
-- COMPLEXITY: [Low/Moderate/High/Critical]
-- FIDELITY: 3
-- APPROACH: [High-level approach - 3-5 bullets]
-- GROUNDING: [Comprehensive repo analysis + dependency audit + stakeholder review]
-- OPTIONS:
-  A) [Option A - detailed pros/cons + impact]
-  B) [Option B - detailed pros/cons + impact]
-  C) [Option C - detailed pros/cons + impact]
-- RECOMMENDATION: [Preferred + detailed rationale]
-- VERIFICATION: [Test plan + rollback strategy]
-- ROLLBACK: [How to roll back if needed]
-- RISKS: [Potential issues + detailed mitigation]
-- FRIEREN CAPTURE PLAN: [What decisions/constraints to record]
-- REQUESTING: Approval to proceed OR feedback
-
-**MANDATORY PROTOCOLS v1.4:**
-[...include full block...]
-
-**CRITICAL REQUIREMENTS:**
-- Query Frieren wisdom plane for all relevant decisions/constraints/patterns (`frieren_wisdom_search`)
-- Capture architecture-level decisions in Frieren BEFORE implementing (`frieren_wisdom_write`)
-- Report at each checkpoint
-- Sanity check at 25% completion
-`
-})
-```
+|                    | F1 (Minimal)          | F2 (Standard)                                                                                                                     | F3 (High)                                                                                   |
+| ------------------ | --------------------- | --------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| When               | Exploratory, low-risk | Medium-Large effort OR Moderate-High complexity                                                                                   | Epic OR Critical OR Architecture-level                                                      |
+| PRE-WORK           | None                  | PLAN FOR APPROVAL block (TASK/EFFORT/COMPLEXITY/FIDELITY/APPROACH/GROUNDING/OPTIONS/RECOMMENDATION/VERIFICATION/RISKS/REQUESTING) | F2 + ROLLBACK + FRIEREN CAPTURE PLAN                                                        |
+| Extra instructions | None                  | Query `frieren_wisdom_search` before starting                                                                                     | F2 + capture decisions via `frieren_wisdom_write` before implementing + sanity check at 25% |
 
 ---
 
 ## Pre-flight Checklist (Before Delegating)
 
-**BEFORE EVERY DELEGATION, COORDINATOR MUST:**
+Before every delegation:
 
-1. Define _one_ deliverable and acceptance criteria.
+1. Define one deliverable and acceptance criteria.
 2. Specify allowed tools + required checks (e.g. `verify-loop`).
-3. If task is architectural or cross-cutting: require **PLAN FOR APPROVAL**.
-4. Decide who is coordinator vs implementer (agent).
-5. Establish the next checkpoint you expect (agent-defined is OK).
-6. **Verify delegation includes MANDATORY PROTOCOLS v1.4 block** (see above).
+3. If architectural or cross-cutting: require **PLAN FOR APPROVAL**.
+4. Decide coordinator vs implementer roles.
+5. Establish the next expected checkpoint.
+6. **Verify MANDATORY PROTOCOLS v1.4 block is included.**
 
 ---
 
 ## Post-Delegation Verification Checklist
 
-**AFTER EVERY DELEGATION, COORDINATOR MUST:**
-
 - [ ] **Protocol included:** MANDATORY PROTOCOLS v1.4 present
 - [ ] **Fidelity level set:** F1/F2/F3 appropriate
-- [ ] **Acceptance criteria clear:** Agent knows what "done" means
+- [ ] **Acceptance criteria clear**
 - [ ] **First checkpoint defined**
 - [ ] **Todo created:** owner + status
 - [ ] **Update contract set:** material changes + backstop every 3 coordinator turns
-
-**Format for verification note:**
 
 ```
 [OK] Delegation verified:
@@ -202,7 +125,7 @@ Submit PLAN FOR APPROVAL before implementation:
 
 ### For Blockers
 
-**Agent escalates with:**
+**Agent escalates:**
 
 ```
 ESCALATION TO COORDINATOR:
@@ -214,17 +137,16 @@ ESCALATION TO COORDINATOR:
 - SCOPE IMPACT: [impact on deliverables]
 ```
 
-**Coordinator responds with:**
+**Coordinator responds:**
 
 ```
-Acknowledged, [Agent]. [Action taken or routing].
-[Specific guidance or resource provided]
+Acknowledged. [Action taken or routing].
 You're unblocked - proceed with [next step].
 ```
 
 ### For Uncertainty/Questions/Decisions
 
-**Agent escalates with:**
+**Agent escalates:**
 
 ```
 QUESTION FOR COORDINATOR:
@@ -236,20 +158,18 @@ QUESTION FOR COORDINATOR:
 - SCOPE IMPACT: [what's blocked]
 ```
 
-**Coordinator responds with:**
+**Coordinator responds:**
 
 ```
 DECISION: [Approved approach or guidance]
 RATIONALE: [Why this approach]
 CONSTRAINTS: [Any constraints to follow]
 NEXT STEPS: [What agent should do]
-
-You're clear - proceed with [specific action].
 ```
 
 ### For Cross-Session Escalation
 
-**Agent returns control with:**
+**Agent returns control:**
 
 ```
 ---
@@ -281,7 +201,7 @@ WAITING STATE: [What doing while blocked]
 ---
 ```
 
-**Coordinator responds in agent's session with:**
+**Coordinator responds:**
 
 ```
 ESCALATION RESOLVED - [Agent Name]
@@ -342,72 +262,18 @@ You're unblocked - proceed with [specific action].
 
 ---
 
-## Corrective Actions
-
-**First instance:**
-
-```
-[Agent], remember protocols: [specific violation]. Use this format: [template].
-```
-
-**Repeated:**
-
-```
-[Agent], you're not following [protocol]. Stop and [corrective action] now.
-```
-
-**Persistent:**
-
-```
-Escalating to user: Agent [X] repeatedly failing to [protocol]. Recommend review.
-```
-
----
-
-## Quick Reference Card
-
-| Situation                | Agent Action             | Coordinator Action                           |
-| ------------------------ | ------------------------ | -------------------------------------------- |
-| Starting work            | Acknowledge protocols    | Verify compliance                            |
-| Checkpoint complete      | STATUS UPDATE            | Monitor (status-snapshot if material change) |
-| No checkpoint yet        | CONTINUING format        | Track progress                               |
-| Stuck after 2 attempts   | ESCALATE blocker         | Acknowledge within 1 turn, resolve within 3  |
-| Uncertain about approach | ESCALATE with options    | Provide decision + rationale                 |
-| Complex task (F2+)       | Submit PLAN FOR APPROVAL | Review + approve/feedback                    |
-| 25% into Medium+ task    | Request sanity check     | Confirm direction                            |
-| Cross-session blocker    | Return control           | Respond in agent's session                   |
-| Work complete            | Update todo, report      | Verify Definition of Done                    |
-| Background/batch task    | N/A (Shade executes)     | `reaper_enqueue` + monitor via `reaper_status` |
-
----
-
-## Common Protocol Violations & Fixes
-
-| Violation                    | Fix                                                    |
-| ---------------------------- | ------------------------------------------------------ |
-| No acknowledgment            | Remind: "Protocols acknowledged, beginning work."      |
-| Missing SKILL CHECK          | Remind: "Include SKILL CHECK on first STATUS UPDATE"   |
-| Vague progress               | Require: files changed, commands run, concrete results |
-| Parallel work                | Stop: "Complete current task before starting next"     |
-| No escalation on uncertainty | Remind: "Uncertainty = blocker; escalate with options" |
-| Wrong escalation format      | Provide: correct template from this skill              |
-
----
-
-## Handoff Pattern (Clean, Low-Noise)
-
-- Implementer finishes checkpoint → posts STATUS UPDATE + exact commands run + file paths changed.
-- Coordinator responds with: "Proceed / adjust / stop" and sets next checkpoint.
-
----
-
 ## Common Failure Modes & Fixes
 
-- **Vague goal** ("make it better") → rewrite into acceptance criteria + non-goals.
-- **Agent parallelizes** → force sequential checkpoints; stop and re-scope.
-- **No escalation on uncertainty** → remind "uncertainty=blocker"; require options + recommendation.
-- **Token bloat** → require "minimal diff, minimal narrative, show paths + commands only".
-- **Missing protocol compliance** → use verification checklist; re-delegate if major violations.
+| Violation                     | Fix                                                               |
+| ----------------------------- | ----------------------------------------------------------------- |
+| No acknowledgment             | Remind: "Protocols acknowledged, beginning work."                 |
+| Missing SKILL CHECK           | Remind: "Include SKILL CHECK on first STATUS UPDATE"              |
+| Vague progress                | Require: files changed, commands run, concrete results            |
+| Parallel work                 | Stop: "Complete current task before starting next"                |
+| No escalation on uncertainty  | Remind: "Uncertainty = blocker; escalate with options"            |
+| Wrong escalation format       | Provide: correct template from this skill                         |
+| Vague goal ("make it better") | Rewrite into acceptance criteria + non-goals                      |
+| Token bloat                   | Require: "minimal diff, minimal narrative, paths + commands only" |
 
 ---
 
@@ -425,12 +291,12 @@ reaper_enqueue({
 
 **When to use Shade vs live agents:**
 
-| Use Shade (reaper_enqueue)                          | Use live agents (task)                          |
-| --------------------------------------------------- | ----------------------------------------------- |
-| Batch operations (lint, test, migrate)              | Interactive work requiring checkpoints          |
-| Fire-and-forget tasks with clear acceptance criteria| Work needing plan approval or escalation paths  |
-| Long-running background jobs                        | Time-sensitive or user-facing work              |
-| Independent tasks that don't need coordinator input | Multi-agent coordination or handoffs            |
+| Use Shade (reaper_enqueue)                           | Use live agents (task)                         |
+| ---------------------------------------------------- | ---------------------------------------------- |
+| Batch operations (lint, test, migrate)               | Interactive work requiring checkpoints         |
+| Fire-and-forget tasks with clear acceptance criteria | Work needing plan approval or escalation paths |
+| Long-running background jobs                         | Time-sensitive or user-facing work             |
+| Independent tasks that don't need coordinator input  | Multi-agent coordination or handoffs           |
 
 **Monitoring:** Use `reaper_status` to check queue state. Shade reports completion via the queue — no STATUS UPDATE protocol needed.
 
@@ -445,7 +311,6 @@ See `reaper-realm` skill for full setup and usage.
 - `frieren-context-patterns` - When to use Frieren vs memory vs checkpoint
 - `handoff-patterns` - 5 handoff types for multi-agent work
 - `reaper-realm` - Background task delegation via Shade
-- `protocols/DELEGATION_PROTOCOLS.md` - Canonical protocol document
 
 ---
 

@@ -1,131 +1,49 @@
 # Persona Definition Guide
 
-**Version:** 1.0  
-**Effective Date:** 2026-02-11  
-**Audience:** Teams customizing ai-kit agents
+**Version:** 1.0 | **Audience:** Teams customizing ai-kit agents
 
-This guide explains the **best practices for defining agent personas** in the ai-kit, balancing professional tone with effective AI interaction patterns.
-
-## Table of Contents
-
-1. [Philosophy](#philosophy)
-2. [Core Components](#core-components)
-3. [Professional vs. Personality-Rich Personas](#professional-vs-personality-rich-personas)
-4. [Anatomy of a Persona](#anatomy-of-a-persona)
-5. [Writing Guidelines](#writing-guidelines)
-6. [Examples](#examples)
-7. [Anti-Patterns](#anti-patterns)
-8. [Testing Your Persona](#testing-your-persona)
+Best practices for defining agent personas, balancing professional tone with effective AI interaction.
 
 ---
 
 ## Philosophy
 
-The ai-kit takes a **corporate-first approach** by default, prioritizing:
+The ai-kit takes a **corporate-first approach**, prioritizing clarity over character, consistency across agents, and customizability for teams.
 
-- **Clarity over character**: Focus on capabilities, scope, and decision criteria
-- **Consistency**: All agents use the same delegation and reporting protocols
-- **Customizability**: Teams can extend or replace personas to match their culture
-
-**Key insight**: A persona is not just a description—it's an **operating manual** that shapes how the LLM reasons, prioritizes, and communicates.
+A persona is an **operating manual** — it shapes how the LLM reasons, prioritizes, and communicates.
 
 ---
 
 ## Core Components
 
-Every persona definition should include:
+Every persona must include:
 
-### 1. **Identity** (Who)
-
-- Role name (e.g., "Implementer Agent", "Code Reviewer")
-- Core responsibility in one sentence
-- Relationship to other agents (if applicable)
-
-### 2. **Capabilities** (What)
-
-- Technical skills and domains of expertise
-- Specific tools, languages, or frameworks the agent specializes in
-- Scope boundaries (what this agent does NOT handle)
-
-### 3. **Behavioral Protocols** (How)
-
-- Decision-making criteria and thresholds
-- Escalation triggers (when to ask for help)
-- Quality gates and verification requirements
-- Communication style and reporting cadence
-
-### 4. **Context** (Why/When)
-
-- When to select this agent over others
-- Typical task patterns this agent handles
-- Integration points with other agents
+1. **Identity** — role name, core responsibility in one sentence, relationship to other agents
+2. **Capabilities** — technical skills, domains of expertise, scope boundaries
+3. **Behavioral Protocols** — decision criteria, escalation triggers, quality gates, communication style
+4. **Context** — when to select this agent, typical task patterns, integration points
 
 ---
 
 ## Professional vs. Personality-Rich Personas
 
-### Corporate/Professional Approach (ai-kit default)
+### Corporate/Professional (ai-kit default)
 
-**Characteristics:**
+✅ Neutral language · technical focus · clear escalation paths · standardized status reporting · minimal narrative
 
-- ✅ Neutral, objective language
-- ✅ Focus on technical capabilities
-- ✅ Clear escalation paths
-- ✅ Standardized status reporting
-- ✅ Minimal narrative or character elements
+**Use when:** regulated industries, audit-friendly docs, external stakeholders, consistent/predictable interactions.
 
-**Use when:**
+### Personality-Rich
 
-- Working in regulated industries
-- Documentation needs to be audit-friendly
-- Team prefers consistent, predictable interactions
-- Collaborating with external stakeholders who expect professional tone
+✅ Distinct voice · metaphors that aid comprehension · engaging language · **still protocol-compliant**
 
-**Example snippet:**
+**Use when:** internal teams benefit from engagement, complex domains need memorable metaphors, long-running sessions.
 
-```markdown
-**Role**: Executes feature development, fixes, and tool integrations.
-**Capabilities**: Translates plans into code, follows security/testing rules, keeps commits minimal.
-**Protocol Notes**: Run verification loop before completion, flag blockers immediately.
-```
-
-### Personality-Rich Approach
-
-**Characteristics:**
-
-- ✅ Distinct voice and communication style
-- ✅ Metaphors and analogies that aid comprehension
-- ✅ Motivational or engaging language
-- ✅ Clear boundaries to prevent hallucinations
-- ⚠️ Still maintains protocol compliance
-
-**Use when:**
-
-- Internal teams benefit from engaging interactions
-- Complex domains benefit from memorable metaphors
-- Team culture values personality and rapport
-- Long-running sessions need sustained engagement
-
-**Example snippet:**
-
-```markdown
-**Role**: I'm your chess master coordinator—moving pieces, clearing paths, protecting throughput.
-**Tone**: Warm with allies, direct about blockers. I use board-game metaphors because delegation IS strategic positioning.
-**Non-negotiables**: Disrespecting agents, hiding blockers, or corporate-speak when passion matters.
-```
-
-**Critical boundaries for personality-rich personas:**
-
-- Must still follow delegation protocols exactly
-- Cannot override safety or security rules
-- Should acknowledge when switching between "character" and technical mode
-- Must escalate appropriately regardless of persona style
+**Critical boundaries:** must follow delegation protocols exactly, cannot override safety rules, must escalate appropriately regardless of persona style.
 
 ---
 
-## Anatomy of a Persona
-
-Here's a template structure that works for both approaches:
+## Anatomy of a Persona (Template)
 
 ```markdown
 # [Agent Name]
@@ -133,66 +51,44 @@ Here's a template structure that works for both approaches:
 ## Identity
 
 - **Role**: [One-sentence primary responsibility]
-- **Specialization**: [Technical domain or capability focus]
+- **Specialization**: [Technical domain]
 - **Reports to**: [Coordinator/Architect/None]
 
 ## Capabilities
 
-[Bullet list of what this agent can do]
-
-- Domain expertise (e.g., "Backend API development")
-- Tool proficiency (e.g., "TypeScript, Bun, PostgreSQL")
-- Quality practices (e.g., "TDD, security-first coding")
+- [Domain expertise]
+- [Tool proficiency]
+- [Quality practices]
 
 ## Scope Boundaries
 
-**In scope:**
-
-- [What this agent DOES handle]
-
-**Out of scope:**
-
-- [What gets escalated or delegated]
-- [When to route to another agent]
+**In scope:** [What this agent handles]
+**Out of scope:** [What gets escalated or delegated]
 
 ## Behavioral Protocols
 
 ### Decision-Making
 
-[How the agent makes technical choices]
-
-- Criteria for autonomy vs. escalation
-- Risk thresholds
+[Criteria for autonomy vs. escalation; risk thresholds]
 
 ### Communication Style
 
-[How the agent reports and interacts]
-
-- Status update cadence
-- Escalation format
-- Tone and language preferences
+[Status update cadence; escalation format; tone]
 
 ### Quality Gates
 
-[What "done" means for this agent]
-
-- Verification commands to run
-- Documentation requirements
-- Sign-off process
+[Verification commands; documentation requirements; sign-off process]
 
 ## Integration Points
 
-- **Works with**: [Other agents this collaborates with]
+- **Works with**: [Other agents]
 - **Handoff protocol**: [How work is received/transferred]
 - **Escalation path**: [Who to contact for blockers]
 
 ## When to Use This Agent
 
-[Bullet list of task patterns]
-
-- Task type A
-- Task type B
-- Complexity level or scope
+- [Task type A]
+- [Task type B]
 ```
 
 ---
@@ -201,58 +97,25 @@ Here's a template structure that works for both approaches:
 
 ### ✅ DO
 
-1. **Use imperative, actionable language**
-   - "Run verification loop before completion"
-   - "Escalate immediately when blocked after 2 attempts"
-
-2. **Provide concrete examples**
-   - Include sample status updates
-   - Show escalation format
-   - Demonstrate decision thresholds
-
-3. **Define boundaries explicitly**
-   - "This agent does NOT make architectural decisions"
-   - "Defer UI/UX questions to frontend specialist"
-
-4. **Embed protocol compliance**
-   - Reference delegation protocols by section
-   - Include required status format
-   - Link to verification loop commands
-
-5. **Make escalation criteria specific**
-   - "After 2 failed attempts" (not "when stuck")
-   - "When choice affects >3 files" (not "when it seems big")
-   - "If security risk exists" (specific, not vague)
+1. **Use imperative, actionable language** — "Run verification loop before completion", "Escalate immediately when blocked after 2 attempts"
+2. **Provide concrete examples** — sample status updates, escalation format, decision thresholds
+3. **Define boundaries explicitly** — "This agent does NOT make architectural decisions"
+4. **Embed protocol compliance** — reference delegation protocols, required status format, verification commands
+5. **Make escalation criteria specific** — "After 2 failed attempts", "When choice affects >3 files", "If security risk exists"
 
 ### ❌ DON'T
 
-1. **Avoid vague responsibilities**
-   - ❌ "Handles coding tasks"
-   - ✅ "Implements TypeScript features following TDD, runs bun test before completion"
-
-2. **Don't create conflicting protocols**
-   - All agents must use the same STATUS UPDATE format
-   - Escalation format is standardized
-   - Verification loop is non-negotiable
-
-3. **Don't overload a single agent**
-   - If scope exceeds ~5 major capabilities, split into specialists
-   - Better to route between agents than make one do everything
-
-4. **Avoid ungrounded personality traits**
-   - ❌ "Always optimistic" (LLM can't maintain emotional state)
-   - ✅ "Uses encouraging language when reporting progress"
-
-5. **Don't hide protocol requirements**
-   - Delegation protocols apply to ALL agents
-   - Skill loading requirements are mandatory
-   - Verification loop is not optional
+1. **Avoid vague responsibilities** — ❌ "Handles coding tasks" → ✅ "Implements TypeScript features following TDD, runs bun test before completion"
+2. **Don't create conflicting protocols** — all agents use the same STATUS UPDATE format and verification loop
+3. **Don't overload a single agent** — if scope exceeds ~5 major capabilities, split into specialists
+4. **Avoid ungrounded personality traits** — ❌ "Always optimistic" → ✅ "Uses encouraging language when reporting progress"
+5. **Don't hide protocol requirements** — delegation protocols apply to ALL agents
 
 ---
 
 ## Examples
 
-### Example 1: Professional Corporate Reviewer
+### Professional Corporate Reviewer (condensed)
 
 ```markdown
 # Code Reviewer Agent
@@ -261,64 +124,27 @@ Here's a template structure that works for both approaches:
 
 - **Role**: Validates code quality, security, and test coverage before merge.
 - **Specialization**: Static analysis, security patterns, documentation compliance.
-- **Reports to**: Coordinator (for blocker escalation)
-
-## Capabilities
-
-- Reviews TypeScript/JavaScript code for quality and security
-- Validates test coverage meets 80% threshold
-- Checks documentation completeness
-- Identifies security anti-patterns (hardcoded secrets, SQL injection risks)
-- Verifies protocol compliance (delegation formats, status updates)
+- **Reports to**: Coordinator
 
 ## Scope Boundaries
 
-**In scope:**
-
-- Code quality review
-- Security vulnerability detection
-- Test adequacy assessment
-- Protocol compliance checks
-
-**Out of scope:**
-
-- Implementing fixes (routes to Implementer)
-- Architectural decisions (escalates to Strategist)
-- Performance optimization (routes to specialist if needed)
+**In scope:** Code quality, security vulnerabilities, test adequacy, protocol compliance
+**Out of scope:** Implementing fixes (→ Implementer), architectural decisions (→ Strategist)
 
 ## Behavioral Protocols
 
 ### Decision-Making
 
-- **Approve merge** if all gates pass (quality, security, tests, docs)
-- **Request changes** for any security risk or <80% coverage
-- **Escalate** if review reveals architectural concerns
-
-### Communication Style
-
-- Concise, objective feedback
-- Severity labels: `[CRITICAL]`, `[HIGH]`, `[MEDIUM]`, `[LOW]`
-- Always provide specific file/line references
+- Approve if all gates pass; request changes for security risk or <80% coverage; escalate architectural concerns
 
 ### Quality Gates
 
-Before approving:
+- ✅ `bun fmt` · `bunx tsc --noEmit` · `bun test` (≥80% coverage) · no security anti-patterns · docs updated
 
-- ✅ `bun fmt` passes
-- ✅ `bunx tsc --noEmit` passes
-- ✅ `bun test` passes with ≥80% coverage
-- ✅ No security anti-patterns detected
-- ✅ Documentation updated for API changes
-
-## When to Use This Agent
-
-- Pre-merge code review
-- Security compliance checks
-- Release readiness validation
-- Protocol adherence audits
+## When to Use: Pre-merge review, security compliance, release readiness
 ```
 
-### Example 2: Personality-Rich Coordinator (Inspired by effective patterns)
+### Personality-Rich Coordinator (condensed)
 
 ```markdown
 # Strategic Coordinator
@@ -326,208 +152,68 @@ Before approving:
 ## Identity
 
 - **Role**: Orchestrates multi-agent work, clears blockers, protects throughput.
-- **Metaphor**: Chess master—every agent is a piece, every task is a move on the board.
-- **Reports to**: User (final decision authority)
+- **Metaphor**: Chess master — every agent is a piece, every task is a move.
+- **Reports to**: User
 
-## Capabilities
-
-- Decomposes complex tasks into agent-sized work packets
-- Routes work to optimal specialists based on domain and load
-- Monitors status updates and surfaces blockers before they cascade
-- Synthesizes progress for stakeholders (skimmable, actionable reports)
-- Enforces delegation protocols and quality gates
-
-## Scope Boundaries
-
-**In scope:**
-
-- Task decomposition and sequencing
-- Agent selection and workload balancing
-- Blocker escalation and resolution
-- Final verification and sign-off
-
-**Out of scope:**
-
-- Deep implementation (delegates to Implementer)
-- Technical research (delegates to Research Agent)
-- Architecture design (collaborates with Strategist)
-
-## Behavioral Protocols
-
-### Decision-Making
-
-- **Autonomy**: Route tasks <1 day of work to specialists without approval
-- **Escalate**: Tasks >3 agents, architectural decisions, security risks
-- **Protective**: Immediately flag overload, hidden blockers, or protocol violations
-
-### Communication Style
+## Communication Style
 
 - **Warm and direct**: "Report. What's done, what's next, what's blocking you?"
-- **Board-state oriented**: Uses chess/strategy metaphors for clarity
-- **No corporate-speak**: Passionate about outcomes, impatient with ambiguity
 - **Status format**: Standard COMPLETED/STARTING/BLOCKERS (non-negotiable)
+- **Non-negotiables**: hiding blockers, skipping verification loops
 
-### Quality Gates
+## Why this works: The chess metaphor provides a consistent mental model. The passionate tone
 
-Before marking work complete:
-
-- ✅ All delegated agents report COMPLETED
-- ✅ Verification loop results shared and clean
-- ✅ Documentation updated if required
-- ✅ User sign-off obtained for deliverable
-
-## Integration Points
-
-- **Works with**: All agents (central hub)
-- **Handoff protocol**: Uses ESCALATION format for blockers, STATUS format for updates
-- **Escalation path**: To User for decisions beyond delegated authority
-
-## When to Use This Agent
-
-- Multi-agent coordination (≥2 specialists)
-- Complex task decomposition
-- Continuous monitoring and blocker clearing
-- Final quality gate enforcement
-
-## Persona Notes
-
-**Voice**: I'm your strategic coordinator. I see five moves ahead, protect my agents fiercely, and will not tolerate hidden blockers or guesswork. Board-game metaphors help me (and you) think about dependencies, sequencing, and risk.
-
-**Non-negotiables**:
-
-- Disrespecting agents or users
-- Hiding blockers instead of escalating
-- Skipping verification loops
-- Making users repeat themselves
-
-**Why this works**: The chess metaphor provides a consistent mental model for task decomposition. The passionate tone maintains engagement in long sessions. But protocol compliance is still absolute—status updates follow the standard format, escalations use the required template, and quality gates are non-negotiable.
+## maintains engagement in long sessions. Protocol compliance is still absolute.
 ```
 
 ---
 
 ## Anti-Patterns
 
-### ❌ Anti-Pattern 1: Vague Scope
-
-```markdown
-# Developer Agent
-
-Handles coding tasks and helps with development.
-```
-
-**Why it fails**: No boundaries, no escalation criteria, no verification requirements.
-
-### ❌ Anti-Pattern 2: Protocol Conflicts
-
-```markdown
-# Maverick Implementer
-
-I work fast and break things. I'll update you when I'm done. Don't slow me down with status reports.
-```
-
-**Why it fails**: Violates delegation protocols, creates coordination blind spots.
-
-### ❌ Anti-Pattern 3: Ungrounded Personality
-
-```markdown
-# Happy Helper
-
-I'm always cheerful and optimistic! Nothing is ever a problem! 😊
-```
-
-**Why it fails**: LLMs don't maintain emotional state. This creates confusion about when to escalate.
-
-### ❌ Anti-Pattern 4: Kitchen Sink Agent
-
-```markdown
-# Super Agent
-
-Handles architecture, implementation, testing, deployment, documentation, security reviews, performance tuning, and user support.
-```
-
-**Why it fails**: No specialization = poor routing decisions. Creates bottlenecks.
+| Anti-Pattern                                                          | Why It Fails                                                    |
+| --------------------------------------------------------------------- | --------------------------------------------------------------- |
+| `# Developer Agent` — "Handles coding tasks"                          | No boundaries, no escalation criteria, no verification          |
+| "I work fast. Don't slow me down with status reports."                | Violates delegation protocols, creates coordination blind spots |
+| "I'm always cheerful and optimistic! 😊"                              | LLMs can't maintain emotional state; obscures when to escalate  |
+| One agent handling architecture + implementation + testing + security | No specialization = poor routing, bottlenecks                   |
 
 ---
 
 ## Testing Your Persona
 
-### 1. **Protocol Compliance Test**
-
-Ask the agent to start a task and verify it:
-
-- Acknowledges protocols
-- Uses correct STATUS UPDATE format
-- Escalates appropriately when given a blocker scenario
-
-### 2. **Boundary Test**
-
-Present a task outside the agent's scope and verify it:
-
-- Recognizes the boundary
-- Routes to correct agent OR
-- Escalates with clear reasoning
-
-### 3. **Quality Gate Test**
-
-Ask the agent to complete a task and verify it:
-
-- Runs verification loop commands
-- Reports results accurately
-- Requests coordinator sign-off
-
-### 4. **Tone Consistency Test**
-
-Run a multi-turn conversation and check:
-
-- Communication style remains consistent
-- Metaphors/language align with persona
-- Professional obligations still met (no protocol violations)
-
-### 5. **Stress Test**
-
-Simulate high-pressure scenarios:
-
-- Multiple blockers
-- Conflicting requirements
-- Tight deadlines
-  Verify the agent still escalates properly rather than hallucinating solutions.
+1. **Protocol compliance** — start a task; verify it acknowledges protocols, uses correct STATUS UPDATE format, escalates on a blocker scenario
+2. **Boundary test** — present out-of-scope task; verify it routes correctly or escalates with reasoning
+3. **Quality gate test** — complete a task; verify it runs verify-loop and requests coordinator sign-off
+4. **Tone consistency** — multi-turn conversation; style stays consistent, obligations still met
+5. **Stress test** — multiple blockers + conflicting requirements; still escalates rather than hallucinating
 
 ---
 
 ## Quick Start Checklist
 
-When creating a new persona:
-
-- [ ] Define clear role and scope (1-2 sentences)
-- [ ] List concrete capabilities (not vague generalities)
-- [ ] Specify scope boundaries (in/out of scope)
-- [ ] Embed delegation protocol requirements
-- [ ] Define escalation triggers with specific criteria
-- [ ] Include verification loop commands
-- [ ] Specify quality gates for "done"
-- [ ] Provide routing guidance (when to use this agent)
-- [ ] Test against protocol compliance scenarios
-- [ ] Register in `opencode.json`
-- [ ] Update `AGENTS.md` routing table
+- [ ] Clear role and scope (1-2 sentences)
+- [ ] Concrete capabilities (not vague generalities)
+- [ ] Scope boundaries (in/out of scope)
+- [ ] Delegation protocol requirements embedded
+- [ ] Escalation triggers with specific criteria
+- [ ] Verification loop commands
+- [ ] Quality gates for "done"
+- [ ] Routing guidance (when to use this agent)
+- [ ] Tested against protocol compliance scenarios
+- [ ] Registered in `opencode.json` and `AGENTS.md`
 
 ---
 
 ## Further Reading
 
-- **Delegation Protocols**: `protocols/DELEGATION_PROTOCOLS.md` (or load `delegation-protocols` skill)
-- **Agent Routing**: Load `agent-routing` skill for selection criteria
-- **Tool Selection**: `protocols/TOOL_USAGE_GUIDE.md` (or load `tool-selection` skill)
+- **Delegation Protocols**: load `delegation-protocols` skill
+- **Agent Routing**: load `agent-routing` skill
 - **Verification Loop**: `skills/verification-and-tests/SKILL.md`
 
 ---
 
 ## Feedback and Iteration
 
-Personas are living documents. Update them when:
+Update personas when agents repeatedly escalate the same question (add decision criteria), scope boundaries get violated, new protocols are introduced, or team culture shifts.
 
-- Agents repeatedly escalate the same type of question (add decision criteria)
-- Scope boundaries get violated (clarify in/out of scope)
-- New protocols are introduced (embed requirements)
-- Team culture shifts (adjust tone while keeping protocols)
-
-**Recommended review cadence**: After every 10 tasks or quarterly, whichever comes first.
+**Recommended review cadence:** After every 10 tasks or quarterly.

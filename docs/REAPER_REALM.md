@@ -23,66 +23,31 @@ Background task delegation system for OpenCode. The coordinator enqueues tasks �
 
 ### Components
 
-| Component | Location | Description |
-|-----------|----------|-------------|
-| Queue DB | `~/.frieren/queue.db` | SQLite task queue (created by Frieren MCP) |
-| Frieren MCP | `~/dev/frieren/` | Provides `reaper_*` tools to OpenCode |
-| Shade harness | `~/.config/opencode/shade-pico/` | Pi extensions, launcher, tmux config |
-| Shade session | tmux `shade` | Persistent background executor |
+| Component     | Location                         | Description                                |
+| ------------- | -------------------------------- | ------------------------------------------ |
+| Queue DB      | `~/.frieren/queue.db`            | SQLite task queue (created by Frieren MCP) |
+| Frieren MCP   | `~/dev/frieren/`                 | Provides `reaper_*` tools to OpenCode      |
+| Shade harness | `~/.config/opencode/shade-pico/` | Pi extensions, launcher, tmux config       |
+| Shade session | tmux `shade`                     | Persistent background executor             |
 
 ## Prerequisites
 
-1. **Frieren MCP server** — provides the queue tools. Install via ai-kit:
-   ```bash
-   ai-kit-install install --frieren
-   ```
-
-2. **Pi runtime** — Shade runs as a Pi process:
-   ```bash
-   npm install -g @mariozechner/pi-coding-agent
-   ```
-
-3. **tmux** — for persistent Shade session:
-   ```bash
-   # Debian/Ubuntu
-   apt install tmux
-   # macOS
-   brew install tmux
-   ```
-
-4. **bun** — used for fast queue count checks in the launcher.
+1. **Frieren MCP server**: `ai-kit-install install --frieren`
+2. **Pi runtime**: `npm install -g @mariozechner/pi-coding-agent`
+3. **tmux**: `apt install tmux` (Debian/Ubuntu) or `brew install tmux` (macOS)
+4. **bun** — for queue count checks in the launcher.
 
 ## Installation
 
-### Via ai-kit (recommended)
-
 ```bash
+# Via ai-kit (recommended)
 ai-kit-install install --shade
-```
 
-This copies Shade harness files to `~/.config/opencode/shade-pico/` and sets up shell aliases.
-
-### Manual
-
-```bash
-# Copy Shade files
+# Manual
 cp -r shade/ ~/.config/opencode/shade-pico/
-
-# Make scripts executable
 chmod +x ~/.config/opencode/shade-pico/shade-launcher.sh
 chmod +x ~/.config/opencode/shade-pico/shade-tmux.sh
-
-# Add to ~/.zshrc
-cat >> ~/.zshrc << 'EOF'
-# Shade — Reaper Realm executor (autostart)
-if ! tmux has-session -t shade 2>/dev/null; then
-  ~/.config/opencode/shade-pico/shade-tmux.sh start &>/dev/null &
-fi
-alias shade='tmux attach -t shade'
-alias shade-start='~/.config/opencode/shade-pico/shade-tmux.sh start'
-alias shade-stop='~/.config/opencode/shade-pico/shade-tmux.sh stop'
-alias shade-status='~/.config/opencode/shade-pico/shade-tmux.sh status'
-EOF
+# Then add shell aliases from shade-tmux.sh to ~/.zshrc
 ```
 
 ## Usage
@@ -121,13 +86,13 @@ shade-start     # Restart Shade session
 
 Shade delegates to ai-kit agents via Pi subprocesses. Each agent gets a domain-specific system prompt.
 
-| Tool | Agent | Domain |
-|------|-------|--------|
-| `implementer` | Implementer | Feature development, fixes, integrations |
-| `reviewer` | Reviewer | Code review, testing validation, documentation |
-| `strategist` | Strategist | System architecture, migration strategies |
-| `research` | Research | Investigation, data gathering, findings |
-| `architect` | Architect | System-wide strategy, roadmaps, trade-offs |
+| Tool          | Agent       | Domain                                         |
+| ------------- | ----------- | ---------------------------------------------- |
+| `implementer` | Implementer | Feature development, fixes, integrations       |
+| `reviewer`    | Reviewer    | Code review, testing validation, documentation |
+| `strategist`  | Strategist  | System architecture, migration strategies      |
+| `research`    | Research    | Investigation, data gathering, findings        |
+| `architect`   | Architect   | System-wide strategy, roadmaps, trade-offs     |
 
 ### Delegation example
 
@@ -209,6 +174,7 @@ pending → manifesting → completed
 ### Stale recovery
 
 Tasks stuck in `manifesting` past their `timeout_seconds` are automatically:
+
 - Requeued to `pending` if `retry_count < max_retries`
 - Marked `dead` if `retry_count >= max_retries`
 
@@ -218,12 +184,12 @@ Completed/dead/cancelled tasks older than 7 days are purged on queue init.
 
 ## Troubleshooting
 
-### Shade not picking up tasks
-
-```bash
-shade-status                    # Is the session running?
-reaper_status()                 # Are tasks actually pending?
-```
+| Problem                    | Fix                                                                    |
+| -------------------------- | ---------------------------------------------------------------------- |
+| Shade not picking up tasks | `shade-status` (session running?); `reaper_status()` (tasks pending?)  |
+| Shade crashes              | `shade-stop && shade-start`; `shade-attach` for errors                 |
+| Queue DB not found         | `ai-kit-install status` — Frieren must be running to create `queue.db` |
+| Pi not found               | `npm install -g @mariozechner/pi-coding-agent` then `which pi`         |
 
 ### Shade crashes
 
@@ -235,6 +201,7 @@ shade-attach                    # Check output for errors
 ### Queue DB not found
 
 Frieren MCP server creates the queue DB on first use. Make sure Frieren is running:
+
 ```bash
 ai-kit-install status           # Check Frieren config
 ```

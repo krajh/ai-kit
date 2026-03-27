@@ -182,12 +182,12 @@ ai-kit installs into `~/.config/opencode/`:
 
 ### Customisation safety
 
-ai-kit uses `.ai-kit-manifest.json` to protect your changes across updates:
+ai-kit uses `.ai-kit-manifest.json` to track changes across updates:
 
-1. **Checksum tracking** — every managed file's SHA-256 is recorded at install time
-2. **Modification detection** — before updating, current files are compared against checksums
-3. **3-way merge** — if you've changed a file and the upstream changed it too, both are preserved
-4. **Explicit resolution** — you decide what to keep; nothing is silently overwritten
+1. **Checksum tracking** — SHA-256 recorded for every managed file at install time
+2. **Modification detection** — files compared against checksums before updating
+3. **3-way merge** — your changes and upstream changes are both preserved
+4. **Explicit resolution** — you decide what to keep; nothing silently overwritten
 
 ### Environment variables
 
@@ -321,11 +321,10 @@ shade-attach    # View live output
 
 ## Adding Your Own Agents
 
-1. Read `docs/PERSONA_DEFINITION_GUIDE.md` for best practices
+1. Read `docs/PERSONA_DEFINITION_GUIDE.md`
 2. Copy an existing agent in `agents/` as a template
 3. Define role, capabilities, scope, escalation criteria, and communication style
-4. Register in `opencode.json` agents list
-5. Document in `AGENTS.md`
+4. Register in `opencode.json` and document in `AGENTS.md`
 
 ## Support
 
