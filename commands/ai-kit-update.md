@@ -19,7 +19,7 @@ echo "Latest ai-kit version: $LATEST"
 
 # Get current installed version from manifest
 
-CURRENT=$(cat ~/.config/opencode/versions/\*/.ai-kit-manifest.json 2>/dev/null | grep '"version"' | head -1 | cut -d'"' -f4 || echo "unknown")
+CURRENT=$(cat ~/.config/opencode/versions/*/.ai-kit-manifest.json 2>/dev/null | grep '"version"' | head -1 | cut -d'"' -f4 || echo "unknown")
 echo "Current ai-kit version: $CURRENT"
 
 # Compare versions
@@ -34,7 +34,7 @@ echo ""
 echo "=== Update complete ==="
 echo "IMPORTANT: Restart OpenCode to pick up the new config, skills, and agent definitions."
 elif [ "$CURRENT" = "unknown" ]; then
-echo "Could not determine current version. Run '~/.config/opencode/versions/\*/ai-kit-install status' to check."
+echo "Could not determine current version. Run '~/.config/opencode/versions/*/ai-kit-install status' to check."
 else
 echo "ai-kit is already up to date ($CURRENT)"
 fi
