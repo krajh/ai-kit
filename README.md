@@ -45,6 +45,8 @@ Your choice is saved to `~/.config/opencode/.env`.
 | `research`    | `aitooling/claude-haiku-4-5-20251001` | `github-copilot/gpt-5.4`           | Investigation, large context (OpenAI) |
 | `architect`   | `aitooling/claude-sonnet-4-6`         | `github-copilot/claude-opus-4.6`   | Big-picture design (Anthropic)        |
 
+`aitooling` model catalog currently includes: `gpt-5.4`, `gpt-5.4-mini`, `gpt-5.4-nano`, `gpt-5.3-codex`, `gpt-5.2-codex`, `gpt-5.2`, `gpt-5.1`, `gpt-4.1`, `gpt-4.1-mini`, `claude-sonnet-4.6`, `claude-sonnet-4.5`, and `claude-haiku-4.5` variants.
+
 ### Verify installation
 
 ```bash
@@ -58,6 +60,24 @@ ai-kit-install update
 ```
 
 Or from within OpenCode: `/ai-kit-update` — fetches the latest version, compares with installed, and runs the update. **Restart OpenCode** after updating.
+
+To switch provider safely (without manually editing `opencode.json`), use:
+
+```bash
+/ai-kit-provider copilot
+# or
+/ai-kit-provider aitooling --models
+```
+
+This runs `ai-kit-install update --provider ...` and re-applies provider-appropriate per-agent model defaults.
+
+To inspect the supported model IDs from inside OpenCode, use:
+
+```bash
+/ai-kit-models
+/ai-kit-models aitooling
+/ai-kit-models copilot
+```
 
 ### How conflicts are handled
 

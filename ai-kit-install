@@ -274,10 +274,28 @@ get_default_agent_model() {
   esac
 }
 
+get_provider_model_prefix() {
+  local provider="$1"
+  case "$provider" in
+  aitooling) echo "aitooling/" ;;
+  copilot) echo "github-copilot/" ;;
+  *) echo "" ;;
+  esac
+}
+
+is_model_for_provider() {
+  local provider="$1" model="$2"
+  local prefix
+  prefix="$(get_provider_model_prefix "$provider")"
+  [ -n "$prefix" ] && [[ "$model" == "$prefix"* ]]
+}
+
 # Prompt (or read saved values) to optionally customise per-agent model assignments.
 # Saves choices to .env as AGENT_MODEL_<NAME> for reuse on future updates.
 select_agent_models() {
   local agents=("architect" "strategist" "implementer" "reviewer" "research")
+  local provider_prefix
+  provider_prefix="$(get_provider_model_prefix "$PROVIDER_CHOICE")"
 
   # Load any previously saved per-agent overrides from .env
   local -A saved_models=()
@@ -285,8 +303,10 @@ select_agent_models() {
     local key="AGENT_MODEL_$(echo "$agent" | tr '[:lower:]' '[:upper:]')"
     local saved
     saved="$(get_env_file_key "$key" || true)"
-    if [ -n "$saved" ]; then
+    if [ -n "$saved" ] && is_model_for_provider "$PROVIDER_CHOICE" "$saved"; then
       saved_models["$agent"]="$saved"
+    elif [ -n "$saved" ]; then
+      log_warn "Ignoring saved $key for provider '$PROVIDER_CHOICE' (expected prefix: ${provider_prefix:-<none>})"
     fi
   done
 
@@ -2084,7 +2104,7 @@ ENVIRONMENT:
 DEFAULT AGENT MODELS:
   Agent         aitooling                          copilot
   ─────────────────────────────────────────────────────────────────────────────
-  architect     aitooling/claude-sonnet-4-6        github-copilot/claude-opus-4.5
+  architect     aitooling/claude-sonnet-4-6        github-copilot/claude-opus-4.6
   strategist    aitooling/claude-sonnet-4-6        github-copilot/claude-opus-4.6
   implementer   aitooling/claude-sonnet-4-6        github-copilot/gpt-5.3-codex
   reviewer      aitooling/claude-haiku-4-5-20251001 github-copilot/claude-sonnet-4.6

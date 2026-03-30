@@ -95,6 +95,26 @@
           "id": "gpt-5.4",
           "name": "GPT 5.4",
           "temperature": true
+        },
+        "azure/gpt-5.4-mini": {
+          "id": "gpt-5.4-mini",
+          "name": "GPT 5.4 Mini",
+          "temperature": true
+        },
+        "azure/gpt-5.4-nano": {
+          "id": "gpt-5.4-nano",
+          "name": "GPT 5.4 Nano",
+          "temperature": true
+        },
+        "azure/text-embedding-3-small": {
+          "id": "text-embedding-3-small",
+          "name": "Text Embedding 3 Small",
+          "temperature": false
+        },
+        "azure/text-embedding-3-large": {
+          "id": "text-embedding-3-large",
+          "name": "Text Embedding 3 Large",
+          "temperature": false
         }
       }
     },
