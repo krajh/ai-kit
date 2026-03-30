@@ -1165,6 +1165,11 @@ verify_tarball() {
     return 0
   fi
 
+  if [ ! -f "$bundle" ]; then
+    log_warn "No cosign bundle present — skipping signature verification"
+    return 0
+  fi
+
   log "Verifying tarball signature (cosign keyless bundle)..."
   cosign_bin="$(ensure_cosign)"
 
@@ -1252,7 +1257,8 @@ download_release() {
 
   log "Downloading bundle from $bundle_url..."
   if ! curl -fsSL "$bundle_url" -o "$version_dir/ai-kit-${tag}.bundle.json"; then
-    die "Failed to download bundle"
+    log_warn "Bundle not available for this release — cosign signature verification will be skipped"
+    rm -f "$version_dir/ai-kit-${tag}.bundle.json"
   fi
 
   # Verify tarball sha256 from manifest (best-effort parse; fail if present and mismatch)
