@@ -1627,10 +1627,67 @@ handle_conflict() {
   done
 }
 
+# JSON-aware merge for opencode.json.
+# Takes the new release's file as base and overlays:
+#   - agent.*.model values from the user's stashed version
+#   - any top-level keys present in stash but absent in the new file (user additions)
+# Falls back to handle_conflict if jq is unavailable.
+# Returns 0 on success, 1 if fallback to conflict handling is needed.
+merge_opencode_json() {
+  local stashed_file="$1"
+  local new_file="$2"
+
+  if ! command -v jq >/dev/null 2>&1; then
+    return 1
+  fi
+
+  local tmp
+  tmp="$(mktemp)"
+
+  # Build a jq script that:
+  # 1. Extracts each agent's model from the stash and applies it to the new file
+  #    (only if the agent exists in both and the stash has a non-empty model)
+  # 2. Deep-merges any top-level keys present in stash but absent in new file
+  jq -s '
+    .[0] as $new |
+    .[1] as $user |
+
+    # Collect agent model overrides: for each agent in $user.agent, if it has a
+    # non-empty .model and that agent exists in $new.agent, carry the model over.
+    ($user.agent // {} | to_entries | map(
+      select(.value.model != null and .value.model != "")
+      | {key: .key, value: .value.model}
+    ) | from_entries) as $agent_models |
+
+    # Collect user-added top-level keys (present in $user, absent in $new).
+    ($user | to_entries | map(select($new[.key] == null)) | from_entries) as $user_additions |
+
+    # Start from new release base, apply user additions, then patch agent models.
+    ($new * $user_additions) |
+    .agent = (
+      .agent | to_entries | map(
+        if $agent_models[.key] != null
+        then .value.model = $agent_models[.key]
+        else .
+        end
+      ) | from_entries
+    )
+  ' "$new_file" "$stashed_file" >"$tmp" 2>/dev/null
+
+  if [ $? -ne 0 ] || [ ! -s "$tmp" ]; then
+    rm -f "$tmp"
+    return 1
+  fi
+
+  mv "$tmp" "$new_file"
+  return 0
+}
+
 # Reapply stashed personalisations onto the new version directory.
 # Uses a 3-way strategy:
 #   old original == new file  →  only user changed → apply user's version
-#   old original != new file  →  both changed      → conflict
+#   old original != new file  →  both changed      → JSON-aware merge (opencode.json)
+#                                                     or conflict prompt (other files)
 #   file not in new version   →  user-added         → copy over
 reapply_modifications() {
   local new_version_dir="$1"
@@ -1688,6 +1745,17 @@ reapply_modifications() {
       cp "$stashed_file" "$new_file"
       log_ok "  Applied personalisation: $rel_path"
       applied=$((applied + 1))
+    elif [ "$rel_path" = "opencode.json" ]; then
+      # opencode.json changed in both — use JSON-aware merge to preserve
+      # agent model choices and user additions without losing new models/config.
+      if merge_opencode_json "$stashed_file" "$new_file"; then
+        log_ok "  Merged opencode.json (agent models and user additions preserved)"
+        applied=$((applied + 1))
+      else
+        log_warn "  opencode.json merge failed (jq error) — falling back to conflict prompt"
+        handle_conflict "$rel_path" "$stashed_file" "$new_file"
+        conflicts=$((conflicts + 1))
+      fi
     else
       # Both user and new release modified this file — conflict
       handle_conflict "$rel_path" "$stashed_file" "$new_file"
