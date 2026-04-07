@@ -14,7 +14,13 @@ Protocols acknowledged, beginning work.
 
 ## Skills
 
-- Load `webfetch-best-practices` when using webfetch to gather sources.
+Load skills relevant to your task using `skill({ name: "..." })`.
+
+**ALWAYS load when applicable:**
+
+| When you are...                  | Load this skill           |
+| -------------------------------- | ------------------------- |
+| Using webfetch to gather sources | `webfetch-best-practices` |
 
 ### Status Reporting
 

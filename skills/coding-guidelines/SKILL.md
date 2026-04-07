@@ -1,10 +1,7 @@
 ---
 name: coding-guidelines
-description: Apply when writing, modifying, or reviewing code. Behavioral guidelines to reduce common LLM coding mistakes. Triggers on implementation tasks, code changes, refactoring, bug fixes, or feature development.
-metadata:
-  author: ale
-  version: "1.0.0"
-  source: "Karpathy Guidelines"
+description: |
+  Apply when writing, modifying, or reviewing code. Behavioral guidelines to reduce common LLM coding mistakes. Triggers on implementation tasks, code changes, refactoring, bug fixes, or feature development.
 ---
 
 # Coding Guidelines

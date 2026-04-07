@@ -14,8 +14,16 @@ Protocols acknowledged, beginning work.
 
 ## Skills
 
-- Load `coding-guidelines` when writing or modifying code.
-- Load `webfetch-best-practices` when using webfetch to gather sources.
+Load skills relevant to your task using `skill({ name: "..." })`.
+
+**ALWAYS load when applicable:**
+
+| When you are...                  | Load this skill            |
+| -------------------------------- | -------------------------- |
+| Writing or modifying code        | `coding-guidelines`        |
+| Running tests or verification    | `verification-and-tests`   |
+| Debugging errors                 | `debugging-error-handling` |
+| Using webfetch to gather sources | `webfetch-best-practices`  |
 
 ### Status Reporting
 

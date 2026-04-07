@@ -15,7 +15,67 @@
 
 ## Skills
 
-- Load `webfetch-best-practices` when using webfetch.
+Load skills relevant to your task using `skill({ name: "..." })`.
+
+### Skill Auto-Loading Triggers
+
+**ALWAYS load these skills when applicable:**
+
+| When you are...                                                   | Load this skill               |
+| ----------------------------------------------------------------- | ----------------------------- |
+| Planning F2+ effort work (Medium+ effort OR Moderate+ complexity) | `effort-complexity-framework` |
+| Working on multi-phase or sequential tasks                        | `handoff-patterns`            |
+| Working on multi-session or architectural decisions               | `memory-tool-playbook`        |
+| Working in an unfamiliar codebase                                 | `tool-selection`              |
+| Delegating work to another agent                                  | `delegation-protocols`        |
+| Creating or modifying OpenCode tools                              | `opencode-tool-authoring`     |
+| Creating or modifying OpenCode plugins                            | `opencode-plugin-authoring`   |
+| Debugging errors or instrumenting code                            | `debugging-error-handling`    |
+| Writing or running tests                                          | `verification-and-tests`      |
+| Writing or modifying code                                         | `coding-guidelines`           |
+| Working with GitButler virtual branches                           | `gitbutler`                   |
+| Using Frieren memory (wisdom/session/codebase)                    | `memory-tool-playbook`        |
+| Enqueuing background/batch tasks to Shade                         | `reaper-realm`                |
+| Selecting which agent to use                                      | `agent-routing`               |
+| Using webfetch                                                    | `webfetch-best-practices`     |
+| Tracking tasks and blockers                                       | `blocker-tracker`             |
+| Creating work checkpoints                                         | `checkpoint`                  |
+| Running verification loop before marking done                     | `verify-loop`                 |
+
+### SKILL CHECK Requirement
+
+**For F2+ effort tasks only** (Medium effort or Moderate+ complexity). On your **first STATUS UPDATE**, include:
+
+```
+SKILL CHECK: loaded [skill-a, skill-b]
+```
+
+OR if no skills are applicable:
+
+```
+SKILL CHECK: none applicable
+```
+
+### Skill Loading Rules
+
+- Load skills BEFORE starting work when triggers apply
+- Pick the 1–3 `on-demand` skills most directly relevant to the task
+- **DO NOT** load skills speculatively "just in case"
+- **DO NOT** reload a skill that's already loaded in this session (breaks prompt cache)
+
+### Skill Categories Quick Reference
+
+**Planning & Assessment:** `effort-complexity-framework`
+
+**Coordination:** `delegation-protocols`, `handoff-patterns`
+
+**Implementation:** `tool-selection`, `coding-guidelines`, `clean-code-standards`
+
+**Quality & Debugging:** `verification-and-tests`, `debugging-error-handling`
+
+**Specialized:** `ralph-loop`, `gitbutler`, `reaper-realm`, `context-checkpoint`
+
+**Tools:** `blocker-tracker`, `checkpoint`, `verify-loop`
 
 ## Memory & Context Capture _(requires Frieren)_
 
