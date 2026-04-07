@@ -2,7 +2,7 @@
 
 All notable changes to ai-kit are documented here.
 
-## [0.9.5] — 2025-01-27
+## [0.9.8] — 2025-01-27
 
 ### Added
 
@@ -19,7 +19,11 @@ All notable changes to ai-kit are documented here.
 
 ---
 
-## [0.9.4] — 2025-01-20
+## [0.9.7] — 2025-01-25
+
+### Fixed
+
+- **ai-kit-update** — JSON-aware merge preserves custom agent model choices when updating `opencode.json`
 
 ### Fixed
 
