@@ -2,6 +2,19 @@
 
 All notable changes to ai-kit are documented here.
 
+## [0.9.9] — 2025-01-27
+
+### Added
+
+- **7 new skills** — claims-and-citations, prompt-caching, security-best-practices, testing, checkpoint, status-snapshot, webfetch-best-practices
+
+### Changed
+
+- All 6 agents updated with new skill triggers matching role responsibilities
+- AGENTS.md skill loading table updated
+
+---
+
 ## [0.9.8] — 2025-01-27
 
 ### Added
