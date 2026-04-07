@@ -27,10 +27,13 @@ Load skills on-demand via `skill({ name: "skill-name" })`. Key triggers for this
 | Selecting tools for a task                                        | `tool-selection`              |
 | Planning F2+ effort work (Medium+ effort OR Moderate+ complexity) | `effort-complexity-framework` |
 | Writing or reviewing code                                         | `coding-guidelines`           |
-| Running tests or verification                                     | `verification-and-tests`      |
+| Running tests                                                     | `testing`                     |
 | Using GitButler virtual branches                                  | `gitbutler`                   |
 | Selecting which agent to use                                      | `agent-routing`               |
 | Enqueuing background/batch tasks to Shade                         | `reaper-realm`                |
+| Reporting cost/performance metrics                                | `claims-and-citations`        |
+| Creating work checkpoints                                         | `checkpoint`                  |
+| Checking project status                                           | `status-snapshot`             |
 
 ## Agent routing (project-specific)
 

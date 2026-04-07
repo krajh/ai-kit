@@ -31,7 +31,7 @@ Load skills relevant to your task using `skill({ name: "..." })`.
 | Creating or modifying OpenCode tools                              | `opencode-tool-authoring`     |
 | Creating or modifying OpenCode plugins                            | `opencode-plugin-authoring`   |
 | Debugging errors or instrumenting code                            | `debugging-error-handling`    |
-| Writing or running tests                                          | `verification-and-tests`      |
+| Writing or running tests                                          | `testing`                     |
 | Writing or modifying code                                         | `coding-guidelines`           |
 | Working with GitButler virtual branches                           | `gitbutler`                   |
 | Using Frieren memory (wisdom/session/codebase)                    | `memory-tool-playbook`        |
@@ -41,6 +41,9 @@ Load skills relevant to your task using `skill({ name: "..." })`.
 | Tracking tasks and blockers                                       | `blocker-tracker`             |
 | Creating work checkpoints                                         | `checkpoint`                  |
 | Running verification loop before marking done                     | `verify-loop`                 |
+| Reporting cost/performance metrics                                | `claims-and-citations`        |
+| Reviewing for security issues                                     | `security-best-practices`     |
+| Checking overall project status                                   | `status-snapshot`             |
 
 ### SKILL CHECK Requirement
 

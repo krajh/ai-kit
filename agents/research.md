@@ -21,6 +21,8 @@ Load skills relevant to your task using `skill({ name: "..." })`.
 | When you are...                  | Load this skill           |
 | -------------------------------- | ------------------------- |
 | Using webfetch to gather sources | `webfetch-best-practices` |
+| Reporting research findings      | `claims-and-citations`    |
+| Verifying test results           | `testing`                 |
 
 ### Status Reporting
 

@@ -21,9 +21,11 @@ Load skills relevant to your task using `skill({ name: "..." })`.
 | When you are...                  | Load this skill            |
 | -------------------------------- | -------------------------- |
 | Writing or modifying code        | `coding-guidelines`        |
-| Running tests or verification    | `verification-and-tests`   |
+| Running tests                    | `testing`                  |
 | Debugging errors                 | `debugging-error-handling` |
 | Using webfetch to gather sources | `webfetch-best-practices`  |
+| Creating work checkpoints        | `checkpoint`               |
+| Reporting metrics                | `claims-and-citations`     |
 
 ### Status Reporting
 

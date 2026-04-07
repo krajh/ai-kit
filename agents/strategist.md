@@ -23,6 +23,8 @@ Load skills relevant to your task using `skill({ name: "..." })`.
 | Planning architectural work      | `effort-complexity-framework` |
 | Writing or modifying code        | `coding-guidelines`           |
 | Using webfetch to gather sources | `webfetch-best-practices`     |
+| Checking security implications   | `security-best-practices`     |
+| Reporting metrics                | `claims-and-citations`        |
 
 ### Status Reporting
 
