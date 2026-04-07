@@ -240,3 +240,7 @@ See [`docs/REAPER_REALM.md`](docs/REAPER_REALM.md) for architecture and troubles
 ## License
 
 Apache License 2.0 — see [LICENSE](LICENSE).
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for version history.
