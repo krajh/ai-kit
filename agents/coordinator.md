@@ -33,6 +33,7 @@ Load skills relevant to your task using `skill({ name: "..." })`.
 | Debugging errors or instrumenting code                            | `debugging-error-handling`    |
 | Writing or running tests                                          | `testing`                     |
 | Writing or modifying code                                         | `coding-guidelines`           |
+| Committing, branching, or managing PRs                           | `git-hygiene`                 |
 | Working with GitButler virtual branches                           | `gitbutler`                   |
 | Using Frieren memory (wisdom/session/codebase)                    | `memory-tool-playbook`        |
 | Enqueuing background/batch tasks to Shade                         | `reaper-realm`                |
@@ -41,6 +42,9 @@ Load skills relevant to your task using `skill({ name: "..." })`.
 | Tracking tasks and blockers                                       | `blocker-tracker`             |
 | Creating work checkpoints                                         | `checkpoint`                  |
 | Running verification loop before marking done                     | `verify-loop`                 |
+| Ending the session and logging decisions                          | `session-end`                 |
+| Exploring new features or designs before implementation            | `brainstorming`               |
+| Producing structured status reports or summaries                  | `output-discipline`           |
 | Reporting cost/performance metrics                                | `claims-and-citations`        |
 | Reviewing for security issues                                     | `security-best-practices`     |
 | Checking overall project status                                   | `status-snapshot`             |
@@ -68,17 +72,19 @@ SKILL CHECK: none applicable
 
 ### Skill Categories Quick Reference
 
-**Planning & Assessment:** `effort-complexity-framework`
+**Planning & Assessment:** `effort-complexity-framework`, `brainstorming`
 
 **Coordination:** `delegation-protocols`, `handoff-patterns`
 
-**Implementation:** `tool-selection`, `coding-guidelines`, `clean-code-standards`
+**Implementation:** `tool-selection`, `coding-guidelines`, `clean-code-standards`, `git-hygiene`
 
 **Quality & Debugging:** `verification-and-tests`, `debugging-error-handling`
 
+**Communication:** `output-discipline`
+
 **Specialized:** `ralph-loop`, `gitbutler`, `reaper-realm`, `context-checkpoint`
 
-**Tools:** `blocker-tracker`, `checkpoint`, `verify-loop`
+**Tools:** `blocker-tracker`, `checkpoint`, `verify-loop`, `session-end`
 
 ## Memory & Context Capture _(requires Frieren)_
 

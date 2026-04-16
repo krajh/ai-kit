@@ -2,6 +2,14 @@
 
 All notable changes to ai-kit are documented here.
 
+## [0.9.10] — 2025-04-14
+
+### Added
+
+- **5 new skills** — verify-loop, session-end, brainstorming, git-hygiene, output-discipline
+
+---
+
 ## [0.9.9] — 2025-01-27
 
 ### Added

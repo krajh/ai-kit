@@ -4,10 +4,9 @@
   "default_agent": "coordinator",
   "plugin": [
     "@howaboua/opencode-roadmap-plugin@latest",
-    "@tarquinen/opencode-dcp@latest",
-    "opencode-mem"
+    "@tarquinen/opencode-dcp@latest"
   ],
-  "share": "manual",
+  "share": "disabled",
   "provider": {
     "aitooling": {
       "npm": "@ai-sdk/openai-compatible",

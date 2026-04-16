@@ -165,6 +165,7 @@ Skills are playbooks loaded on-demand. All ai-kit skills are globally available 
 | Skill                         | Purpose                                       |
 | ----------------------------- | --------------------------------------------- |
 | `effort-complexity-framework` | Replace time estimates with Effort+Complexity |
+| `brainstorming`              | Explore ideas into designs before coding       |
 
 ### Development & Code Quality
 
@@ -173,12 +174,15 @@ Skills are playbooks loaded on-demand. All ai-kit skills are globally available 
 | `coding-guidelines`    | Reduce common LLM coding mistakes               |
 | `clean-code-standards` | Minimal comments, maximum readability           |
 | `tool-selection`       | Fast tool selection (patch→edit→write priority) |
+| `git-hygiene`          | Safe git practices and PR discipline            |
+| `output-discipline`     | Skimmable outputs with consistent status tags   |
 
 ### Quality & Testing
 
 | Skill                      | Purpose                              |
 | -------------------------- | ------------------------------------ |
 | `verification-and-tests`   | Definition of Done workflow          |
+| `verify-loop`              | Run standardized quality gates        |
 | `debugging-error-handling` | Error triage and prevention patterns |
 
 ### Workflow & Tooling
@@ -190,6 +194,7 @@ Skills are playbooks loaded on-demand. All ai-kit skills are globally available 
 | `opencode-plugin-authoring` | Patterns for `plugin/*.ts` runtime plugins      |
 | `ralph-loop`                | Iterate-to-done loop for mechanical tasks       |
 | `memory-tool-playbook`      | Episodic memory patterns                        |
+| `session-end`              | Comprehensive session closure and continuity     |
 
 ## Optional Integrations
 
