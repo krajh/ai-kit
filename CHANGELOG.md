@@ -2,6 +2,14 @@
 
 All notable changes to ai-kit are documented here.
 
+## [0.9.11] — 2026-04-17
+
+### Added
+
+- **Claude Opus 4.7 (aitooling)** — Added `claude-opus-4-7` to the `aitooling` provider model catalog in `opencode.json`
+
+---
+
 ## [0.9.10] — 2025-04-14
 
 ### Added
