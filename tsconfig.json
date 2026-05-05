@@ -3,14 +3,18 @@
     "target": "ES2022",
     "module": "ESNext",
     "moduleResolution": "Bundler",
-    "lib": ["ES2022"],
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "types": ["bun-types", "node"],
     "strict": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true
   },
   "include": [
     "src/**/*.ts",
     "plugins/**/*.ts",
+    "tools/**/*.ts",
     ".opencode/tools/**/*.ts",
     "tests/**/*.ts"
   ]

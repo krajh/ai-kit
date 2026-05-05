@@ -34,6 +34,7 @@ Load skills on-demand via `skill({ name: "skill-name" })`. Key triggers for this
 | Reporting cost/performance metrics                                | `claims-and-citations`        |
 | Creating work checkpoints                                         | `checkpoint`                  |
 | Checking project status                                           | `status-snapshot`             |
+| Verifying work meets Definition of Done                           | `verify-loop`                 |
 
 ## Agent routing (project-specific)
 
@@ -53,3 +54,37 @@ Load skills on-demand via `skill({ name: "skill-name" })`. Key triggers for this
 5. Define scope boundaries (in scope / out of scope / escalate to user).
 6. Register in `opencode.json` and update the routing table above.
 7. Test against protocol compliance scenarios.
+
+## verify-loop Usage by Agent
+
+Each agent in ai-kit should use `verify-loop` at specific points in their workflow:
+
+| Agent | When to use verify-loop | Key flags |
+|---|---|---|
+| `coordinator` | Before marking roadmap actions complete; after multi-agent orchestration | `--type auto`, `--checkpoint-name` |
+| `strategist` | After architectural decisions; validating design compliance | `--type tool`, `--spec ./docs/plan.md` |
+| `implementer` | Before committing code; after implementation complete | `--type auto`, `--skip-console-logging` (non-opencode repos) |
+| `reviewer` | Quality gate validation; F2/F3 work requires `--effort f2 --guillotine-passed` | `--type auto`, `--effort f2` |
+| `research` | Validating research artifacts; documentation compliance | `--type doc`, `--spec ./docs/research.md` |
+| `architect` | Design compliance validation; F2/F3 Crimson Seal gates | `--type tool`, `--effort f3` |
+
+### F2/F3 Work (Crimson Seal)
+
+For medium+ complexity work, agents must follow the Crimson Seal protocol:
+
+1. **Implementer** runs: `bun tools/verify-loop.ts --effort f2`
+2. **Reviewer** performs Guillotine review (code review)
+3. **Implementer** runs: `bun tools/verify-loop.ts --effort f2 --guillotine-passed`
+4. **Coordinator** marks roadmap action complete with Completion Proof
+
+### Integration with Roadmap
+
+After `verify-loop` passes:
+1. Copy the **Completion Proof** from the report
+2. Run: `updateroadmap(actionNumber='N.NN', status='completed', note='<paste Completion Proof>')`
+
+### Integration with Checkpoint
+
+On success with `--checkpoint-name`:
+- Creates `.opencode/checkpoints/latest.json`
+- Enables `session-end` to persist context

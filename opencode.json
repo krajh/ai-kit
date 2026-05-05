@@ -63,7 +63,6 @@
         "claude-opus-4-7": {
           "id": "claude-opus-4-7",
           "name": "Claude Opus 4.7",
-          "temperature": true
         },
         "azure/gpt-5.2-chat": {
           "id": "gpt-5.2-chat",
@@ -252,7 +251,9 @@
       }
     }
   },
-  "instructions": ["AGENTS.md"],
+  "instructions": [
+    "AGENTS.md"
+  ],
   "watcher": {
     "ignore": [
       "node_modules/**",
@@ -276,12 +277,12 @@
   },
   "agent": {
     "coordinator": {
-      "description": "Coordination lead (user-defined). Choose the coordinator persona that fits your team.",
+      "description": "Coordination lead (user-defined). Choose the coordinator persona that fits your team. Uses verify-loop for Definition of Done enforcement before marking work complete.",
       "mode": "primary",
       "temperature": 0.2
     },
     "strategist": {
-      "description": "Systems architect for planning and decisions",
+      "description": "Systems architect for planning and decisions. Uses verify-loop to validate architectural compliance and F2/F3 Crimson Seal reviews.",
       "mode": "subagent",
       "model": "github-copilot/claude-opus-4.6",
       "temperature": 0.3,
@@ -292,7 +293,7 @@
       }
     },
     "implementer": {
-      "description": "Implementation specialist for disciplined execution",
+      "description": "Implementation specialist for disciplined execution. Runs verify-loop before committing; uses --spec for semantic gates on F2/F3 work.",
       "mode": "subagent",
       "model": "github-copilot/gpt-5.3-codex",
       "temperature": 0.4,
@@ -301,7 +302,7 @@
       }
     },
     "reviewer": {
-      "description": "Code and documentation reviewer for quality assurance",
+      "description": "Code and documentation reviewer for quality assurance. Uses verify-loop for quality gates; performs Guillotine reviews for F2/F3 Crimson Seal compliance.",
       "mode": "subagent",
       "model": "github-copilot/claude-sonnet-4.6",
       "temperature": 0.2,
@@ -312,7 +313,7 @@
       }
     },
     "research": {
-      "description": "Research lead for discovery and requirements",
+      "description": "Research lead for discovery and requirements. Uses verify-loop to validate research artifacts and documentation compliance.",
       "mode": "subagent",
       "model": "github-copilot/gpt-5.4",
       "temperature": 0.2,
@@ -324,7 +325,7 @@
       }
     },
     "architect": {
-      "description": "Big-picture architect who shapes roadmaps and trade-offs",
+      "description": "Big-picture architect who shapes roadmaps and trade-offs. Uses verify-loop for design compliance validation and F2/F3 Crimson Seal gates.",
       "mode": "subagent",
       "model": "github-copilot/claude-opus-4.6",
       "temperature": 0.3,

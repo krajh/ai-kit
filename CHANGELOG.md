@@ -2,6 +2,23 @@
 
 All notable changes to ai-kit are documented here.
 
+## [0.9.12] — 2026-04-29
+
+### Added
+- **verify-loop toolchain** — Ported from OpenCode with full F2/F3 Crimson Seal protocol, semantic gates, and spec-verify integration
+- **tools/ directory** — New tool infrastructure with eval-harness/llm-client.ts for LLM-powered verification
+- **commands/verify-loop.md** — Full command documentation with usage patterns
+
+### Changed
+- **All 6 agents** — Updated descriptions in opencode.json and AGENTS.md to reference verify-loop usage
+- **verify-loop/SKILL.md** — Enhanced with keywords field, compatibility section for ai-kit agents, F2/F3 Crimson Seal documentation
+- **tsconfig.json** — Added tools/**/*.ts to compilation, enabled allowImportingTsExtensions
+
+### Fixed
+- **opencode.json** — Reformatted instructions array for consistency
+
+---
+
 ## [0.9.11] — 2026-04-17
 
 ### Added

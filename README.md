@@ -182,7 +182,7 @@ Skills are playbooks loaded on-demand. All ai-kit skills are globally available 
 | Skill                      | Purpose                              |
 | -------------------------- | ------------------------------------ |
 | `verification-and-tests`   | Definition of Done workflow          |
-| `verify-loop`              | Run standardized quality gates        |
+| `verify-loop`              | Standardized quality gates with F2/F3 Crimson Seal protocol |
 | `debugging-error-handling` | Error triage and prevention patterns |
 
 ### Workflow & Tooling
