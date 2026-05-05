@@ -2,6 +2,14 @@
 
 All notable changes to ai-kit are documented here.
 
+## [0.9.13] — 2026-04-29
+
+### Fixed
+- **Release workflow** — Added `commands/` and `tools/` to tarball creation so commands (ai-kit-update, ai-k-it-models, ai-k-it-provider) are properly installed
+- **Release validation** — Added `commands` and `tools` to REQUIRED_PATHS validation
+
+---
+
 ## [0.9.12] — 2026-04-29
 
 ### Added

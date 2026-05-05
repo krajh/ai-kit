@@ -34,6 +34,8 @@ jobs:
             "plugins"
             "skills"
             "protocols"
+            "commands"
+            "tools"
           )
           MISSING=()
           for path in "${REQUIRED_PATHS[@]}"; do
@@ -65,7 +67,9 @@ jobs:
             agents \
             plugins \
             skills \
-            protocols
+            protocols \
+            commands \
+            tools
 
           SHA256=$(sha256sum "${TARBALL}" | awk '{print $1}')
           SIZE=$(stat -c%s "${TARBALL}")
