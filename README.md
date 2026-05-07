@@ -218,6 +218,8 @@ ai-kit-install install --shade
 
 **Prerequisites:** Frieren + Pi runtime (`npm install -g @mariozechner/pi-coding-agent`) + tmux.
 
+**Native Windows note:** ai-kit can install the Shade files and PowerShell alias, but `shade-tmux.sh` still requires tmux and is not supported on native Windows. Use WSL/tmux for the full background executor.
+
 ```bash
 # Enqueue from coordinator:
 reaper_enqueue({ task: "Fix all TypeScript errors in src/", priority: 3 })

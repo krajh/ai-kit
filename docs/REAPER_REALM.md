@@ -50,6 +50,8 @@ chmod +x ~/.config/opencode/shade-pico/shade-tmux.sh
 # Then add shell aliases from shade-tmux.sh to ~/.zshrc
 ```
 
+> **Native Windows:** `ai-kit-install install --shade` copies the Shade files to `%APPDATA%\opencode\shade-pico` and installs a `shade` PowerShell alias, but `shade-tmux.sh` still depends on tmux and does not run natively on Windows. Use WSL/tmux for the persistent executor.
+
 ## Usage
 
 ### Enqueue a task (from coordinator/OpenCode)
@@ -131,6 +133,7 @@ Default: `~/.frieren/queue.db`. Override with `FRIEREN_QUEUE_DB` env var.
 ```
 ~/.config/opencode/shade-pico/
 ├── AGENTS.md                    # Shade's system prompt
+├── shade.ps1                    # Windows wrapper / limitation notice
 ├── shade-launcher.sh            # Main launcher (poll loop)
 ├── shade-tmux.sh                # Tmux session manager
 └── extensions/
