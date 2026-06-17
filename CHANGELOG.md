@@ -2,6 +2,16 @@
 
 All notable changes to ai-kit are documented here.
 
+## [0.10.1] — 2026-05-22
+
+### Removed
+- **Anthropic models from `aitooling` provider** — Removed `claude-haiku-4-5`, `claude-sonnet-4-5`, `claude-sonnet-4-6`, and `claude-opus-4-7` from the `aitooling` model catalog in `opencode.json`. The `github-copilot` provider retains its full Anthropic lineup.
+
+### Changed
+- **aitooling agent defaults** — `get_default_agent_model` and help text now map `aitooling/*` roles to GPT models: `architect/strategist/research → gpt-5.4`, `implementer → gpt-5.3-codex`, `reviewer → gpt-5.4-mini`.
+
+---
+
 ## [0.9.13] — 2026-04-29
 
 ### Fixed

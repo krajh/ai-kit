@@ -260,11 +260,11 @@ validate_provider() {
 get_default_agent_model() {
   local provider="$1" agent="$2"
   case "$provider/$agent" in
-  aitooling/architect)   echo "aitooling/claude-sonnet-4-6" ;;
-  aitooling/strategist)  echo "aitooling/claude-sonnet-4-6" ;;
-  aitooling/implementer) echo "aitooling/claude-sonnet-4-6" ;;
-  aitooling/reviewer)    echo "aitooling/claude-haiku-4-5-20251001" ;;
-  aitooling/research)    echo "aitooling/claude-haiku-4-5-20251001" ;;
+  aitooling/architect)   echo "aitooling/gpt-5.4" ;;
+  aitooling/strategist)  echo "aitooling/gpt-5.4" ;;
+  aitooling/implementer) echo "aitooling/gpt-5.3-codex" ;;
+  aitooling/reviewer)    echo "aitooling/gpt-5.4-mini" ;;
+  aitooling/research)    echo "aitooling/gpt-5.4" ;;
   copilot/architect)     echo "github-copilot/claude-opus-4.6" ;;
   copilot/strategist)    echo "github-copilot/claude-opus-4.6" ;;
   copilot/implementer)   echo "github-copilot/gpt-5.3-codex" ;;
@@ -2172,11 +2172,11 @@ ENVIRONMENT:
 DEFAULT AGENT MODELS:
   Agent         aitooling                          copilot
   ─────────────────────────────────────────────────────────────────────────────
-  architect     aitooling/claude-sonnet-4-6        github-copilot/claude-opus-4.6
-  strategist    aitooling/claude-sonnet-4-6        github-copilot/claude-opus-4.6
-  implementer   aitooling/claude-sonnet-4-6        github-copilot/gpt-5.3-codex
-  reviewer      aitooling/claude-haiku-4-5-20251001 github-copilot/claude-sonnet-4.6
-  research      aitooling/claude-haiku-4-5-20251001 github-copilot/gpt-5.4
+  architect     aitooling/gpt-5.4                  github-copilot/claude-opus-4.6
+  strategist    aitooling/gpt-5.4                  github-copilot/claude-opus-4.6
+  implementer   aitooling/gpt-5.3-codex            github-copilot/gpt-5.3-codex
+  reviewer      aitooling/gpt-5.4-mini             github-copilot/claude-sonnet-4.6
+  research      aitooling/gpt-5.4                  github-copilot/gpt-5.4
 
   Use --models to customise any agent's model during install/update.
   Choices are saved to .env (AGENT_MODEL_<NAME>) and reused on future updates.

@@ -37,15 +37,15 @@ Your choice is saved to `~/.config/opencode/.env`.
 
 #### Provider model tiers
 
-| Agent         | aitooling                             | copilot                            | Role                                  |
-| ------------- | ------------------------------------- | ---------------------------------- | ------------------------------------- |
-| `strategist`  | `aitooling/claude-sonnet-4-6`         | `github-copilot/claude-opus-4.6`   | Architecture planning (Anthropic)     |
-| `implementer` | `aitooling/claude-sonnet-4-6`         | `github-copilot/gpt-5.3-codex`     | Code generation (OpenAI Codex)        |
-| `reviewer`    | `aitooling/claude-haiku-4-5-20251001` | `github-copilot/claude-sonnet-4.6` | Code/doc review (Anthropic)           |
-| `research`    | `aitooling/claude-haiku-4-5-20251001` | `github-copilot/gpt-5.4`           | Investigation, large context (OpenAI) |
-| `architect`   | `aitooling/claude-sonnet-4-6`         | `github-copilot/claude-opus-4.6`   | Big-picture design (Anthropic)        |
+| Agent         | aitooling                  | copilot                            | Role                                  |
+| ------------- | -------------------------- | ---------------------------------- | ------------------------------------- |
+| `strategist`  | `aitooling/gpt-5.4`        | `github-copilot/claude-opus-4.6`   | Architecture planning (Anthropic)     |
+| `implementer` | `aitooling/gpt-5.3-codex`  | `github-copilot/gpt-5.3-codex`     | Code generation (OpenAI Codex)        |
+| `reviewer`    | `aitooling/gpt-5.4-mini`   | `github-copilot/claude-sonnet-4.6` | Code/doc review (Anthropic)           |
+| `research`    | `aitooling/gpt-5.4`        | `github-copilot/gpt-5.4`           | Investigation, large context (OpenAI) |
+| `architect`   | `aitooling/gpt-5.4`        | `github-copilot/claude-opus-4.6`   | Big-picture design (Anthropic)        |
 
-`aitooling` model catalog currently includes: `gpt-5.4`, `gpt-5.4-mini`, `gpt-5.4-nano`, `gpt-5.3-codex`, `gpt-5.2-codex`, `gpt-5.2`, `gpt-5.1`, `gpt-4.1`, `gpt-4.1-mini`, `claude-sonnet-4.6`, `claude-sonnet-4.5`, and `claude-haiku-4.5` variants.
+`aitooling` model catalog currently includes: `gpt-5.4`, `gpt-5.4-mini`, `gpt-5.4-nano`, `gpt-5.3-codex`, `gpt-5.3-chat`, `gpt-5.2-codex`, `gpt-5.2`, `gpt-5.2-chat`, `gpt-5.1`, `gpt-5.1-codex`, `gpt-5.1-codex-mini`, `gpt-4.1`, `gpt-4.1-mini`, plus `text-embedding-3-small/large`.
 
 ### Verify installation
 
